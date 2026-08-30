@@ -1,0 +1,622 @@
+# STANDARDS-be.md — Petko Backend Standards (NestJS + Supabase)
+
+> **Always read `CLAUDE.md` before reading this file.**
+> This document governs all backend code in `petko-be/`.
+
+---
+
+## Stack
+
+| Tool | Purpose |
+|---|---|
+| NestJS + TypeScript (strict) | REST API framework |
+| Supabase JS SDK (`@supabase/supabase-js`) | Database queries (via service role) |
+| Supabase Auth | JWT verification — `anon` key for user JWTs |
+| `class-validator` + `class-transformer` | DTO validation |
+| `@nestjs/config` | Environment variable management |
+| Joi | Env schema validation at startup |
+| Jest | Unit testing |
+
+> **No TypeORM.** Database access goes through the Supabase JS client using the service role key. There are no raw SQL migrations managed here — schema is managed in the Supabase dashboard or via Supabase CLI.
+
+---
+
+## Project Structure
+
+```
+petko-be/
+├── .env                          # Environment variables (never commit)
+├── .env.example                  # Placeholder committed to repo
+├── src/
+│   ├── main.ts                   # Bootstrap — pipes, filters, interceptors, CORS
+│   ├── app.module.ts             # Root module — imports all feature + core modules
+│   ├── config/
+│   │   └── env.validation.ts     # Joi schema — validates all env vars at startup
+│   ├── common/
+│   │   ├── decorators/
+│   │   │   ├── roles.decorator.ts
+│   │   │   └── current-user.decorator.ts
+│   │   ├── filters/
+│   │   │   └── http-exception.filter.ts
+│   │   ├── guards/
+│   │   │   ├── auth.guard.ts     # Verifies Supabase JWT
+│   │   │   └── roles.guard.ts    # Checks user role from DB
+│   │   ├── interceptors/
+│   │   │   └── response.interceptor.ts
+│   │   └── types/
+│   │       ├── authenticated-request.type.ts
+│   │       └── api-response.type.ts
+│   ├── supabase/
+│   │   └── supabase.module.ts    # Provides SupabaseService globally
+│   │   └── supabase.service.ts   # Supabase admin client (service role)
+│   └── modules/
+│       ├── users/
+│       │   ├── users.module.ts
+│       │   ├── users.controller.ts
+│       │   ├── users.service.ts
+│       │   └── dto/
+│       │       └── update-user.dto.ts
+│       ├── products/
+│       │   ├── products.module.ts
+│       │   ├── products.controller.ts
+│       │   ├── products.service.ts
+│       │   └── dto/
+│       │       ├── create-product.dto.ts
+│       │       └── update-product.dto.ts
+│       ├── cart/
+│       │   ├── cart.module.ts
+│       │   ├── cart.controller.ts
+│       │   ├── cart.service.ts
+│       │   └── dto/
+│       │       └── upsert-cart-item.dto.ts
+│       ├── orders/
+│       │   ├── orders.module.ts
+│       │   ├── orders.controller.ts
+│       │   ├── orders.service.ts
+│       │   └── dto/
+│       │       └── create-order.dto.ts
+│       └── checkout/
+│           ├── checkout.module.ts
+│           ├── checkout.controller.ts
+│           └── checkout.service.ts   # Scaffolded — gateway TBA
+└── test/
+    └── app.e2e-spec.ts
+```
+
+---
+
+## Environment Variables
+
+Create `petko-be/.env` (never commit):
+
+```env
+# .env — Petko Backend
+# Copy from .env.example and fill in your values
+
+NODE_ENV=development
+PORT=3000
+
+# Supabase — get these from your Supabase project settings
+SUPABASE_URL=your_supabase_project_url_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+SUPABASE_ANON_KEY=your_anon_key_here
+
+# CORS
+FRONTEND_URL=http://localhost:5173
+```
+
+Create `petko-be/.env.example` (commit this):
+
+```env
+NODE_ENV=development
+PORT=3000
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_ANON_KEY=
+FRONTEND_URL=http://localhost:5173
+```
+
+---
+
+## Supabase Key Usage
+
+| Key | Use case | Risk if leaked |
+|---|---|---|
+| **Anon key** | Verify user JWTs sent from the frontend | Low — public by design |
+| **Service role key** | All DB read/write from the backend | **CRITICAL** — bypasses RLS |
+
+**Rules:**
+- The **service role key** lives only in `petko-be/.env` — never sent to the frontend, never logged
+- The **anon key** is used only for JWT verification with `supabase.auth.getUser(token)`
+- All Supabase DB operations go through the **service role client** (`SupabaseService`) inside NestJS services only
+
+---
+
+## Supabase Module & Service
+
+### `src/supabase/supabase.service.ts`
+
+```ts
+import { Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+@Injectable()
+export class SupabaseService {
+  private readonly adminClient: SupabaseClient
+  private readonly anonClient: SupabaseClient
+
+  constructor(private readonly config: ConfigService) {
+    this.adminClient = createClient(
+      config.getOrThrow<string>('SUPABASE_URL'),
+      config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY')
+    )
+    this.anonClient = createClient(
+      config.getOrThrow<string>('SUPABASE_URL'),
+      config.getOrThrow<string>('SUPABASE_ANON_KEY')
+    )
+  }
+
+  /** Use for all DB operations. Bypasses RLS — handle access control via guards. */
+  get admin(): SupabaseClient {
+    return this.adminClient
+  }
+
+  /** Use only for verifying user JWTs. */
+  get anon(): SupabaseClient {
+    return this.anonClient
+  }
+}
+```
+
+### `src/supabase/supabase.module.ts`
+
+```ts
+import { Global, Module } from '@nestjs/common'
+import { SupabaseService } from './supabase.service'
+
+@Global()
+@Module({
+  providers: [SupabaseService],
+  exports: [SupabaseService],
+})
+export class SupabaseModule {}
+```
+
+Import `SupabaseModule` once in `app.module.ts`. Because it is `@Global()`, all feature modules get `SupabaseService` without re-importing.
+
+---
+
+## Authentication Guard
+
+The `AuthGuard` validates the Bearer JWT sent from the frontend (issued by Supabase after Google SSO). It attaches the verified user to `request.user`.
+
+### `src/common/guards/auth.guard.ts`
+
+```ts
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common'
+import { SupabaseService } from '@/supabase/supabase.service'
+import { AuthenticatedRequest } from '@/common/types/authenticated-request.type'
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(private readonly supabase: SupabaseService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>()
+    const authHeader = request.headers['authorization']
+
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing or invalid Authorization header')
+    }
+
+    const token = authHeader.split(' ')[1]
+    const { data: { user }, error } = await this.supabase.anon.auth.getUser(token)
+
+    if (error || !user) {
+      throw new UnauthorizedException('Invalid or expired token')
+    }
+
+    // Fetch role from our public users table
+    const { data: profile, error: profileError } = await this.supabase.admin
+      .from('users')
+      .select('id, email, full_name, avatar_url, role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      throw new UnauthorizedException('User profile not found')
+    }
+
+    request.user = profile
+    return true
+  }
+}
+```
+
+### `src/common/types/authenticated-request.type.ts`
+
+```ts
+import { Request } from 'express'
+
+export interface UserProfile {
+  id: string
+  email: string
+  full_name: string
+  avatar_url: string
+  role: 'admin' | 'customer'
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: UserProfile
+}
+```
+
+---
+
+## RBAC — Roles Guard
+
+### `src/common/decorators/roles.decorator.ts`
+
+```ts
+import { SetMetadata } from '@nestjs/common'
+
+export type Role = 'admin' | 'customer'
+export const ROLES_KEY = 'roles'
+export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles)
+```
+
+### `src/common/guards/roles.guard.ts`
+
+```ts
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
+import { ROLES_KEY, Role } from '@/common/decorators/roles.decorator'
+import { AuthenticatedRequest } from '@/common/types/authenticated-request.type'
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ])
+
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true
+    }
+
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>()
+    const userRole = request.user?.role
+
+    if (!requiredRoles.includes(userRole)) {
+      throw new ForbiddenException('You do not have permission to access this resource')
+    }
+
+    return true
+  }
+}
+```
+
+### Usage on a Controller
+
+```ts
+@Controller('admin/products')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('admin')
+export class AdminProductsController {
+  // All routes here require admin role
+}
+```
+
+---
+
+## Current User Decorator
+
+### `src/common/decorators/current-user.decorator.ts`
+
+```ts
+import { createParamDecorator, ExecutionContext } from '@nestjs/common'
+import { AuthenticatedRequest, UserProfile } from '@/common/types/authenticated-request.type'
+
+export const CurrentUser = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): UserProfile => {
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>()
+    return request.user
+  }
+)
+```
+
+Usage:
+
+```ts
+@Get('me')
+@UseGuards(AuthGuard)
+getMe(@CurrentUser() user: UserProfile) {
+  return user
+}
+```
+
+---
+
+## API Response Format
+
+All endpoints return a consistent envelope. The response interceptor wraps success responses automatically.
+
+**Success:**
+```json
+{ "success": true, "data": {}, "message": "optional" }
+```
+
+**Paginated:**
+```json
+{
+  "success": true,
+  "data": [],
+  "meta": {
+    "total": 50, "page": 1, "limit": 10,
+    "totalPages": 5, "hasPreviousPage": false, "hasNextPage": true
+  },
+  "message": "optional"
+}
+```
+
+**Error:**
+```json
+{ "success": false, "statusCode": 400, "message": "...", "errors": [] }
+```
+
+### `src/common/interceptors/response.interceptor.ts`
+
+```ts
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common'
+import { Observable, map } from 'rxjs'
+
+@Injectable()
+export class ResponseInterceptor implements NestInterceptor {
+  intercept(_context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    return next.handle().pipe(
+      map((data) => ({
+        success: true,
+        data: data ?? null,
+        message: '',
+      }))
+    )
+  }
+}
+```
+
+### `src/common/filters/http-exception.filter.ts`
+
+```ts
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common'
+import { Response } from 'express'
+
+@Catch()
+export class HttpExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp()
+    const response = ctx.getResponse<Response>()
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR
+
+    const message =
+      exception instanceof HttpException
+        ? exception.message
+        : 'Internal server error'
+
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : null
+
+    const errors =
+      typeof exceptionResponse === 'object' &&
+      exceptionResponse !== null &&
+      'message' in exceptionResponse &&
+      Array.isArray((exceptionResponse as Record<string, unknown>).message)
+        ? (exceptionResponse as Record<string, unknown[]>).message
+        : []
+
+    response.status(status).json({
+      success: false,
+      statusCode: status,
+      message,
+      errors,
+    })
+  }
+}
+```
+
+---
+
+## `main.ts` Bootstrap
+
+```ts
+import { NestFactory } from '@nestjs/core'
+import { ValidationPipe } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { AppModule } from './app.module'
+import { ResponseInterceptor } from './common/interceptors/response.interceptor'
+import { HttpExceptionFilter } from './common/filters/http-exception.filter'
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule)
+  const config = app.get(ConfigService)
+
+  app.enableCors({
+    origin: config.getOrThrow<string>('FRONTEND_URL'),
+    credentials: true,
+  })
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    })
+  )
+
+  app.useGlobalFilters(new HttpExceptionFilter())
+  app.useGlobalInterceptors(new ResponseInterceptor())
+
+  const port = config.get<number>('PORT') ?? 3000
+  await app.listen(port)
+  console.log(`Petko API running on http://localhost:${port}`)
+}
+
+bootstrap()
+```
+
+---
+
+## Module Structure Rules
+
+Every feature module follows this structure:
+
+```
+src/modules/<name>/
+├── <name>.module.ts
+├── <name>.controller.ts
+├── <name>.service.ts
+└── dto/
+    ├── create-<name>.dto.ts
+    └── update-<name>.dto.ts
+```
+
+- Register every module in `app.module.ts`
+- Use constructor-based DI with `readonly` dependencies
+- DTOs must use `class-validator` decorators on every field
+- **Controllers** handle HTTP routing only — no business logic
+- **Services** hold business logic and call `SupabaseService` for DB access
+- Never query Supabase from a controller directly
+
+---
+
+## DTO Validation Example
+
+```ts
+import { IsString, IsNumber, IsEnum, IsBoolean, Min, IsOptional } from 'class-validator'
+
+export enum PetType {
+  CAT = 'cat',
+  DOG = 'dog',
+  BOTH = 'both',
+}
+
+export class CreateProductDto {
+  @IsString()
+  name: string
+
+  @IsString()
+  description: string
+
+  @IsNumber()
+  @Min(0)
+  price: number
+
+  @IsNumber()
+  @Min(0)
+  stock: number
+
+  @IsString()
+  category: string
+
+  @IsEnum(PetType)
+  pet_type: PetType
+
+  @IsString()
+  @IsOptional()
+  image_url?: string
+
+  @IsBoolean()
+  @IsOptional()
+  is_active?: boolean
+}
+```
+
+---
+
+## Error Handling Rules
+
+- Throw NestJS built-in exceptions only — never raw `Error`
+- Common exceptions: `NotFoundException`, `BadRequestException`, `ForbiddenException`, `UnauthorizedException`, `ConflictException`
+- The global `HttpExceptionFilter` formats all errors into the standard envelope
+
+```ts
+// Example in a service
+const { data, error } = await this.supabase.admin
+  .from('products')
+  .select('*')
+  .eq('id', id)
+  .single()
+
+if (error || !data) {
+  throw new NotFoundException(`Product with id ${id} not found`)
+}
+```
+
+---
+
+## Layering Rules
+
+- **Controllers** → receive HTTP, validate with DTO, call service, return data
+- **Services** → orchestrate business logic, call `SupabaseService` for DB, throw typed exceptions
+- **SupabaseService** → single shared Supabase admin client; injected via DI
+- Never call Supabase from a controller
+- Never put routing logic in a service
+
+---
+
+## File Naming Conventions
+
+- **kebab-case** for all files and folders
+- NestJS suffixes: `.module.ts`, `.controller.ts`, `.service.ts`, `.guard.ts`, `.interceptor.ts`, `.filter.ts`, `.decorator.ts`, `.dto.ts`
+- Classes: **PascalCase** | Methods/vars: **camelCase** | DB columns: **snake_case** | Constants: **UPPER_SNAKE_CASE**
+
+---
+
+## Code Style
+
+- TypeScript strict mode — never `any`
+- `async/await` only — never `.then()`
+- Explicit return types on all service and controller methods
+- `readonly` on all injected constructor dependencies
+
+---
+
+## Testing
+
+- Unit tests are **co-located** as `<name>.spec.ts` next to the source file
+- Every service and controller must have a `.spec.ts`
+- Mock `SupabaseService` in all unit tests — no real network calls
+- Use `@nestjs/testing` + `Test.createTestingModule()`
+- E2E tests go in `test/` at project root (only exception to co-location)
+
+---
+
+## Shared FE ↔ BE Conventions
+
+- **Identical response envelope** — FE `lib/api-types.ts` mirrors BE interceptor output
+- **Pagination contract**: `page`, `limit`, `sortBy`, `sortOrder` query params in; `meta` object out
+- **Feature-first**: BE `modules/<feature>/`, FE `features/<feature>/`
+- **kebab-case** filenames everywhere, **PascalCase** classes/components, **camelCase** vars
