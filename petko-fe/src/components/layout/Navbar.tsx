@@ -22,35 +22,42 @@ export default function Navbar() {
     <nav className="border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         {/* Brand */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <Link to="/" className="flex items-center gap-2 text-xl font-black text-orange-500">
             <span className="text-2xl">🐾</span>
-            <span>Petko</span>
+            {/* On phones admins need the room for the view toggle */}
+            <span className={isAdmin ? 'hidden sm:inline' : undefined}>Petko</span>
           </Link>
 
-          {/* Quick Nav for Admins */}
+          {/* View toggle for admins (the only customer/admin switch, all screen sizes) */}
           {isAdmin && (
-            <div className="hidden items-center rounded-lg bg-gray-100 p-1 text-xs font-semibold sm:flex">
+            <div
+              role="group"
+              aria-label="Switch view"
+              className="flex items-center rounded-lg bg-gray-100 p-1 text-xs font-semibold"
+            >
               <Link
                 to="/"
-                className={`flex items-center gap-1 rounded-md px-3 py-1 transition ${
+                aria-current={inAdminRoute ? undefined : 'page'}
+                className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3 ${
                   !inAdminRoute
                     ? 'bg-white text-orange-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <Store size={14} />
+                <Store size={14} aria-hidden="true" />
                 Storefront
               </Link>
               <Link
                 to="/admin"
-                className={`flex items-center gap-1 rounded-md px-3 py-1 transition ${
+                aria-current={inAdminRoute ? 'page' : undefined}
+                className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3 ${
                   inAdminRoute
                     ? 'bg-white text-orange-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <LayoutDashboard size={14} />
+                <LayoutDashboard size={14} aria-hidden="true" />
                 Admin Panel
               </Link>
             </div>

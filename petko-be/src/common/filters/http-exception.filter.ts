@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common'
 import { Response } from 'express'
 
-interface ErrorResponse {
+export interface ErrorResponse {
   success: false
   statusCode: number
   message: string

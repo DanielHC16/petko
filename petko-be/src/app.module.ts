@@ -4,6 +4,8 @@ import { envValidationSchema } from './config/env.validation'
 import { SupabaseModule } from './supabase/supabase.module'
 import { UsersModule } from './modules/users/users.module'
 import { ProductsModule } from './modules/products/products.module'
+import { AdminAccessEmailsModule } from './modules/admin-access-emails/admin-access-emails.module'
+import { AdminStatsModule } from './modules/admin-stats/admin-stats.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 
@@ -22,6 +24,8 @@ import { AppService } from './app.service'
     // Feature modules
     UsersModule,
     ProductsModule,
+    AdminAccessEmailsModule,
+    AdminStatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

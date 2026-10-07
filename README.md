@@ -86,4 +86,11 @@ npm test              # backend unit tests
 
 ## Deploy to Vercel
 
-The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before the first production deploy, apply `petko-be/supabase/security-patch-001-lock-user-role.sql` in the Supabase SQL editor.
+The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before the first production deploy, apply these in the Supabase SQL editor, in order (both are safe to re-run):
+
+1. `petko-be/supabase/security-patch-001-lock-user-role.sql`
+2. `petko-be/supabase/migration-002-admin-access-emails.sql`
+
+## Admin access
+
+Admins can switch between the storefront and the admin panel with the Storefront / Admin Panel toggle in the navbar. A user is an admin if their stored role is `admin` or their confirmed email is in the admin access list. Manage the list at `/admin/users` → "Admin access list". A listed email gets admin access on its first sign-in. Details are in [`context/CLAUDE.md`](context/CLAUDE.md#admin-access-effective-admin-role).

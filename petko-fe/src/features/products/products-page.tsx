@@ -4,6 +4,7 @@ import { Search, ShoppingBag, Plus, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 const CATEGORIES = [
   { id: 'all', label: 'All Items' },
@@ -20,39 +21,50 @@ const CATEGORIES = [
   { id: 'accessories', label: 'Collars & Leashes' },
 ]
 
+const SORT_OPTIONS = ['newest', 'price_asc', 'price_desc', 'name'] as const
+type SortOption = (typeof SORT_OPTIONS)[number]
+
+function isSortOption(value: string): value is SortOption {
+  return (SORT_OPTIONS as readonly string[]).includes(value)
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedPetType, setSelectedPetType] = useState<'all' | 'dog' | 'cat'>('all')
-  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'name'>('newest')
+  const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  // Loading is derived: the filters that produced the current results vs the current filters.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
 
   const addItem = useCartStore((s) => s.addItem)
 
+  const requestKey = JSON.stringify({ selectedCategory, selectedPetType, search, sortBy })
+  const isLoading = loadedKey !== requestKey
+
   useEffect(() => {
     let isMounted = true
-    setIsLoading(true)
+    const key = JSON.stringify({ selectedCategory, selectedPetType, search, sortBy })
 
-    fetchProducts({
-      category: selectedCategory,
-      pet_type: selectedPetType,
-      search,
-      sortBy,
-    })
-      .then((data) => {
+    async function load(): Promise<void> {
+      try {
+        const data = await fetchProducts({
+          category: selectedCategory,
+          pet_type: selectedPetType,
+          search,
+          sortBy,
+        })
+        if (isMounted) setProducts(data)
+      } catch (err: unknown) {
         if (isMounted) {
-          setProducts(data)
-          setIsLoading(false)
+          toast.error(getApiErrorMessage(err, 'Failed to load products'))
         }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          toast.error(err instanceof Error ? err.message : 'Failed to load products')
-          setIsLoading(false)
-        }
-      })
+      } finally {
+        if (isMounted) setLoadedKey(key)
+      }
+    }
+    load()
 
     return () => {
       isMounted = false
@@ -161,7 +173,9 @@ export default function ProductsPage() {
           <select
             id="sort-select"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => {
+              if (isSortOption(e.target.value)) setSortBy(e.target.value)
+            }}
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-orange-500 focus:outline-none"
           >
             <option value="newest">Newest First</option>

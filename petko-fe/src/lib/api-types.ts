@@ -4,6 +4,14 @@ export interface ApiResponse<T> {
   message: string
 }
 
+/** Error envelope returned by the NestJS HttpExceptionFilter. */
+export interface ApiErrorBody {
+  success: false
+  statusCode: number
+  message: string
+  errors: unknown[]
+}
+
 export interface PaginatedResponse<T> {
   success: boolean
   data: T[]

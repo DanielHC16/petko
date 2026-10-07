@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { SupabaseService } from '@/supabase/supabase.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
@@ -27,6 +29,8 @@ const POSTGREST_RESERVED_CHARS = /[,()*%\\:"']/g
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name)
+
   constructor(private readonly supabase: SupabaseService) {}
 
   async findAll(filters?: {
@@ -62,8 +66,9 @@ export class ProductsService {
     const { data, error } = await query
 
     if (error) {
+      this.logDbError('findAll', error)
       throw new BadRequestException(
-        `Failed to fetch products: ${error.message}`,
+        'Could not load products. Please try again.',
       )
     }
 
@@ -103,8 +108,9 @@ export class ProductsService {
       .single<ProductEntity>()
 
     if (error || !data) {
+      this.logDbError('create', error)
       throw new BadRequestException(
-        `Failed to create product: ${error?.message}`,
+        'Could not create the product. Check the fields and try again.',
       )
     }
 
@@ -133,9 +139,14 @@ export class ProductsService {
       .select('*')
       .single<ProductEntity>()
 
+    // PGRST116: `.single()` matched zero rows, i.e. the product does not exist.
+    if (!data && (!error || error.code === 'PGRST116')) {
+      throw new NotFoundException('Product not found')
+    }
     if (error || !data) {
-      throw new NotFoundException(
-        `Failed to update product ${id}: ${error?.message || 'Not found'}`,
+      this.logDbError('update', error)
+      throw new BadRequestException(
+        'Could not update the product. Check the fields and try again.',
       )
     }
 
@@ -149,12 +160,43 @@ export class ProductsService {
       .eq('id', id)
 
     if (error) {
+      this.logDbError('delete', error)
       throw new BadRequestException(
-        `Failed to delete product ${id}: ${error.message}`,
+        'Could not delete the product. It may be referenced by existing orders.',
       )
     }
 
-    return { message: `Product ${id} deleted successfully` }
+    return { message: 'Product deleted successfully' }
+  }
+
+  /** Logs the raw Supabase error server-side; callers return a generic message. */
+  private logDbError(operation: string, error: PostgrestError | null): void {
+    this.logger.error(
+      `products.${operation} failed: ${error?.code ?? 'no-code'} ${error?.message ?? 'no data returned'}`,
+    )
+  }
+
+  /** Catalog counts for the admin dashboard (all products and active ones). */
+  async countProducts(): Promise<{ total: number; active: number }> {
+    const [totalResult, activeResult] = await Promise.all([
+      this.supabase.admin
+        .from('products')
+        .select('id', { count: 'exact', head: true }),
+      this.supabase.admin
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true),
+    ])
+
+    const error = totalResult.error ?? activeResult.error
+    if (error) {
+      this.logDbError('countProducts', error)
+      throw new BadRequestException(
+        'Could not load product counts. Please try again.',
+      )
+    }
+
+    return { total: totalResult.count ?? 0, active: activeResult.count ?? 0 }
   }
 
   private isPetType(value: string): value is ProductEntity['pet_type'] {

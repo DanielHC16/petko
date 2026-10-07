@@ -14,32 +14,44 @@ import {
   UserPlus,
   ArrowRight,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
+import { getApiErrorMessage } from '@/lib/api-error'
 import { useAuthStore } from '@/store/auth.store'
+import { fetchAdminStats, type AdminStats } from './admin-api'
+
+type StatsState =
+  | { status: 'loading' }
+  | { status: 'ready'; stats: AdminStats }
+  | { status: 'error' }
 
 export default function AdminDashboardPage() {
   const profile = useAuthStore((s) => s.profile)
-  const [productCount, setProductCount] = useState<number | null>(null)
-  const [userCount, setUserCount] = useState<number | null>(null)
-  const [adminCount, setAdminCount] = useState<number | null>(null)
+  const [statsState, setStatsState] = useState<StatsState>({ status: 'loading' })
 
   useEffect(() => {
-    supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true })
-      .then(({ count }) => setProductCount(count ?? 0))
-
-    supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .then(({ count }) => setUserCount(count ?? 0))
-
-    supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'admin')
-      .then(({ count }) => setAdminCount(count ?? 0))
+    let isMounted = true
+    async function load(): Promise<void> {
+      try {
+        const stats = await fetchAdminStats()
+        if (isMounted) setStatsState({ status: 'ready', stats })
+      } catch (err: unknown) {
+        if (!isMounted) return
+        toast.error(getApiErrorMessage(err, 'Failed to load dashboard stats'))
+        setStatsState({ status: 'error' })
+      }
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
   }, [])
+
+  /** Renders a stat, "…" while loading and "—" on error. */
+  function statText(format: (stats: AdminStats) => string): string {
+    if (statsState.status === 'loading') return '…'
+    if (statsState.status === 'error') return '—'
+    return format(statsState.stats)
+  }
 
   return (
     <div className="space-y-8">
@@ -99,7 +111,9 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900">Browse Storefront</p>
-              <p className="text-xs text-gray-500">57 products, search &amp; filters</p>
+              <p className="text-xs text-gray-500">
+                {statText((s) => `${s.products.active} products`)}, search &amp; filters
+              </p>
             </div>
           </Link>
 
@@ -169,7 +183,7 @@ export default function AdminDashboardPage() {
                 <Package size={22} />
               </div>
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                {productCount !== null ? `${productCount} active` : '...'}
+                {statText((s) => `${s.products.active} active`)}
               </span>
             </div>
             <div className="mt-4">
@@ -211,7 +225,7 @@ export default function AdminDashboardPage() {
                 <Users size={22} />
               </div>
               <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-800">
-                {adminCount !== null ? `${adminCount} admin(s)` : `${userCount ?? 0} user(s)`}
+                {statText((s) => `${s.users.admins} admin(s)`)}
               </span>
             </div>
             <div className="mt-4">
@@ -223,6 +237,9 @@ export default function AdminDashboardPage() {
               </div>
               <p className="mt-0.5 text-xs text-gray-500">
                 Manually assign Admin roles by Gmail address &amp; view all accounts
+              </p>
+              <p className="mt-1 text-xs font-semibold text-orange-800">
+                {statText((s) => `${s.accessEmails} email(s) on the admin access list`)}
               </p>
             </div>
           </Link>

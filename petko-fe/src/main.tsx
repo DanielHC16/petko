@@ -5,8 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/axios'
-import type { UserProfile } from '@/store/auth.store'
+import { fetchCurrentProfile } from '@/lib/auth'
 
 // Global auth state listener — runs once at app startup.
 // Keeps the Zustand store in sync with Supabase session changes
@@ -17,12 +16,7 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
   setSession(session)
 
   if (session) {
-    try {
-      const response = await api.get<{ data: UserProfile }>('/users/me')
-      setProfile(response.data.data)
-    } catch {
-      setProfile(null)
-    }
+    setProfile(await fetchCurrentProfile())
   } else {
     setProfile(null)
   }

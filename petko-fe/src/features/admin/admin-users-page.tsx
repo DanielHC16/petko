@@ -12,20 +12,31 @@ import {
   Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api } from '@/lib/axios'
-import { useAuthStore, type UserProfile } from '@/store/auth.store'
+import { getApiErrorMessage } from '@/lib/api-error'
+import { useAuthStore } from '@/store/auth.store'
+import AdminAccessSection from './admin-access-section'
+import {
+  deleteUser,
+  fetchUsers,
+  promoteUser,
+  updateUserRole,
+  type AdminUser,
+  type Role,
+} from './admin-api'
 
-interface UserWithDate extends UserProfile {
-  created_at?: string
+const ROLE_OPTIONS: readonly Role[] = ['admin', 'customer']
+
+function isRole(value: string): value is Role {
+  return (ROLE_OPTIONS as readonly string[]).includes(value)
 }
 
 export default function AdminUsersPage() {
   const currentAdmin = useAuthStore((s) => s.profile)
-  const [users, setUsers] = useState<UserWithDate[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [emailInput, setEmailInput] = useState('')
-  const [roleInput, setRoleInput] = useState<'admin' | 'customer'>('admin')
+  const [roleInput, setRoleInput] = useState<Role>('admin')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -37,10 +48,9 @@ export default function AdminUsersPage() {
   async function loadUsers() {
     setIsLoading(true)
     try {
-      const res = await api.get<{ success: boolean; data: UserWithDate[] }>('/users')
-      setUsers(res.data.data || [])
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to fetch users')
+      setUsers(await fetchUsers())
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to fetch users'))
     } finally {
       setIsLoading(false)
     }
@@ -55,28 +65,22 @@ export default function AdminUsersPage() {
 
     setIsSubmitting(true)
     try {
-      const res = await api.post<{ success: boolean; data: UserWithDate; message?: string }>(
-        '/users/promote',
-        {
-          email: emailInput.trim().toLowerCase(),
-          role: roleInput,
-        },
-      )
+      const updated = await promoteUser(emailInput.trim().toLowerCase(), roleInput)
 
       toast.success(
-        `Successfully set ${res.data.data.email} as ${roleInput.toUpperCase()}!`,
+        `Successfully set ${updated.email} as ${roleInput.toUpperCase()}!`,
         { icon: '🛡️', duration: 4000 },
       )
       setEmailInput('')
       loadUsers()
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to assign user role')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to assign user role'))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  async function handleToggleRole(targetUser: UserWithDate) {
+  async function handleToggleRole(targetUser: AdminUser) {
     if (targetUser.id === currentAdmin?.id) {
       toast.error('You cannot change your own admin role!')
       return
@@ -89,17 +93,17 @@ export default function AdminUsersPage() {
 
     setUpdatingId(targetUser.id)
     try {
-      await api.patch(`/users/${targetUser.id}/role`, { role: newRole })
+      await updateUserRole(targetUser.id, newRole)
       toast.success(`Updated ${targetUser.email} to ${newRole.toUpperCase()}`)
       loadUsers()
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update role')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update role'))
     } finally {
       setUpdatingId(null)
     }
   }
 
-  async function handleDeleteUser(targetUser: UserWithDate) {
+  async function handleDeleteUser(targetUser: AdminUser) {
     if (targetUser.id === currentAdmin?.id) {
       toast.error('You cannot remove your own active admin account!')
       return
@@ -110,11 +114,11 @@ export default function AdminUsersPage() {
 
     setDeletingId(targetUser.id)
     try {
-      await api.delete(`/users/${targetUser.id}`)
+      await deleteUser(targetUser.id)
       toast.success(`Removed account ${targetUser.email}`, { icon: '🗑️' })
       loadUsers()
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete user account')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete user account'))
     } finally {
       setDeletingId(null)
     }
@@ -229,7 +233,9 @@ export default function AdminUsersPage() {
 
           <select
             value={roleInput}
-            onChange={(e) => setRoleInput(e.target.value as 'admin' | 'customer')}
+            onChange={(e) => {
+              if (isRole(e.target.value)) setRoleInput(e.target.value)
+            }}
             className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 focus:border-orange-500 focus:outline-none"
           >
             <option value="admin">🛡️ Role: Admin</option>
@@ -250,6 +256,9 @@ export default function AdminUsersPage() {
           </button>
         </form>
       </div>
+
+      {/* Admin Access Email List */}
+      <AdminAccessSection onChange={loadUsers} />
 
       {/* Users Table */}
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -351,6 +360,11 @@ export default function AdminUsersPage() {
                           )}
                           {user.role.toUpperCase()}
                         </span>
+                        {user.admin_access_listed && (
+                          <span className="ml-1.5 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-700">
+                            Access list
+                          </span>
+                        )}
                       </td>
 
                       {/* Joined Date */}
@@ -372,6 +386,16 @@ export default function AdminUsersPage() {
                           </span>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
+                            {user.admin_access_listed ? (
+                              <button
+                                type="button"
+                                disabled
+                                title="Remove their email from the admin access list to demote"
+                                className="cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 opacity-70"
+                              >
+                                Demote to Customer
+                              </button>
+                            ) : (
                             <button
                               onClick={() => handleToggleRole(user)}
                               disabled={isUpdating || isDeleting}
@@ -387,6 +411,7 @@ export default function AdminUsersPage() {
                                   ? 'Demote to Customer'
                                   : 'Promote to Admin'}
                             </button>
+                            )}
 
                             <button
                               onClick={() => handleDeleteUser(user)}

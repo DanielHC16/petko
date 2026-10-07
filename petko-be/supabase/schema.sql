@@ -158,3 +158,29 @@ create policy "Users can view items from their own orders"
 -- update public.users
 -- set role = 'admin'
 -- where email = 'your-email@gmail.com';
+
+-- ────────────────────────────────────────────────────────────
+-- 8. ADMIN ACCESS EMAILS
+-- Emails listed here are treated as admins by the backend
+-- (AuthGuard) once the account's email is confirmed. Managed in
+-- the app at /admin/users → "Admin access list".
+-- Service-role only: RLS on with NO policies, and client grants
+-- revoked. Same as migration-002-admin-access-emails.sql.
+-- ────────────────────────────────────────────────────────────
+create table if not exists public.admin_access_emails (
+  id          uuid primary key default gen_random_uuid(),
+  email       text not null unique
+              check (email = lower(btrim(email)) and email <> ''),
+  added_by    uuid references public.users(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.admin_access_emails enable row level security;
+-- Deliberately no policies: anon/authenticated must never read or write this.
+revoke all on public.admin_access_emails from anon, authenticated;
+
+insert into public.admin_access_emails (email) values
+  ('danielcamacho0416@gmail.com'),
+  ('ilaurenaubrey@gmail.com'),
+  ('sancheztriciap@gmail.com')
+on conflict (email) do nothing;
