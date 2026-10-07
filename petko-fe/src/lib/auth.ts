@@ -1,5 +1,21 @@
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store/auth.store'
+import { api } from '@/lib/axios'
+import type { ApiResponse } from '@/lib/api-types'
+import { useAuthStore, type UserProfile } from '@/store/auth.store'
+
+/**
+ * Loads the signed-in user's profile from the API. `role` is the effective
+ * role (admin when stored as admin or listed in the admin access list).
+ * Returns null when the request fails.
+ */
+export async function fetchCurrentProfile(): Promise<UserProfile | null> {
+  try {
+    const response = await api.get<ApiResponse<UserProfile>>('/users/me')
+    return response.data.data
+  } catch {
+    return null
+  }
+}
 
 /**
  * Initiates Google OAuth sign-in via Supabase.

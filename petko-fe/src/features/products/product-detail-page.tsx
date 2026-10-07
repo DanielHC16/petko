@@ -4,29 +4,43 @@ import { ArrowLeft, ShoppingCart, Check, ShieldCheck, Truck, RefreshCw } from 'l
 import toast from 'react-hot-toast'
 import { fetchProductById, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [product, setProduct] = useState<Product | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // Loading is derived: the id whose fetch has settled vs the current route id.
+  const [loadedId, setLoadedId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
 
   const addItem = useCartStore((s) => s.addItem)
 
+  const isLoading = Boolean(id) && loadedId !== id
+
   useEffect(() => {
     if (!id) return
-    setIsLoading(true)
+    let isMounted = true
+    const productId = id
 
-    fetchProductById(id)
-      .then((data) => {
-        setProduct(data)
-        setIsLoading(false)
-      })
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : 'Product not found')
-        setIsLoading(false)
-      })
+    async function load(): Promise<void> {
+      try {
+        const data = await fetchProductById(productId)
+        if (isMounted) setProduct(data)
+      } catch (err: unknown) {
+        if (isMounted) {
+          setProduct(null)
+          toast.error(getApiErrorMessage(err, 'Product not found'))
+        }
+      } finally {
+        if (isMounted) setLoadedId(productId)
+      }
+    }
+    load()
+
+    return () => {
+      isMounted = false
+    }
   }, [id])
 
   function handleAddToCart() {

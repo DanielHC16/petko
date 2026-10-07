@@ -2,8 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
-import { api } from '@/lib/axios'
-import type { UserProfile } from '@/store/auth.store'
+import { fetchCurrentProfile } from '@/lib/auth'
 
 /**
  * Supabase redirects here after Google SSO.
@@ -24,17 +23,12 @@ export default function AuthCallbackPage() {
 
       setSession(session)
 
-      try {
-        // Fetch user profile + role from our NestJS API
-        const response = await api.get<{ data: UserProfile }>('/users/me')
-        setProfile(response.data.data)
-      } catch {
-        // Profile fetch failed — still authenticated but without role info
-        // The ProtectedRoute will handle role-based redirects
-      } finally {
-        setLoading(false)
-        navigate('/', { replace: true })
-      }
+      // Fetch user profile + role from our NestJS API. On failure the user is
+      // still authenticated but without role info; ProtectedRoute handles that.
+      const profile = await fetchCurrentProfile()
+      if (profile) setProfile(profile)
+      setLoading(false)
+      navigate('/', { replace: true })
     }
 
     handleCallback()
