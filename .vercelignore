@@ -1,0 +1,19 @@
+# Never upload local secrets, data files or build artifacts to Vercel.
+# Vercel installs and builds from source (see vercel.json).
+.agents
+.vercel
+**/node_modules
+petko-be/dist
+petko-fe/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/client_secret*.json
+**/*secret*.json
+**/*credential*.json
+**/*.csv
+**/*.pem
+**/*.key
+petko-be/scripts
+petko-be/supabase
+petko-be/coverage

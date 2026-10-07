@@ -1,0 +1,16 @@
+{
+  "name": "petko",
+  "private": true,
+  "description": "Petko monorepo orchestration (single Vercel project: static petko-fe + NestJS function under /api)",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix petko-be && npm ci --prefix petko-fe",
+    "build": "npm run build --prefix petko-be && npm run build --prefix petko-fe",
+    "lint": "npm run lint:be && npm run lint:fe",
+    "lint:be": "cd petko-be && npx eslint \"{src,test}/**/*.ts\"",
+    "lint:fe": "npm run lint --prefix petko-fe",
+    "test": "npm test --prefix petko-be"
+  }
+}
