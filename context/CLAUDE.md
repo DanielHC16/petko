@@ -105,6 +105,7 @@ One Vercel project at the repo root serves everything from one domain:
 - **Routing** (`vercel.json` rewrites, applied after static files): `/api/*` → the function. The Nest global prefix is `api`, so routes are `/api/products`, `/api/users/me`, `/api/health`. Every other path → `/index.html` (SPA routing).
 - **Same origin**: the FE calls `/api` relatively, so CORS is off in production (`FRONTEND_URL` unset).
 - **Installs**: per app (`npm ci --prefix petko-be`, `npm ci --prefix petko-fe`), with no npm workspaces. Each app keeps its own lockfile.
+- **CommonJS runtime deps**: the backend compiles to CommonJS, and Vercel's Node runtime rejects `require(esm)`. `@nestjs/config` is pinned to the CJS 4.x line (`4.0.4`, exact). Do not upgrade it (or add any other runtime dep) to an ESM-only version while the backend compiles to CJS.
 
 ### Commands (repo root)
 

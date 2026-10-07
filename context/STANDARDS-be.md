@@ -13,7 +13,7 @@
 | Supabase JS SDK (`@supabase/supabase-js`) | Database queries (via service role) |
 | Supabase Auth | JWT verification — `anon` key for user JWTs |
 | `class-validator` + `class-transformer` | DTO validation |
-| `@nestjs/config` | Environment variable management |
+| `@nestjs/config` | Environment variable management. Pinned to CJS `4.0.4` because Vercel's runtime rejects `require(esm)`; do not upgrade to ESM-only versions while the backend compiles to CJS |
 | Joi | Env schema validation at startup |
 | Jest | Unit testing |
 
@@ -27,7 +27,6 @@
 petko-be/
 ├── .env                          # Environment variables (never commit)
 ├── .env.example                  # Placeholder committed to repo
-├── tsconfig.spec.json            # Jest-only TS config (CJS; transforms ESM @nestjs/config)
 ├── supabase/
 │   ├── schema.sql                # Full schema + RLS (run manually in Supabase)
 │   └── security-patch-*.sql      # Numbered patches for live projects (run manually)
@@ -612,7 +611,7 @@ if (error || !data) {
 - Mock `SupabaseService` in all unit tests — no real network calls
 - Use `@nestjs/testing` + `Test.createTestingModule()`
 - E2E tests go in `test/` at project root (only exception to co-location)
-- Both Jest configs load `test/setup-env.ts` (dummy Supabase vars, `VERCEL=1`), so tests never read the real `.env`. They also use `tsconfig.spec.json`, which transforms the ESM-only `@nestjs/config` to CommonJS.
+- Both Jest configs load `test/setup-env.ts` (dummy Supabase vars, `VERCEL=1`), so tests never read the real `.env`.
 - `src/bootstrap.spec.ts` boots the real app via `createApp()` and checks the `/api` prefix, 401s on guarded routes, and the error envelope. Extend it when adding global setup.
 - Lint: `npx eslint "{src,test}/**/*.ts"` must exit 0. Prettier is configured with `"semi": false`.
 
