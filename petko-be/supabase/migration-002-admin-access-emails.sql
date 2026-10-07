@@ -20,7 +20,8 @@
 --
 -- HOW TO APPLY
 --   Supabase Dashboard → SQL Editor → New Query, or
---   `npx supabase db query --linked "$(cat this-file)"`.
+--   from petko-be: `npx supabase db query --linked --file
+--   supabase/migration-002-admin-access-emails.sql`.
 --   Safe to re-run (create if not exists, on conflict do nothing).
 -- ============================================================
 
