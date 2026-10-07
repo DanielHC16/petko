@@ -14,7 +14,11 @@ import { RolesGuard } from '@/common/guards/roles.guard'
 import { Roles } from '@/common/decorators/roles.decorator'
 import { CurrentUser } from '@/common/decorators/current-user.decorator'
 import type { UserProfile } from '@/common/types/authenticated-request.type'
-import { UsersService } from './users.service'
+import {
+  UsersService,
+  type UserListItem,
+  type UserRecord,
+} from './users.service'
 import { UpdateUserRoleDto } from './dto/update-user-role.dto'
 import { PromoteUserDto } from './dto/promote-user.dto'
 
@@ -31,7 +35,7 @@ export class UsersController {
   @Get()
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
-  async getAllUsers(): Promise<UserProfile[]> {
+  async getAllUsers(): Promise<UserListItem[]> {
     return this.usersService.findAll()
   }
 
@@ -41,15 +45,23 @@ export class UsersController {
   async updateUserRole(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserRoleDto,
-  ): Promise<UserProfile> {
-    return this.usersService.updateRole(id, dto.role)
+    @CurrentUser() user: UserProfile,
+  ): Promise<UserRecord> {
+    return this.usersService.updateRole(id, dto.role, user.id)
   }
 
   @Post('promote')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
-  async promoteUserByEmail(@Body() dto: PromoteUserDto): Promise<UserProfile> {
-    return this.usersService.promoteByEmail(dto.email, dto.role || 'admin')
+  async promoteUserByEmail(
+    @Body() dto: PromoteUserDto,
+    @CurrentUser() user: UserProfile,
+  ): Promise<UserRecord> {
+    return this.usersService.promoteByEmail(
+      dto.email,
+      dto.role || 'admin',
+      user.id,
+    )
   }
 
   @Delete(':id')
