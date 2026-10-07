@@ -16,7 +16,22 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/axios'
+import { getApiErrorMessage } from '@/lib/api-error'
 import type { Product } from '@/features/products/products-api'
+
+const STOCK_FILTERS = ['all', 'in_stock', 'low_stock', 'out_of_stock'] as const
+type StockFilter = (typeof STOCK_FILTERS)[number]
+
+const PET_TYPES = ['cat', 'dog', 'both'] as const
+type PetType = (typeof PET_TYPES)[number]
+
+function isStockFilter(value: string): value is StockFilter {
+  return (STOCK_FILTERS as readonly string[]).includes(value)
+}
+
+function isPetType(value: string): value is PetType {
+  return (PET_TYPES as readonly string[]).includes(value)
+}
 
 const CATEGORIES = [
   'food',
@@ -38,7 +53,7 @@ interface ProductFormData {
   price: string
   stock: string
   category: string
-  pet_type: 'cat' | 'dog' | 'both'
+  pet_type: PetType
   image_url: string
   is_active: boolean
 }
@@ -60,7 +75,7 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [petTypeFilter, setPetTypeFilter] = useState('all')
-  const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all')
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all')
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -78,8 +93,8 @@ export default function AdminProductsPage() {
     try {
       const res = await api.get<{ success: boolean; data: Product[] }>('/products/admin/all')
       setProducts(res.data.data || [])
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to fetch products')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to fetch products'))
     } finally {
       setIsLoading(false)
     }
@@ -145,8 +160,8 @@ export default function AdminProductsPage() {
 
       setIsModalOpen(false)
       loadProducts()
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to save product')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to save product'))
     } finally {
       setIsSaving(false)
     }
@@ -162,8 +177,8 @@ export default function AdminProductsPage() {
       toast.success(
         `Product marked as ${nextState ? 'ACTIVE' : 'INACTIVE'}`,
       )
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update status')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to update status'))
     }
   }
 
@@ -176,8 +191,8 @@ export default function AdminProductsPage() {
       await api.delete(`/products/${product.id}`)
       toast.success(`Deleted "${product.name}"`, { icon: '🗑️' })
       setProducts((prev) => prev.filter((p) => p.id !== product.id))
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete product')
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete product'))
     } finally {
       setDeletingId(null)
     }
@@ -331,7 +346,9 @@ export default function AdminProductsPage() {
           {/* Stock */}
           <select
             value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value as any)}
+            onChange={(e) => {
+              if (isStockFilter(e.target.value)) setStockFilter(e.target.value)
+            }}
             className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:border-orange-500 focus:outline-none"
           >
             <option value="all">All Stock Levels</option>
@@ -604,9 +621,10 @@ export default function AdminProductsPage() {
                   </label>
                   <select
                     value={formData.pet_type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pet_type: e.target.value as any })
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (isPetType(value)) setFormData({ ...formData, pet_type: value })
+                    }}
                     className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm text-gray-800 focus:border-orange-500 focus:outline-none"
                   >
                     <option value="both">🐾 For All Pets (Both)</option>
