@@ -21,15 +21,11 @@ export class AuthGuard implements CanActivate {
   constructor(private readonly supabase: SupabaseService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context
-      .switchToHttp()
-      .getRequest<AuthenticatedRequest>()
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>()
 
     const authHeader = request.headers['authorization']
     if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException(
-        'Missing or invalid Authorization header',
-      )
+      throw new UnauthorizedException('Missing or invalid Authorization header')
     }
 
     const token = authHeader.split(' ')[1]

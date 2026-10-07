@@ -29,7 +29,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
 
-    const status =
+    const status: number =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR
@@ -41,21 +41,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Extract field-level validation errors from class-validator
     const exceptionResponse =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : null
+      exception instanceof HttpException ? exception.getResponse() : null
 
     const errors: unknown[] =
       typeof exceptionResponse === 'object' &&
       exceptionResponse !== null &&
       'message' in exceptionResponse &&
-      Array.isArray(
-        (exceptionResponse as Record<string, unknown>).message,
-      )
+      Array.isArray((exceptionResponse as Record<string, unknown>).message)
         ? (exceptionResponse as Record<string, unknown[]>).message
         : []
 
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (status === Number(HttpStatus.INTERNAL_SERVER_ERROR)) {
       this.logger.error(exception)
     }
 

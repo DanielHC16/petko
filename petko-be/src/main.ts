@@ -35,4 +35,4 @@ async function bootstrap() {
   console.log(`🐾 Petko API running on http://localhost:${port}`)
 }
 
-bootstrap()
+void bootstrap()

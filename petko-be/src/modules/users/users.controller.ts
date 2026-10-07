@@ -47,9 +47,7 @@ export class UsersController {
   @Post('promote')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
-  async promoteUserByEmail(
-    @Body() dto: PromoteUserDto,
-  ): Promise<UserProfile> {
+  async promoteUserByEmail(@Body() dto: PromoteUserDto): Promise<UserProfile> {
     return this.usersService.promoteByEmail(dto.email, dto.role || 'admin')
   }
 

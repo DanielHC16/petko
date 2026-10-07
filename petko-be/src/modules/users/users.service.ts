@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common'
 import { SupabaseService } from '@/supabase/supabase.service'
 import type { UserProfile } from '@/common/types/authenticated-request.type'
@@ -9,6 +10,8 @@ import type { Role } from '@/common/decorators/roles.decorator'
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name)
+
   constructor(private readonly supabase: SupabaseService) {}
 
   async findById(id: string): Promise<UserProfile | null> {
@@ -22,7 +25,7 @@ export class UsersService {
       return null
     }
 
-    return data as UserProfile
+    return data
   }
 
   async findAll(): Promise<UserProfile[]> {
@@ -35,7 +38,7 @@ export class UsersService {
       throw new BadRequestException(`Failed to fetch users: ${error.message}`)
     }
 
-    return (data as UserProfile[]) || []
+    return data || []
   }
 
   async updateRole(id: string, role: Role): Promise<UserProfile> {
@@ -50,7 +53,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`)
     }
 
-    return data as UserProfile
+    return data
   }
 
   async promoteByEmail(
@@ -78,12 +81,11 @@ export class UsersService {
         throw new BadRequestException('Failed to update user role')
       }
 
-      return updated as UserProfile
+      return updated
     }
 
     // 2. Check if user exists in auth.users
-    const { data: authData } =
-      await this.supabase.admin.auth.admin.listUsers()
+    const { data: authData } = await this.supabase.admin.auth.admin.listUsers()
     const matchedAuthUser = authData?.users?.find(
       (u) => u.email?.toLowerCase() === cleanEmail,
     )
@@ -110,7 +112,7 @@ export class UsersService {
         )
       }
 
-      return inserted as UserProfile
+      return inserted
     }
 
     // 3. If user has never signed in before, pre-create the auth user in Supabase
@@ -148,7 +150,7 @@ export class UsersService {
       )
     }
 
-    return createdProfile as UserProfile
+    return createdProfile
   }
 
   async removeUser(
@@ -174,7 +176,12 @@ export class UsersService {
     // Delete from auth.users (Supabase Auth)
     try {
       await this.supabase.admin.auth.admin.deleteUser(id)
-    } catch {}
+    } catch (err: unknown) {
+      // Keep the original best-effort semantics: the profile is already gone.
+      this.logger.warn(
+        `Auth user ${id} could not be deleted: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
 
     return { message: 'User account removed successfully' }
   }

@@ -17,9 +17,7 @@ import type {
  */
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): UserProfile => {
-    const request = ctx
-      .switchToHttp()
-      .getRequest<AuthenticatedRequest>()
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>()
     return request.user
   },
 )

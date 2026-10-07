@@ -18,14 +18,16 @@ export class SupabaseService {
   private readonly anonClient: SupabaseClient
 
   constructor(private readonly config: ConfigService) {
+    // `createClient` without generated DB types infers a slightly different
+    // generic signature than the default `SupabaseClient`; narrow it once here.
     this.adminClient = createClient(
       config.getOrThrow<string>('SUPABASE_URL'),
       config.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY'),
-    )
+    ) as SupabaseClient
     this.anonClient = createClient(
       config.getOrThrow<string>('SUPABASE_URL'),
       config.getOrThrow<string>('SUPABASE_ANON_KEY'),
-    )
+    ) as SupabaseClient
   }
 
   /** All DB operations — service role, bypasses RLS. */
