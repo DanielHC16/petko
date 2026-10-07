@@ -46,11 +46,18 @@ export function configureApp(app: NestExpressApplication): void {
   app.useGlobalInterceptors(new ResponseInterceptor())
 }
 
-/** Creates the Nest app on the Express adapter with the shared configuration. */
+/**
+ * Creates the Nest app on the Express adapter with the shared configuration.
+ *
+ * `abortOnError: false` makes init errors (e.g. env validation) reject instead
+ * of exiting the process, so the serverless handler can answer with the JSON
+ * 500 envelope. Locally, `main.ts` still fails to start on the rejection.
+ */
 export async function createApp(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(),
+    { abortOnError: false },
   )
   configureApp(app)
   return app

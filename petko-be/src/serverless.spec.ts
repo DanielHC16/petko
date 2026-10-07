@@ -31,24 +31,23 @@ function createResponse(): FakeResponse {
 }
 
 /** Loads a fresh copy of the handler (clean module-level cache) and its mocked bootstrap. */
-function loadHandler(): { handler: Handler; createApp: jest.Mock } {
-  let handler!: Handler
-  let createApp!: jest.Mock
-  jest.isolateModules(() => {
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    // Silence the expected bootstrap-failure log in this isolated registry.
-    const nest = require('@nestjs/common') as { Logger: typeof Logger }
-    jest
-      .spyOn(nest.Logger.prototype, 'error')
-      .mockImplementation(() => undefined)
-    const bootstrap = require('./bootstrap') as { createApp: jest.Mock }
-    const serverless = require('./serverless') as { default: Handler }
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    createApp = bootstrap.createApp
-    handler = serverless.default
-  })
-  return { handler, createApp }
+/* eslint-disable @typescript-eslint/no-require-imports */
+// The handler requires './bootstrap' lazily, so tests reset the shared module
+// registry (not jest.isolateModules) to get a clean cache per test.
+function loadFreshHandler(): Handler {
+  jest.resetModules()
+  // Silence the expected bootstrap-failure log.
+  const nest = require('@nestjs/common') as { Logger: typeof Logger }
+  jest.spyOn(nest.Logger.prototype, 'error').mockImplementation(() => undefined)
+  return (require('./serverless') as { default: Handler }).default
 }
+
+function loadHandler(): { handler: Handler; createApp: jest.Mock } {
+  const handler = loadFreshHandler()
+  const bootstrap = require('./bootstrap') as { createApp: jest.Mock }
+  return { handler, createApp: bootstrap.createApp }
+}
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 function fakeApp(express: jest.Mock): unknown {
   return {
@@ -80,6 +79,20 @@ describe('serverless handler', () => {
       errors: [],
     })
     expect(res.body).not.toContain('missing SUPABASE_URL')
+  })
+
+  it('does not load the app module until the first request', async () => {
+    const factory = jest.fn(() => ({ createApp: jest.fn() }))
+    jest.doMock('./bootstrap', factory)
+
+    const handler = loadFreshHandler()
+    expect(factory).not.toHaveBeenCalled()
+
+    await handler(req, createResponse() as unknown as ServerResponse)
+    expect(factory).toHaveBeenCalledTimes(1)
+
+    // Restore the file-level mock for the remaining tests.
+    jest.doMock('./bootstrap', () => ({ createApp: jest.fn() }))
   })
 
   it('does not write when headers were already sent', async () => {

@@ -2,7 +2,6 @@ import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Logger } from '@nestjs/common'
 import type { Express } from 'express'
-import { createApp } from './bootstrap'
 import type { ErrorResponse } from './common/filters/http-exception.filter'
 
 /**
@@ -18,6 +17,13 @@ let cachedServer: Promise<Express> | null = null
 const logger = new Logger('Serverless')
 
 async function bootstrapServer(): Promise<Express> {
+  // Loaded lazily: requiring AppModule starts the async env validation in
+  // ConfigModule.forRoot(). With a static import, a validation failure is an
+  // unhandled rejection while Vercel loads this file and kills the function
+  // before the handler can send the JSON error envelope. Here, createApp()
+  // awaits it in the same tick, so the failure reaches the catch below.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { createApp } = require('./bootstrap') as typeof import('./bootstrap')
   const app = await createApp()
   await app.init()
   return app.getHttpAdapter().getInstance()
