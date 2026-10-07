@@ -8,5 +8,6 @@ export const envValidationSchema = Joi.object({
   SUPABASE_URL: Joi.string().uri().required(),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
   SUPABASE_ANON_KEY: Joi.string().required(),
-  FRONTEND_URL: Joi.string().uri().required(),
+  // Only needed when the frontend is served from a different origin (enables CORS).
+  FRONTEND_URL: Joi.string().uri().optional(),
 })

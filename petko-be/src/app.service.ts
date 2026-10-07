@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common'
 
+export interface HealthStatus {
+  status: 'ok'
+}
+
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!'
+  /** Liveness check — does not touch the database. */
+  getHealth(): HealthStatus {
+    return { status: 'ok' }
   }
 }

@@ -4,12 +4,15 @@ import { envValidationSchema } from './config/env.validation'
 import { SupabaseModule } from './supabase/supabase.module'
 import { UsersModule } from './modules/users/users.module'
 import { ProductsModule } from './modules/products/products.module'
+import { AppController } from './app.controller'
+import { AppService } from './app.service'
 
 @Module({
   imports: [
-    // Config — loads .env and validates against Joi schema
+    // Config — loads .env locally (never on Vercel) and validates against Joi schema
     ConfigModule.forRoot({
       isGlobal: true,
+      ignoreEnvFile: Boolean(process.env.VERCEL),
       validationSchema: envValidationSchema,
     }),
 
@@ -20,5 +23,7 @@ import { ProductsModule } from './modules/products/products.module'
     UsersModule,
     ProductsModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
