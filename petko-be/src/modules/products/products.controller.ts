@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  ParseUUIDPipe,
   Query,
   UseGuards,
 } from '@nestjs/common'
@@ -20,23 +21,37 @@ import { UpdateProductDto } from './dto/update-product.dto'
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  /** Public catalog — active products only. */
   @Get()
   async getAllProducts(
     @Query('category') category?: string,
     @Query('pet_type') pet_type?: string,
     @Query('search') search?: string,
-    @Query('all') all?: string,
+  ): Promise<ProductEntity[]> {
+    return this.productsService.findAll({ category, pet_type, search })
+  }
+
+  /** Admin catalog — includes inactive products. Declared before `:id`. */
+  @Get('admin/all')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  async getAllProductsAdmin(
+    @Query('category') category?: string,
+    @Query('pet_type') pet_type?: string,
+    @Query('search') search?: string,
   ): Promise<ProductEntity[]> {
     return this.productsService.findAll({
       category,
       pet_type,
       search,
-      all: all === 'true',
+      all: true,
     })
   }
 
   @Get(':id')
-  async getProductById(@Param('id') id: string): Promise<ProductEntity> {
+  async getProductById(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ProductEntity> {
     return this.productsService.findById(id)
   }
 
@@ -51,7 +66,7 @@ export class ProductsController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
   async updateProduct(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProductDto,
   ): Promise<ProductEntity> {
     return this.productsService.update(id, dto)
@@ -60,7 +75,9 @@ export class ProductsController {
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
-  async deleteProduct(@Param('id') id: string): Promise<{ message: string }> {
+  async deleteProduct(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ message: string }> {
     return this.productsService.delete(id)
   }
 }

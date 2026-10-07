@@ -20,6 +20,11 @@ export interface ProductEntity {
   created_at: string
 }
 
+const PET_TYPES: readonly ProductEntity['pet_type'][] = ['cat', 'dog', 'both']
+
+/** Characters with meaning in PostgREST filter syntax (`or=(...)`, `ilike` wildcards, quoting). */
+const POSTGREST_RESERVED_CHARS = /[,()*%\\:"']/g
+
 @Injectable()
 export class ProductsService {
   constructor(private readonly supabase: SupabaseService) {}
@@ -43,12 +48,14 @@ export class ProductsService {
       query = query.eq('category', filters.category)
     }
 
-    if (filters?.pet_type && filters.pet_type !== 'all') {
-      query = query.or(`pet_type.eq.${filters.pet_type},pet_type.eq.both`)
+    // Only known pet types reach the raw PostgREST `or` filter; anything else is ignored.
+    const petType = filters?.pet_type
+    if (petType && this.isPetType(petType)) {
+      query = query.or(`pet_type.eq.${petType},pet_type.eq.both`)
     }
 
-    if (filters?.search && filters.search.trim()) {
-      const term = filters.search.trim()
+    const term = this.sanitizeSearchTerm(filters?.search)
+    if (term) {
       query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%`)
     }
 
@@ -148,5 +155,14 @@ export class ProductsService {
     }
 
     return { message: `Product ${id} deleted successfully` }
+  }
+
+  private isPetType(value: string): value is ProductEntity['pet_type'] {
+    return (PET_TYPES as readonly string[]).includes(value)
+  }
+
+  /** Strips PostgREST-reserved characters so user input cannot alter the filter. */
+  private sanitizeSearchTerm(search?: string): string {
+    return (search ?? '').replace(POSTGREST_RESERVED_CHARS, '').trim()
   }
 }
