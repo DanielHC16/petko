@@ -24,6 +24,7 @@ It is a full-stack web application with a React/Vite frontend and a NestJS REST 
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth — Google SSO |
 | Payments | TBA — scaffold only, gateway left blank |
+| Hosting | Vercel — one project: static FE + NestJS serverless function under `/api` |
 
 ---
 
@@ -65,6 +66,13 @@ Before generating any new feature, module, or component, **read the relevant sta
 ### 7. No Hardcoded Secrets
 - All credentials and keys go in `.env` files with clear placeholder comments
 - Frontend env vars are prefixed `VITE_`; backend env vars are defined in `.env` and validated via Joi
+- Every `VITE_*` value is **public**: it is inlined into the browser bundle. Only the Supabase URL/anon key belong there. The service-role key is backend-only.
+- No hardcoded hosts (e.g. `localhost`) in shipped code. Use env-driven values with a same-origin default.
+
+### 8. Database Security
+- The frontend talks to Supabase directly with the anon key, so RLS and column grants are the real access control for those tables.
+- `petko-be/supabase/security-patch-001-lock-user-role.sql` must be applied in every Supabase project. Without it, users can self-promote to admin through the REST API.
+- New tables need RLS enabled plus explicit policies. Schema changes go in `schema.sql` and, for live projects, a numbered `security-patch-*.sql` / migration file.
 
 ---
 
@@ -72,12 +80,63 @@ Before generating any new feature, module, or component, **read the relevant sta
 
 ```
 petko/
-├── CLAUDE.md              ← This file (global context)
-├── STANDARDS-fe.md        ← Frontend standards & patterns
-├── STANDARDS-be.md        ← Backend standards & patterns
-├── petko-fe/              ← React + Vite frontend
-└── petko-be/              ← NestJS backend
+├── context/
+│   ├── CLAUDE.md          ← This file (global context)
+│   ├── STANDARDS-fe.md    ← Frontend standards & patterns
+│   └── STANDARDS-be.md    ← Backend standards & patterns
+├── api/
+│   └── index.js           ← Vercel function entry → petko-be/dist/serverless.js
+├── vercel.json            ← Single Vercel project config (build, rewrites, headers)
+├── package.json           ← Root orchestration scripts only (no deps, no lockfile)
+├── .vercelignore          ← Keeps secrets, CSV data, local env files out of uploads
+├── petko-fe/              ← React + Vite frontend (own package-lock.json)
+└── petko-be/              ← NestJS backend (own package-lock.json)
+    └── supabase/          ← schema.sql + security patches (run manually in Supabase)
 ```
+
+---
+
+## Deployment (single Vercel project)
+
+One Vercel project at the repo root serves everything from one domain:
+
+- **Frontend**: `petko-fe` is built by Vite into static files at `petko-fe/dist` (the Vercel `outputDirectory`).
+- **Backend**: NestJS runs as one Node serverless function, `api/index.js`. It re-exports `petko-be/dist/serverless.js`, which bootstraps the Nest app once per warm instance (Express adapter) and caches it.
+- **Routing** (`vercel.json` rewrites, applied after static files): `/api/*` → the function. The Nest global prefix is `api`, so routes are `/api/products`, `/api/users/me`, `/api/health`. Every other path → `/index.html` (SPA routing).
+- **Same origin**: the FE calls `/api` relatively, so CORS is off in production (`FRONTEND_URL` unset).
+- **Installs**: per app (`npm ci --prefix petko-be`, `npm ci --prefix petko-fe`), with no npm workspaces. Each app keeps its own lockfile.
+
+### Commands (repo root)
+
+| Command | What it does |
+|---|---|
+| `npm run install:all` | `npm ci` in `petko-be` and `petko-fe` (Vercel `installCommand`) |
+| `npm run build` | `nest build` then `tsc -b && vite build` (Vercel `buildCommand`) |
+| `npm run lint` | BE eslint (check only) + FE oxlint |
+| `npm test` | BE Jest unit tests (`npm run test:e2e --prefix petko-be` for e2e) |
+
+Local dev: run `npm run start:dev` in `petko-be` (serves `http://localhost:3000/api`) and `npm run dev` in `petko-fe` (`http://localhost:5173`, which proxies `/api` → `:3000`).
+
+### Environment variables (names only)
+
+| Name | Side | Secret |
+|---|---|---|
+| `SUPABASE_URL` | BE function | no |
+| `SUPABASE_SERVICE_ROLE_KEY` | BE function | **yes** (Vercel: Sensitive) |
+| `SUPABASE_ANON_KEY` | BE function | no (public) |
+| `VITE_SUPABASE_URL` | FE build | no (public) |
+| `VITE_SUPABASE_ANON_KEY` | FE build | no (public) |
+
+Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and `FRONTEND_URL` (BE, enables CORS for a cross-origin FE). Local only: `NODE_ENV`, `PORT`. On Vercel (`VERCEL` is set) the backend never reads a `.env` file.
+
+### Deploy steps
+
+1. Apply `petko-be/supabase/security-patch-001-lock-user-role.sql` in the Supabase SQL editor (once).
+2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
+3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
+4. `vercel deploy --prod`, or push to `main` with the Git integration.
+5. In Supabase Auth → URL Configuration, set Site URL to `https://<domain>` and add the redirect URL `https://<domain>/auth/callback`. The Google OAuth redirect URI stays the Supabase callback.
+6. Smoke check `https://<domain>/api/health`.
 
 ---
 

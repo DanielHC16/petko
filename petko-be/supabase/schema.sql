@@ -28,6 +28,12 @@ create policy "Users can update their own profile"
   on public.users for update
   using (auth.uid() = id);
 
+-- Column-level lock (see security-patch-001-lock-user-role.sql):
+-- clients may only edit their display fields, never `role`.
+-- Role changes go through the NestJS backend (service role) only.
+revoke update on public.users from anon, authenticated;
+grant update (full_name, avatar_url) on public.users to authenticated;
+
 -- ────────────────────────────────────────────────────────────
 -- 2. AUTO-INSERT TRIGGER
 -- When a user signs in with Google SSO for the first time,

@@ -19,9 +19,10 @@ interface SuccessResponse<T> {
  * Registered globally in main.ts — do NOT register per-module.
  */
 @Injectable()
-export class ResponseInterceptor<T>
-  implements NestInterceptor<T, SuccessResponse<T>>
-{
+export class ResponseInterceptor<T> implements NestInterceptor<
+  T,
+  SuccessResponse<T>
+> {
   intercept(
     _context: ExecutionContext,
     next: CallHandler<T>,

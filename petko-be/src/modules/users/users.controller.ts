@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common'
 import { AuthGuard } from '@/common/guards/auth.guard'
@@ -38,7 +39,7 @@ export class UsersController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
   async updateUserRole(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserRoleDto,
   ): Promise<UserProfile> {
     return this.usersService.updateRole(id, dto.role)
@@ -47,9 +48,7 @@ export class UsersController {
   @Post('promote')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
-  async promoteUserByEmail(
-    @Body() dto: PromoteUserDto,
-  ): Promise<UserProfile> {
+  async promoteUserByEmail(@Body() dto: PromoteUserDto): Promise<UserProfile> {
     return this.usersService.promoteByEmail(dto.email, dto.role || 'admin')
   }
 
@@ -57,7 +56,7 @@ export class UsersController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles('admin')
   async removeUser(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: UserProfile,
   ): Promise<{ message: string }> {
     return this.usersService.removeUser(id, user.id)

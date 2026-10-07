@@ -1,8 +1,11 @@
 import axios from 'axios'
 import { supabase } from '@/lib/supabase'
 
+// Same-origin `/api` by default: Vercel serves the NestJS function there,
+// and the Vite dev server proxies `/api` to the local backend.
+// Set VITE_API_URL only to target an API on another origin (must include `/api`).
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: false,
 })
 

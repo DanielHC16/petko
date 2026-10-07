@@ -72,3 +72,8 @@ coverage/
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Vercel CLI link/build output & local agent workspace
+.vercel/
+.agents/
+/api/**/*.map

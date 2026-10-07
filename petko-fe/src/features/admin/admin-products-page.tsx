@@ -76,7 +76,7 @@ export default function AdminProductsPage() {
   async function loadProducts() {
     setIsLoading(true)
     try {
-      const res = await api.get<{ success: boolean; data: Product[] }>('/products?all=true')
+      const res = await api.get<{ success: boolean; data: Product[] }>('/products/admin/all')
       setProducts(res.data.data || [])
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to fetch products')
