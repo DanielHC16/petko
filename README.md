@@ -12,8 +12,11 @@ A full-stack e-commerce platform for pet supplies.
 
 ```
 petko/
-├── petko-be/   # NestJS Backend API
-└── petko-fe/   # React + Vite Frontend
+├── api/index.js   # Vercel function entry → petko-be/dist/serverless.js
+├── vercel.json    # Single Vercel project config (static FE + /api function)
+├── package.json   # Root orchestration scripts only (no dependencies)
+├── petko-be/      # NestJS Backend API (served under /api)
+└── petko-fe/      # React + Vite Frontend
 ```
 
 ## Getting Started
@@ -40,7 +43,7 @@ petko/
    ```bash
    npm run start:dev
    ```
-   Runs on `http://localhost:3000`.
+   Runs on `http://localhost:3000/api` (health check: `GET /api/health`).
 
 ---
 
@@ -66,4 +69,21 @@ petko/
    ```bash
    npm run dev
    ```
-   Runs on `http://localhost:5173`.
+   Runs on `http://localhost:5173`. API calls go to same-origin `/api`, which the Vite dev server proxies to the backend on port 3000.
+
+---
+
+### Root scripts
+
+From the repo root (the same commands Vercel runs):
+
+```bash
+npm run install:all   # npm ci in petko-be and petko-fe
+npm run build         # nest build + vite build
+npm run lint          # backend eslint + frontend oxlint
+npm test              # backend unit tests
+```
+
+## Deploy to Vercel
+
+The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before the first production deploy, apply `petko-be/supabase/security-patch-001-lock-user-role.sql` in the Supabase SQL editor.

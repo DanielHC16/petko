@@ -27,9 +27,16 @@
 petko-be/
 ├── .env                          # Environment variables (never commit)
 ├── .env.example                  # Placeholder committed to repo
+├── tsconfig.spec.json            # Jest-only TS config (CJS; transforms ESM @nestjs/config)
+├── supabase/
+│   ├── schema.sql                # Full schema + RLS (run manually in Supabase)
+│   └── security-patch-*.sql      # Numbered patches for live projects (run manually)
 ├── src/
-│   ├── main.ts                   # Bootstrap — pipes, filters, interceptors, CORS
+│   ├── bootstrap.ts              # configureApp() + createApp() — prefix, pipes, filters, interceptors, CORS
+│   ├── main.ts                   # Local server: createApp() + listen(PORT)
+│   ├── serverless.ts             # Vercel handler: cached createApp() + init()
 │   ├── app.module.ts             # Root module — imports all feature + core modules
+│   ├── app.controller.ts         # GET /api/health (no DB access)
 │   ├── config/
 │   │   └── env.validation.ts     # Joi schema — validates all env vars at startup
 │   ├── common/
@@ -80,6 +87,7 @@ petko-be/
 │           ├── checkout.controller.ts
 │           └── checkout.service.ts   # Scaffolded — gateway TBA
 └── test/
+    ├── setup-env.ts              # Jest setupFiles — dummy env, VERCEL=1 (no .env read)
     └── app.e2e-spec.ts
 ```
 
@@ -101,20 +109,17 @@ SUPABASE_URL=your_supabase_project_url_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 SUPABASE_ANON_KEY=your_anon_key_here
 
-# CORS
-FRONTEND_URL=http://localhost:5173
+# OPTIONAL — CORS for a cross-origin frontend only.
+# Not needed with the Vite dev proxy or on Vercel (same origin).
+# FRONTEND_URL=http://localhost:5173
 ```
 
-Create `petko-be/.env.example` (commit this):
+`petko-be/.env.example` (committed) has the same keys with placeholder values.
 
-```env
-NODE_ENV=development
-PORT=3000
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_ANON_KEY=
-FRONTEND_URL=http://localhost:5173
-```
+Rules:
+- Validation lives in `src/config/env.validation.ts` (Joi). Required: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`. Optional: `FRONTEND_URL`. Defaulted: `NODE_ENV`, `PORT`.
+- `ConfigModule.forRoot({ ignoreEnvFile: Boolean(process.env.VERCEL) })`: on Vercel only project env vars are used. A `.env` file is never read in production.
+- On Vercel, set only the three `SUPABASE_*` vars. Do not set `NODE_ENV`, `PORT` or `FRONTEND_URL`.
 
 ---
 
@@ -126,7 +131,7 @@ FRONTEND_URL=http://localhost:5173
 | **Service role key** | All DB read/write from the backend | **CRITICAL** — bypasses RLS |
 
 **Rules:**
-- The **service role key** lives only in `petko-be/.env` — never sent to the frontend, never logged
+- The **service role key** lives only in `petko-be/.env` locally and as a Sensitive Vercel env var in production — never sent to the frontend, never logged
 - The **anon key** is used only for JWT verification with `supabase.auth.getUser(token)`
 - All Supabase DB operations go through the **service role client** (`SupabaseService`) inside NestJS services only
 
@@ -449,43 +454,39 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 ---
 
-## `main.ts` Bootstrap
+## Bootstrap (`bootstrap.ts`, `main.ts`, `serverless.ts`)
+
+The app runs in two hosts, and both share one setup function:
+
+- **`src/bootstrap.ts`**
+  - `configureApp(app)`: global prefix `api` (`API_PREFIX`), `x-powered-by` disabled, CORS only when `FRONTEND_URL` is set (`credentials: false`, since auth is a Bearer header), `ValidationPipe({ whitelist, forbidNonWhitelisted, transform })`, `HttpExceptionFilter`, `ResponseInterceptor`.
+  - `createApp()`: `NestFactory.create(AppModule, new ExpressAdapter())` + `configureApp`.
+- **`src/main.ts`** (local / `npm run start:dev`): `createApp()` + `listen(PORT)`, serving `http://localhost:3000/api`.
+- **`src/serverless.ts`** (Vercel): default-exported `(req, res)` handler. It caches the `createApp()` + `init()` promise in module scope (once per warm instance), clears the cache if bootstrap fails, and forwards to the Express instance. The repo-root `api/index.js` re-exports `petko-be/dist/serverless.js`, so it must be built by `nest build` first.
 
 ```ts
-import { NestFactory } from '@nestjs/core'
-import { ValidationPipe } from '@nestjs/common'
+// src/main.ts
 import { ConfigService } from '@nestjs/config'
-import { AppModule } from './app.module'
-import { ResponseInterceptor } from './common/interceptors/response.interceptor'
-import { HttpExceptionFilter } from './common/filters/http-exception.filter'
+import { API_PREFIX, createApp } from './bootstrap'
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+async function bootstrap(): Promise<void> {
+  const app = await createApp()
   const config = app.get(ConfigService)
-
-  app.enableCors({
-    origin: config.getOrThrow<string>('FRONTEND_URL'),
-    credentials: true,
-  })
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    })
-  )
-
-  app.useGlobalFilters(new HttpExceptionFilter())
-  app.useGlobalInterceptors(new ResponseInterceptor())
 
   const port = config.get<number>('PORT') ?? 3000
   await app.listen(port)
-  console.log(`Petko API running on http://localhost:${port}`)
+  console.log(`🐾 Petko API running on http://localhost:${port}/${API_PREFIX}`)
 }
 
-bootstrap()
+void bootstrap()
 ```
+
+Rules:
+- Add new global middleware, pipes, filters, interceptors and CORS changes in `configureApp` only, so local and serverless never diverge.
+- Every route is under `/api`. Controllers declare paths without the prefix (`@Controller('products')` → `/api/products`).
+- `GET /api/health` returns `{ status: 'ok' }` with no DB access. Use it for smoke checks.
+- Static admin routes on a controller with `:id` params must be declared before `@Get(':id')` (e.g. `GET /products/admin/all`). UUID route params use `ParseUUIDPipe`.
+- Never interpolate raw user input into PostgREST filter strings (`.or(...)`). Whitelist enum values and strip reserved characters (see `ProductsService`).
 
 ---
 
@@ -611,6 +612,9 @@ if (error || !data) {
 - Mock `SupabaseService` in all unit tests — no real network calls
 - Use `@nestjs/testing` + `Test.createTestingModule()`
 - E2E tests go in `test/` at project root (only exception to co-location)
+- Both Jest configs load `test/setup-env.ts` (dummy Supabase vars, `VERCEL=1`), so tests never read the real `.env`. They also use `tsconfig.spec.json`, which transforms the ESM-only `@nestjs/config` to CommonJS.
+- `src/bootstrap.spec.ts` boots the real app via `createApp()` and checks the `/api` prefix, 401s on guarded routes, and the error envelope. Extend it when adding global setup.
+- Lint: `npx eslint "{src,test}/**/*.ts"` must exit 0. Prettier is configured with `"semi": false`.
 
 ---
 

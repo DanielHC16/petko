@@ -99,17 +99,18 @@ Create `petko-fe/.env.local` (never commit this file):
 VITE_SUPABASE_URL=your_supabase_project_url_here
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
-VITE_API_URL=http://localhost:3000
+# OPTIONAL — only for an API on another origin (include /api). Leave unset normally.
+# VITE_API_URL=https://api.example.com/api
 ```
 
-Create `petko-fe/.env.example` (commit this):
+`petko-fe/.env.example` (committed) has the same keys with placeholder values.
 
-```env
-# .env.example — copy to .env.local and fill in values
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-VITE_API_URL=http://localhost:3000
-```
+Rules:
+- Every `VITE_*` value is **public**: Vite inlines it into the bundle. Only the Supabase URL and anon key belong here, never the service-role key or other secrets.
+- `VITE_API_URL` is optional. The axios client defaults to same-origin `/api`:
+  - **Dev**: `vite.config.ts` `server.proxy` forwards `/api` → `http://localhost:3000` (the NestJS server, which serves under `/api`).
+  - **Vercel**: the API function is on the same domain, so no CORS is needed.
+- On Vercel, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as project env vars. They are read at build time.
 
 ---
 
@@ -386,8 +387,10 @@ Used for calls to the NestJS API. **Not** used for Supabase calls (use the Supab
 import axios from 'axios'
 import { supabase } from '@/lib/supabase'
 
+// Same-origin `/api` by default (Vite proxy in dev, same domain on Vercel).
+// `||` (not `??`) so an empty VITE_API_URL also falls back.
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: false,
 })
 
@@ -514,8 +517,10 @@ export function cn(...inputs: ClassValue[]) {
 ## Scripts
 
 ```bash
-npm run dev       # Vite dev server (http://localhost:5173)
-npm run build     # tsc -b && vite build
-npm run lint      # eslint .
-npm run preview   # preview production build
+npm run dev       # Vite dev server (http://localhost:5173), proxies /api → :3000
+npm run build     # tsc -b && vite build → dist/ (Vercel outputDirectory: petko-fe/dist)
+npm run lint      # oxlint
+npm run preview   # preview production build (SPA fallback like Vercel's rewrite)
 ```
+
+API paths in code are relative to the `/api` base (e.g. `api.get('/users/me')` → `/api/users/me`). Never hardcode a host. Client routes (e.g. `/admin/products`, `/auth/callback`) work on hard refresh because Vercel rewrites every non-`/api` path to `index.html`.
