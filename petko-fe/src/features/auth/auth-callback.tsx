@@ -3,11 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import { fetchCurrentProfile } from '@/lib/auth'
+import pawBlueImg from '@/assets/paw_blue.png'
 
-/**
- * Supabase redirects here after Google SSO.
- * We read the session, then fetch the user's profile (including role) from our API.
- */
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const { setSession, setProfile, setLoading } = useAuthStore()
@@ -23,8 +20,6 @@ export default function AuthCallbackPage() {
 
       setSession(session)
 
-      // Fetch user profile + role from our NestJS API. On failure the user is
-      // still authenticated but without role info; ProtectedRoute handles that.
       const profile = await fetchCurrentProfile()
       if (profile) setProfile(profile)
       setLoading(false)
@@ -35,8 +30,20 @@ export default function AuthCallbackPage() {
   }, [navigate, setSession, setProfile, setLoading])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <p className="text-sm text-gray-500">Signing you in...</p>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-petko-cream">
+      <img src={pawBlueImg} alt="" aria-hidden="true" className="w-12 h-12 object-contain" />
+      <span
+        className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-petko-blue animate-spin"
+        aria-hidden="true"
+      />
+      <p
+        className="text-base font-semibold text-petko-blue"
+        style={{ fontFamily: "'Nunito', sans-serif" }}
+        role="status"
+        aria-live="polite"
+      >
+        Signing you in…
+      </p>
     </div>
   )
 }
