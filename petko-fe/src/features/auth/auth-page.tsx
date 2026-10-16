@@ -84,7 +84,7 @@ function SignInForm({ isLoading, error, onSignIn, pawImg, dark = false }: SignIn
                      disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? (
-            <span className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-petko-blue animate-spin" aria-hidden="true" />
+            <img src={pawBlueImg} alt="" aria-hidden="true" className="w-5 h-5 object-contain animate-bounce" />
           ) : (
             <GoogleIcon />
           )}
