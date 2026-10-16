@@ -39,6 +39,7 @@ export default function ProductsPage() {
   const [loadedKey, setLoadedKey] = useState<string | null>(null)
 
   const addItem = useCartStore((s) => s.addItem)
+  const cartItems = useCartStore((s) => s.items)
 
   const requestKey = JSON.stringify({ selectedCategory, selectedPetType, search, sortBy })
   const isLoading = loadedKey !== requestKey
@@ -80,6 +81,7 @@ export default function ProductsPage() {
       price: Number(product.price),
       quantity: 1,
       image_url: product.image_url,
+      stock: product.stock,
     })
 
     setAddedIds((prev) => new Set(prev).add(product.id))
@@ -249,6 +251,11 @@ export default function ProductsPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
           {products.map((product) => {
             const isAdded = addedIds.has(product.id)
+            
+            const itemInCart = cartItems.find((i) => i.product_id === product.id)
+            const currentQty = itemInCart ? itemInCart.quantity : 0
+            const canAddMore = product.stock > currentQty
+
             return (
               <div
                 key={product.id}
@@ -291,7 +298,8 @@ export default function ProductsPage() {
 
                   <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-2.5">
                     <div>
-                      <span className="text-sm font-extrabold text-gray-900 sm:text-base">
+                      {/* Removed font-extrabold here */}
+                      <span className="text-sm font-medium text-gray-900 sm:text-base">
                         ₱{Number(product.price).toLocaleString('en-PH', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -304,7 +312,7 @@ export default function ProductsPage() {
 
                     <button
                       onClick={() => handleAddToCart(product)}
-                      disabled={product.stock <= 0}
+                      disabled={!canAddMore}
                       className={`flex h-8 w-8 items-center justify-center rounded-full transition ${
                         isAdded
                           ? 'bg-green-500 text-white'

@@ -15,6 +15,7 @@ export default function ProductDetailPage() {
   const [isAdded, setIsAdded] = useState(false)
 
   const addItem = useCartStore((s) => s.addItem)
+  const cartItems = useCartStore((s) => s.items)
 
   const isLoading = Boolean(id) && loadedId !== id
 
@@ -52,6 +53,7 @@ export default function ProductDetailPage() {
       price: Number(product.price),
       quantity,
       image_url: product.image_url,
+      stock: product.stock,
     })
 
     setIsAdded(true)
@@ -60,6 +62,8 @@ export default function ProductDetailPage() {
     toast.success(`Added ${quantity} item(s) to your cart!`, {
       icon: '🐾',
     })
+    
+    setQuantity(1)
   }
 
   if (isLoading) {
@@ -85,6 +89,10 @@ export default function ProductDetailPage() {
       </div>
     )
   }
+
+  const itemInCart = cartItems.find((i) => i.product_id === product.id)
+  const currentCartQty = itemInCart ? itemInCart.quantity : 0
+  const remainingStock = product.stock - currentCartQty
 
   return (
     <div className="space-y-6">
@@ -127,7 +135,8 @@ export default function ProductDetailPage() {
             </h1>
 
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-gray-900">
+              {/* Removed font-extrabold here */}
+              <span className="text-3xl font-medium text-gray-900">
                 ₱{Number(product.price).toLocaleString('en-PH', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -168,8 +177,8 @@ export default function ProductDetailPage() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                  disabled={quantity >= product.stock}
+                  onClick={() => setQuantity((q) => Math.min(remainingStock, q + 1))}
+                  disabled={quantity >= remainingStock}
                   className="px-3 py-1 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30"
                 >
                   +
@@ -180,7 +189,7 @@ export default function ProductDetailPage() {
             {/* Add to Cart button */}
             <button
               onClick={handleAddToCart}
-              disabled={product.stock <= 0}
+              disabled={remainingStock <= 0}
               className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold shadow-sm transition ${
                 isAdded
                   ? 'bg-green-600 text-white'
@@ -195,7 +204,7 @@ export default function ProductDetailPage() {
               ) : (
                 <>
                   <ShoppingCart size={18} />
-                  Add to Cart
+                  {remainingStock <= 0 ? 'Max Limit Reached' : 'Add to Cart'}
                 </>
               )}
             </button>

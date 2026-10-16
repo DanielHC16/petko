@@ -66,7 +66,8 @@ export default function CartPage() {
                     <h3 className="line-clamp-1 text-sm font-bold text-gray-900">
                       {item.name}
                     </h3>
-                    <p className="mt-0.5 text-xs font-bold text-orange-600">
+                    {/* Removed font-bold here */}
+                    <p className="mt-0.5 text-xs font-medium text-orange-600">
                       ₱{Number(item.price).toLocaleString('en-PH', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -88,18 +89,28 @@ export default function CartPage() {
                       </span>
                       <button
                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                        className="px-2.5 py-0.5 text-xs font-bold text-gray-600 hover:bg-gray-100"
+                        disabled={item.quantity >= item.stock} 
+                        className={`px-2.5 py-0.5 text-xs font-bold text-gray-600 ${
+                          item.quantity >= item.stock 
+                            ? 'opacity-30 cursor-not-allowed' 
+                            : 'hover:bg-gray-100'
+                        }`}
                       >
                         +
                       </button>
                     </div>
 
-                    <button
-                      onClick={() => removeItem(item.product_id)}
-                      className="text-xs font-medium text-red-500 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
+                    <div className="flex items-center gap-4">
+                      {item.quantity >= item.stock && (
+                        <span className="text-[10px] font-bold text-orange-500">Max stock</span>
+                      )}
+                      <button
+                        onClick={() => removeItem(item.product_id)}
+                        className="text-xs font-medium text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -136,8 +147,10 @@ export default function CartPage() {
             </div>
 
             <div className="flex items-baseline justify-between pt-1">
-              <span className="text-sm font-bold text-gray-900">Total</span>
-              <span className="text-xl font-extrabold text-orange-600">
+              {/* Removed font-bold here */}
+              <span className="text-sm font-medium text-gray-900">Total</span>
+              {/* Removed font-extrabold here */}
+              <span className="text-xl font-medium text-orange-600">
                 ₱{totalPrice.toLocaleString('en-PH', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
