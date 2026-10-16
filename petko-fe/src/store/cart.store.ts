@@ -6,6 +6,7 @@ export interface CartItem {
   price: number
   quantity: number
   image_url: string
+  stock: number // Added stock property
 }
 
 interface CartState {
@@ -28,12 +29,13 @@ export const useCartStore = create<CartState>((set, get) => ({
         return {
           items: state.items.map((i) =>
             i.product_id === item.product_id
-              ? { ...i, quantity: i.quantity + item.quantity }
+              ? { ...i, quantity: Math.min(i.quantity + item.quantity, i.stock) } // Enforce stock limit on existing items
               : i
           ),
         }
       }
-      return { items: [...state.items, item] }
+      // Enforce stock limit when adding a new item
+      return { items: [...state.items, { ...item, quantity: Math.min(item.quantity, item.stock) }] }
     }),
 
   removeItem: (product_id) =>
@@ -44,7 +46,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   updateQuantity: (product_id, quantity) =>
     set((state) => ({
       items: state.items.map((i) =>
-        i.product_id === product_id ? { ...i, quantity } : i
+        // Enforce stock limit on manual quantity updates
+        i.product_id === product_id ? { ...i, quantity: Math.min(quantity, i.stock) } : i
       ),
     })),
 
