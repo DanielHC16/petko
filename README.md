@@ -82,7 +82,22 @@ npm run install:all   # npm ci in petko-be and petko-fe
 npm run build         # nest build + vite build
 npm run lint          # backend eslint + frontend oxlint
 npm test              # backend unit tests
+npm test --prefix petko-fe # frontend shipping regression tests
 ```
+
+## Repository agents and skills
+
+The portable Codex kit from `C:/Users/Hardy/ObsidianVaults/Atom/codex-agent-kit` is included in this repository. Open a new Codex session from the repository root in a trusted folder to discover the seven agents in `.codex/agents/` and seven skills in `.agents/skills/`.
+
+Use `debugger` for failures, `reviewer` for a read-only review, and `devops-engineer` for deployment work. Project instructions live in `AGENTS.md` and `context/`; they take precedence over generic examples in the kit. Local agent reports in `.agents/tasks/` stay ignored.
+
+To refresh from the original Atom kit without overwriting repository-owned files:
+
+```powershell
+node C:/Users/Hardy/ObsidianVaults/Atom/codex-agent-kit/install.mjs .
+```
+
+Checkout and order history currently contain UI previews. Ordering and payment submission remain disabled until backend integration is implemented; the sample order is explicitly labelled.
 
 ## Deploy to Vercel
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { 
   ChevronRight, 
-  ShoppingCart, 
   Check, 
   ShieldCheck, 
   Truck, 
@@ -28,7 +27,6 @@ export default function ProductDetailPage() {
   const cartItems = useCartStore((s) => s.items)
 
   // Placeholder States
-  const [selectedSize, setSelectedSize] = useState('1Kg')
   const [activeTab, setActiveTab] = useState('Description')
 
   const isLoading = Boolean(id) && loadedId !== id
@@ -132,7 +130,7 @@ export default function ProductDetailPage() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div 
                   key={i} 
-                  className={`aspect-square cursor-pointer overflow-hidden rounded-xl border-2 bg-white p-1 transition ${
+                  className={`aspect-square overflow-hidden rounded-xl border-2 bg-white p-1 transition ${
                     i === 1 ? 'border-[#0B3B8C]' : 'border-transparent hover:border-gray-300'
                   }`}
                   title="Thumbnail Placeholder"
@@ -145,8 +143,10 @@ export default function ProductDetailPage() {
             {/* Main Image */}
             <div className="relative flex flex-1 items-center justify-center rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm">
               <button 
+                disabled
+                aria-label="Wishlist (coming soon)"
                 className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-400 shadow-md transition hover:text-red-500"
-                title="Wishlist (Placeholder)"
+                title="Wishlist coming soon"
               >
                 <Heart size={20} />
               </button>
@@ -190,12 +190,9 @@ export default function ProductDetailPage() {
                 ].map((size) => (
                   <button
                     key={size.label}
-                    onClick={() => setSelectedSize(size.label)}
-                    className={`flex min-w-[80px] flex-col items-center justify-center rounded-xl border p-2 transition ${
-                      selectedSize === size.label
-                        ? 'border-[#D32F2F] bg-red-50 text-[#D32F2F]'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
-                    }`}
+                    disabled
+                    title="Size selection coming soon; sample options"
+                    className="flex min-w-[80px] flex-col items-center justify-center rounded-xl border border-gray-300 bg-gray-50 p-2 text-gray-500 cursor-not-allowed"
                   >
                     <span className="text-sm font-bold">{size.label}</span>
                     <span className="text-[10px] opacity-80">{size.price}</span>
@@ -210,9 +207,9 @@ export default function ProductDetailPage() {
                 For <span className="font-normal text-gray-400">(Placeholder)</span>
               </span>
               <div>
-                <button className="flex items-center gap-2 rounded-xl border border-[#D32F2F] bg-white px-5 py-2.5 text-sm font-bold text-[#D32F2F] shadow-sm">
+                <span className="inline-flex items-center gap-2 rounded-xl border border-[#D32F2F] bg-white px-5 py-2.5 text-sm font-bold text-[#D32F2F] shadow-sm">
                   {product.pet_type === 'cat' ? '🐱 Cats' : product.pet_type === 'dog' ? '🐶 Dogs' : '🐾 All Pets'}
-                </button>
+                </span>
               </div>
             </div>
 
@@ -286,10 +283,12 @@ export default function ProductDetailPage() {
 
                 {/* Buy Now Button (Placeholder) */}
                 <button
-                  disabled={remainingStock <= 0}
+                  disabled
+                  title="Buy Now coming soon; add items to your cart to continue"
                   className="flex flex-1 flex-col items-center justify-center rounded-xl bg-[#D32F2F] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#B71C1C] disabled:bg-gray-300 disabled:text-gray-500"
                 >
                   <span>Buy Now</span>
+                  <span className="text-[10px]">Coming soon</span>
                 </button>
               </div>
             </div>

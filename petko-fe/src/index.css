@@ -22,3 +22,16 @@
 
 
 }
+
+/* Hide native range thumb — used by split dual-range slider */
+input[type='range'].appearance-none::-webkit-slider-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+}
+input[type='range'].appearance-none::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+}

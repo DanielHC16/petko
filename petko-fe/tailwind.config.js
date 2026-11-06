@@ -7,14 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
+        orange: {
+          50:  '#fff8f0',
+          100: '#feecd3',
+          200: '#fdd5a0',
+          300: '#fbb96b',
+          400: '#f9a23e',
+          500: '#F7931A',
+          600: '#e07d0a',
+          700: '#b86308',
+          800: '#8f4d08',
+          900: '#6b3a07',
+          950: '#3d1f02',
+        },
         petko: {
-          blue:       '#1A3A8F', // deep navy — primary brand
-          'blue-mid': '#2248B3', // mid-tone for hover states
-          'blue-dark':'#122A6E', // darkest panel bg
-          gold:       '#F5A623', // warm gold/orange accent
-          'gold-lt':  '#FBBF40', // lighter gold for hover
-          cream:      '#F5EDDB', // warm off-white page background
-          red:        '#E63329', // PetKo logo red 'o'
+          blue:       '#1A3A8F',
+          'blue-mid': '#2248B3',
+          'blue-dark':'#122A6E',
+          gold:       '#F7931A',
+          'gold-lt':  '#f9a23e',
+          cream:      '#F5EDDB',
+          red:        '#E63329',
         },
       },
       fontFamily: {
