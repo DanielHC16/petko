@@ -62,7 +62,7 @@ export default function CartPage() {
               </button>
             </div>
             {/* Table Header */}
-            <div className="grid grid-cols-[3fr_1fr_1fr_1fr_auto] gap-4 rounded-xl bg-[#F5E6D3] px-6 py-4 text-sm font-bold text-[#1A237E]">
+            <div className="hidden sm:grid grid-cols-[3fr_1fr_1fr_1fr_auto] gap-4 rounded-xl bg-[#F5E6D3] px-6 py-4 text-sm font-bold text-[#1A237E]">
               <div>Product Details</div>
               <div className="text-center">Price</div>
               <div className="text-center">Quantity</div>
@@ -76,10 +76,10 @@ export default function CartPage() {
                 {items.map((item) => (
                   <div
                     key={item.product_id}
-                    className="grid grid-cols-[3fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
+                    className="grid grid-cols-[1fr_auto_1fr_auto] sm:grid-cols-[3fr_1fr_1fr_1fr_auto] items-center gap-2 sm:gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
                   >
                     {/* Product Details */}
-                    <div className="flex items-center gap-4">
+                    <div className="col-span-4 sm:col-span-1 flex min-w-0 items-center gap-4">
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-gray-200 p-1">
                         <img
                           src={item.image_url}
@@ -87,7 +87,7 @@ export default function CartPage() {
                           className="max-h-full max-w-full object-contain"
                         />
                       </div>
-                      <div className="flex flex-col">
+                      <div className="flex min-w-0 flex-col">
                         <h3 className="line-clamp-2 text-sm font-bold text-[#1A237E]">
                           {item.name}
                         </h3>
@@ -107,6 +107,7 @@ export default function CartPage() {
                     {/* Quantity Selector */}
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        aria-label={`Decrease quantity of ${item.name}`}
                         onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))}
                         className="flex h-6 w-6 items-center justify-center rounded bg-[#1A237E] text-white hover:bg-blue-900"
                       >
@@ -116,6 +117,7 @@ export default function CartPage() {
                         {item.quantity}
                       </span>
                       <button
+                        aria-label={`Increase quantity of ${item.name}`}
                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                         disabled={item.quantity >= item.stock}
                         className={`flex h-6 w-6 items-center justify-center rounded text-white ${
