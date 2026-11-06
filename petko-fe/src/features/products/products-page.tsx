@@ -9,6 +9,7 @@ import dogcatImg    from '@/assets/proheader.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 import logoImg      from '@/assets/logo.png'
 import pawImg       from '@/assets/paw_white.png'
+import { useSearchParams } from 'react-router-dom'
 
 const CATEGORIES = [
   { id: 'all',         label: 'All Items' },
@@ -38,10 +39,11 @@ function isSortOption(v: string): v is SortOption {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 export default function ProductsPage() {
+  const [searchParams] = useSearchParams()
   const [products, setProducts]                     = useState<Product[]>([])
   const [search, setSearch]                         = useState('')
-  const [selectedCategory, setSelectedCategory]     = useState('all')
-  const [petTab, setPetTab]                         = useState<PetTab>('all')
+  const [selectedCategory, setSelectedCategory]     = useState(searchParams.get('cat') || 'all')
+  const [petTab, setPetTab]                         = useState<PetTab>((searchParams.get('pet') as PetTab) || 'all')
   const [sortBy, setSortBy]                         = useState<SortOption>('newest')
   const [loadedKey, setLoadedKey]                   = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen]         = useState(false)
