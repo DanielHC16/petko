@@ -84,6 +84,20 @@ npm run lint          # backend eslint + frontend oxlint
 npm test              # backend unit tests
 ```
 
+## Repository agents and skills
+
+The portable Codex kit from `C:/Users/Hardy/ObsidianVaults/Atom/codex-agent-kit` is included in this repository. Open a new Codex session from the repository root in a trusted folder to discover the seven agents in `.codex/agents/` and seven skills in `.agents/skills/`.
+
+Use `debugger` for failures, `reviewer` for a read-only review, and `devops-engineer` for deployment work. Project instructions live in `AGENTS.md` and `context/`; they take precedence over generic examples in the kit. Local agent reports in `.agents/tasks/` stay ignored.
+
+To refresh from the original Atom kit without overwriting repository-owned files:
+
+```powershell
+node C:/Users/Hardy/ObsidianVaults/Atom/codex-agent-kit/install.mjs .
+```
+
+Checkout and order history currently contain UI previews. Checkout does not persist orders or process payments; backend integration is still required.
+
 ## Deploy to Vercel
 
 The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before the first production deploy, apply these in the Supabase SQL editor, in order (both are safe to re-run):

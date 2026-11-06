@@ -1,35 +1,30 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { 
-  ChevronRight, 
-  ShoppingCart, 
-  Check, 
-  ShieldCheck, 
-  Truck, 
-  RefreshCw, 
-  Heart, 
-  Minus, 
-  Plus 
+import {
+  ChevronRight,
+  Check,
+  ShieldCheck,
+  Truck,
+  RefreshCw,
+  Minus,
+  Plus
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { fetchProductById, type Product } from './products-api'
+import { fetchProductById, fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
 import { getApiErrorMessage } from '@/lib/api-error'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [product, setProduct] = useState<Product | null>(null)
+  const [suggestions, setSuggestions] = useState<Product[]>([])
   const [loadedId, setLoadedId] = useState<string | null>(null)
-  
+
   // Cart & Quantity States
   const [quantity, setQuantity] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
   const cartItems = useCartStore((s) => s.items)
-
-  // Placeholder States
-  const [selectedSize, setSelectedSize] = useState('1Kg')
-  const [activeTab, setActiveTab] = useState('Description')
 
   const isLoading = Boolean(id) && loadedId !== id
 
@@ -41,7 +36,23 @@ export default function ProductDetailPage() {
     async function load(): Promise<void> {
       try {
         const data = await fetchProductById(productId)
-        if (isMounted) setProduct(data)
+        if (isMounted) {
+          setProduct(data)
+          setQuantity(1)
+          setSuggestions([])
+          setLoadedId(productId)
+          try {
+            const relatedData = await fetchProducts({
+              category: data.category,
+              pet_type: data.pet_type
+            })
+            // Filter out the current product and take up to 4 items
+            const related = relatedData.filter((p) => p.id !== data.id).slice(0, 4)
+            if (isMounted) setSuggestions(related)
+          } catch (suggestionErr) {
+            console.error('Failed to load suggestions', suggestionErr)
+          }
+        }
       } catch (err: unknown) {
         if (isMounted) {
           setProduct(null)
@@ -60,12 +71,15 @@ export default function ProductDetailPage() {
 
   function handleAddToCart() {
     if (!product) return
+    const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
+    const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
+    if (quantityToAdd <= 0) return
 
     addItem({
       product_id: product.id,
       name: product.name,
       price: Number(product.price),
-      quantity,
+      quantity: quantityToAdd,
       image_url: product.image_url,
       stock: product.stock,
     })
@@ -73,10 +87,10 @@ export default function ProductDetailPage() {
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 1500)
 
-    toast.success(`Added ${quantity} item(s) to your cart!`, {
+    toast.success(`Added ${quantityToAdd} item(s) to your cart!`, {
       icon: '🐾',
     })
-    
+
     setQuantity(1)
   }
 
@@ -90,12 +104,12 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center max-w-lg mx-auto mt-12">
+      <div className="mx-auto mt-12 max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center">
         <h2 className="text-xl font-bold text-[#0B3B8C]">Product not found</h2>
         <p className="mt-2 text-sm text-gray-500">The product you are looking for does not exist or has been removed.</p>
         <Link
           to="/"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B3B8C] px-6 py-3 text-sm font-bold text-white hover:bg-blue-800 transition"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B3B8C] px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
         >
           Back to Store
         </Link>
@@ -106,56 +120,60 @@ export default function ProductDetailPage() {
   const itemInCart = cartItems.find((i) => i.product_id === product.id)
   const currentCartQty = itemInCart ? itemInCart.quantity : 0
   const remainingStock = product.stock - currentCartQty
+  const CATEGORIES = [
+  { id: 'all',         label: 'All Items' },
+  { id: 'food',        label: 'Pet Food' },
+  { id: 'treats',      label: 'Treats' },
+  { id: 'toys',        label: 'Toys' },
+  { id: 'grooming',    label: 'Grooming' },
+  { id: 'wellness',    label: 'Health & Wellness' },
+  { id: 'litter',      label: 'Litter & Toilet' },
+  { id: 'bedding',     label: 'Beds & Furniture' },
+  { id: 'apparel',     label: 'Clothing' },
+  { id: 'cleaning',    label: 'Training & Cleaning' },
+  { id: 'travel',      label: 'Travel & Outdoor' },
+  { id: 'accessories', label: 'Collars & Leashes' },
+]
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] p-4 md:p-8 font-sans">
-      <div className="mx-auto max-w-7xl space-y-6">
-        
+<div className="min-h-screen bg-[#fbe8c1] p-4 font-sans md:p-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+
         {/* Breadcrumb Navigation */}
-        <nav className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-          <Link to="/" className="hover:text-[#0B3B8C] transition">Home</Link>
+        <nav className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-600">
+          <Link to="/" className="transition hover:text-[#0B3B8C]">Home</Link>
           <ChevronRight size={14} className="text-gray-400" />
-          <span className="capitalize">{product.pet_type === 'cat' ? 'Cats' : product.pet_type === 'dog' ? 'Dogs' : 'Pets'}</span>
+
+          <Link
+            to={`/?pet=${product.pet_type}`}
+            className="transition hover:text-[#0B3B8C]"
+          >
+            {product.pet_type === 'cat' ? 'Cats' : product.pet_type === 'dog' ? 'Dogs' : 'All Pets'}
+          </Link>
+
           <ChevronRight size={14} className="text-gray-400" />
-          <span className="capitalize">{product.category}</span>
+
+          <Link
+            to={`/?pet=${product.pet_type}&cat=${product.category}`}
+            className="transition hover:text-[#0B3B8C]"
+          >
+            {CATEGORIES.find(c => c.id === product.category)?.label || product.category}
+          </Link>
+
           <ChevronRight size={14} className="text-gray-400" />
           <span className="font-bold text-gray-900">{product.name}</span>
         </nav>
 
         {/* Top Section: Images & Primary Details */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.1fr]">
-          
-          {/* Left Column: Image Gallery */}
-          <div className="flex gap-4">
-            {/* Thumbnails (Placeholder) */}
-            <div className="flex w-20 flex-col gap-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div 
-                  key={i} 
-                  className={`aspect-square cursor-pointer overflow-hidden rounded-xl border-2 bg-white p-1 transition ${
-                    i === 1 ? 'border-[#0B3B8C]' : 'border-transparent hover:border-gray-300'
-                  }`}
-                  title="Thumbnail Placeholder"
-                >
-                  <img src={product.image_url} alt="thumbnail" className="h-full w-full object-contain" />
-                </div>
-              ))}
-            </div>
 
-            {/* Main Image */}
-            <div className="relative flex flex-1 items-center justify-center rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm">
-              <button 
-                className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-400 shadow-md transition hover:text-red-500"
-                title="Wishlist (Placeholder)"
-              >
-                <Heart size={20} />
-              </button>
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="max-h-[450px] w-auto object-contain drop-shadow-xl"
-              />
-            </div>
+          {/* Left Column: Image Gallery */}
+          <div className="relative flex items-center justify-center rounded-[2rem] border border-gray-200 bg-white p-8 shadow-md">
+            <img
+              src={product.image_url}
+              alt={product.name}
+              className="max-h-[450px] max-w-full w-auto object-contain drop-shadow-xl"
+            />
           </div>
 
           {/* Right Column: Product Details */}
@@ -164,9 +182,6 @@ export default function ProductDetailPage() {
               <h1 className="text-3xl font-extrabold text-[#0B3B8C] sm:text-4xl">
                 {product.name}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                {product.description}
-              </p>
             </div>
 
             <div className="text-3xl font-extrabold text-[#D32F2F]">
@@ -176,76 +191,41 @@ export default function ProductDetailPage() {
               })}
             </div>
 
-            {/* Size Variants (Placeholder) */}
+            {/* "For" Target */}
             <div className="space-y-2 pt-2">
               <span className="text-sm font-semibold text-gray-800">
-                Size <span className="font-normal text-gray-400">(Placeholder)</span>
-              </span>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { label: '500g', price: '₱ 199.00' },
-                  { label: '1Kg', price: '₱ 349.00' },
-                  { label: '2.5Kg', price: '₱ 799.00' },
-                  { label: '5Kg', price: '₱ 1,499.00' },
-                ].map((size) => (
-                  <button
-                    key={size.label}
-                    onClick={() => setSelectedSize(size.label)}
-                    className={`flex min-w-[80px] flex-col items-center justify-center rounded-xl border p-2 transition ${
-                      selectedSize === size.label
-                        ? 'border-[#D32F2F] bg-red-50 text-[#D32F2F]'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
-                    }`}
-                  >
-                    <span className="text-sm font-bold">{size.label}</span>
-                    <span className="text-[10px] opacity-80">{size.price}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* "For" Target (Placeholder) */}
-            <div className="space-y-2 pt-2">
-              <span className="text-sm font-semibold text-gray-800">
-                For <span className="font-normal text-gray-400">(Placeholder)</span>
+                For
               </span>
               <div>
-                <button className="flex items-center gap-2 rounded-xl border border-[#D32F2F] bg-white px-5 py-2.5 text-sm font-bold text-[#D32F2F] shadow-sm">
+                <span className="inline-flex items-center gap-2 rounded-xl border border-[#D32F2F] bg-white px-5 py-2.5 text-sm font-bold text-[#D32F2F] shadow-sm">
                   {product.pet_type === 'cat' ? '🐱 Cats' : product.pet_type === 'dog' ? '🐶 Dogs' : '🐾 All Pets'}
-                </button>
+                </span>
               </div>
             </div>
 
-            {/* Meta Information Grid (Placeholder) */}
-            <div className="grid grid-cols-4 divide-x divide-gray-200 border-y border-gray-200 py-4 text-center text-xs">
-              <div className="flex flex-col px-2">
-                <span className={product.stock > 0 ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
-                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                </span>
-                <span className="text-gray-500">({product.stock} available)</span>
+              {/* Meta Information Grid */}
+              <div className="grid grid-cols-2 divide-x divide-gray-800 py-4 text-center text-xs">
+                <div className="flex flex-col px-2">
+                  <span className={product.stock > 0 ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
+                    {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                  </span>
+                  <span className="font-bold text-gray-800">({product.stock} available)</span>
+                </div>
+                <div className="flex flex-col px-2">
+                  <span className="font-bold text-[#0B3B8C]">Made in</span>
+                  <span className="font-bold text-gray-800">Philippines</span>
+                </div>
               </div>
-              <div className="flex flex-col px-2">
-                <span className="font-bold text-gray-800">Net Weight</span>
-                <span className="text-gray-500">1 Kg</span>
-              </div>
-              <div className="flex flex-col px-2">
-                <span className="font-bold text-gray-800">Suitable For</span>
-                <span className="text-gray-500">All Life Stages</span>
-              </div>
-              <div className="flex flex-col px-2">
-                <span className="font-bold text-gray-800">Made in</span>
-                <span className="text-gray-500">Philippines</span>
-              </div>
-            </div>
 
             {/* Add to Cart / Quantity Actions */}
             <div className="space-y-1">
               <span className="text-xs font-semibold text-gray-500">Quantity</span>
               <div className="flex items-stretch gap-3">
                 {/* Quantity Selector */}
-                <div className="flex items-center rounded-xl border-2 border-[#0B3B8C] bg-white overflow-hidden">
+                <div className="flex items-center overflow-hidden rounded-xl border-2 border-[#0B3B8C] bg-white">
                   <button
                     type="button"
+                    aria-label="Decrease quantity"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1}
                     className="flex items-center justify-center p-3 text-[#0B3B8C] transition hover:bg-blue-50 disabled:opacity-30"
@@ -257,6 +237,7 @@ export default function ProductDetailPage() {
                   </span>
                   <button
                     type="button"
+                    aria-label="Increase quantity"
                     onClick={() => setQuantity((q) => Math.min(remainingStock, q + 1))}
                     disabled={quantity >= remainingStock}
                     className="flex items-center justify-center p-3 text-[#0B3B8C] transition hover:bg-blue-50 disabled:opacity-30"
@@ -284,19 +265,19 @@ export default function ProductDetailPage() {
                   )}
                 </button>
 
-                {/* Buy Now Button (Placeholder) */}
+                {/* Payment integration is not available yet. */}
                 <button
-                  disabled={remainingStock <= 0}
+                  disabled
+                  title="Buy Now coming soon"
                   className="flex flex-1 flex-col items-center justify-center rounded-xl bg-[#D32F2F] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#B71C1C] disabled:bg-gray-300 disabled:text-gray-500"
                 >
-                  <span>Buy Now</span>
+                  <span>Buy Now (Coming Soon)</span>
                 </button>
               </div>
             </div>
 
             {/* Trust Badges */}
-            <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[#FDF3E1] p-4 text-center text-[11px] font-semibold text-gray-700 sm:text-xs">
-              <div className="flex flex-col items-center justify-center gap-1 sm:flex-row">
+            <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[#fdf2e1] border border-gray-200 shadow-md p-4 text-center text-[11px] font-semibold text-gray-700 sm:text-xs">              <div className="flex flex-col items-center justify-center gap-1 sm:flex-row">
                 <ShieldCheck size={18} className="text-gray-500" />
                 <span>Secure Checkout</span>
               </div>
@@ -313,53 +294,55 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Bottom Section: Tabs & Cross-Sell */}
+        {/* Bottom Section: Description & Cross-Sell */}
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-          
-          {/* Tabs Container */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-            <div className="flex gap-8 border-b border-gray-200">
-              {['Description', 'Ingredients', 'Feeding Guide'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-4 text-sm font-bold transition-colors ${
-                    activeTab === tab
-                      ? 'border-b-2 border-[#0B3B8C] text-[#0B3B8C]'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  {tab} {tab !== 'Description' && <span className="font-normal text-[10px] text-gray-400"> (Placeholder)</span>}
-                </button>
-              ))}
-            </div>
-            <div className="py-6 text-sm leading-relaxed text-gray-600">
-              {activeTab === 'Description' ? (
-                <p>{product.description}</p>
-              ) : (
-                <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50">
-                  <p className="text-gray-400 italic">This content section is a placeholder for {activeTab}.</p>
-                </div>
-              )}
+
+          {/* Description Container */}
+          <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-8 shadow-md lg:col-span-2">            <h2 className="mb-4 border-b border-gray-200 pb-4 text-lg font-bold text-[#0B3B8C]">
+              Description
+            </h2>
+            <div className="py-2 text-sm leading-relaxed text-gray-600">
+              <p>{product.description}</p>
             </div>
           </div>
 
           {/* Cross-Sell Container (Placeholder) */}
-          <div className="rounded-3xl bg-[#FDF3E1] p-6 shadow-sm">
-            <h3 className="mb-4 font-extrabold text-[#0B3B8C]">
-              You May Also Like <span className="font-normal text-xs text-gray-500">(Placeholder)</span>
+          <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-6 shadow-md">            <h3 className="mb-4 font-extrabold text-[#0B3B8C]">
+              You May Also Like
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              {/* Dummy Cards for mockup */}
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="rounded-xl border border-white bg-white/50 p-3 text-center opacity-75 backdrop-blur-sm">
-                  <div className="mb-3 flex aspect-square items-center justify-center rounded-lg bg-gray-100/80">
-                     <span className="text-[10px] text-gray-400">Image</span>
-                  </div>
-                  <div className="mx-auto mb-2 h-3 w-3/4 rounded bg-gray-300/50"></div>
-                  <div className="mx-auto h-3 w-1/2 rounded bg-gray-300/50"></div>
+              {suggestions.length > 0 ? (
+                suggestions.map((suggestion) => (
+                  <Link
+                    key={suggestion.id}
+                    to={`/products/${suggestion.id}`}
+                    className="group flex flex-col justify-between rounded-xl border border-white bg-white p-3 text-center shadow-sm transition hover:shadow-md"
+                  >
+                    <div className="mb-3 flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-gray-50 p-2">
+                      <img
+                        src={suggestion.image_url}
+                        alt={suggestion.name}
+                        className="max-h-full max-w-full object-contain transition duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="line-clamp-2 text-xs font-bold text-[#0B3B8C] group-hover:underline">
+                        {suggestion.name}
+                      </h4>
+                      <div className="mt-1 text-sm font-extrabold text-[#D32F2F]">
+                        ₱ {Number(suggestion.price).toLocaleString('en-PH', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-2 py-8 text-center text-xs text-gray-500">
+                  No related products available.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 

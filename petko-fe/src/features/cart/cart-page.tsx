@@ -7,7 +7,6 @@ export default function CartPage() {
   const totalPrice = useCartStore((s) => s.totalPrice())
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const removeItem = useCartStore((s) => s.removeItem)
-  const clearCart = useCartStore((s) => s.clearCart)
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
   const shippingEstimate = 100 // Dummy value based on wireframe having a cost, adjust as needed

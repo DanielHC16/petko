@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Search, ShoppingBag, ShoppingCart, RotateCcw, ChevronDown, Menu, X } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
@@ -32,39 +32,13 @@ function isSortOption(v: string): v is SortOption {
   return (SORT_OPTIONS as readonly string[]).includes(v)
 }
 
-// ── Price range slider (kept for future use) ──────────────────────────────────
-const MIN_PRICE = 0
-const MAX_PRICE = 15000
-
-// ── Simple dropdown ───────────────────────────────────────────────────────────
-function Dropdown({ label, active, children }: { label: string; active?: boolean; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="relative shrink-0">
-      <button onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm font-medium transition
-          ${active ? 'border-orange-500 text-orange-600' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}>
-        {label} <ChevronDown size={13} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-40 mt-1 min-w-[220px] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
-            {children}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────────
 export default function ProductsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts]                     = useState<Product[]>([])
   const [search, setSearch]                         = useState('')
-  const [selectedCategory, setSelectedCategory]     = useState('all')
-  const [petTab, setPetTab]                         = useState<PetTab>('all')
-  const [priceRange]                                = useState<[number, number]>([MIN_PRICE, MAX_PRICE])
+  const selectedCategory = searchParams.get('cat') || 'all'
+  const requestedPet = searchParams.get('pet')
+  const petTab: PetTab = requestedPet === 'cat' || requestedPet === 'dog' ? requestedPet : 'all'
   const [sortBy, setSortBy]                         = useState<SortOption>('newest')
   const [loadedKey, setLoadedKey]                   = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen]         = useState(false)
@@ -96,17 +70,32 @@ export default function ProductsPage() {
     }
     load()
     return () => { mounted = false }
-  }, [requestKey])
+  }, [requestKey, selectedCategory, petTab, search, sortBy])
 
   const displayed = useMemo(() => products.filter(p => {
-    const inPrice = Number(p.price) >= priceRange[0] && Number(p.price) <= priceRange[1]
     const inCat   = selectedCategory === 'all' || p.category === selectedCategory
     const inPet   = petTab === 'all' || p.pet_type === petTab || p.pet_type === 'both'
-    return inPrice && inCat && inPet
-  }), [products, priceRange, selectedCategory, petTab])
+    return inCat && inPet
+  }), [products, selectedCategory, petTab])
 
   function clearFilters() {
-    setSelectedCategory('all'); setPetTab('all'); setSearch('')
+    const params = new URLSearchParams(searchParams)
+    params.delete('cat')
+    params.delete('pet')
+    setSearchParams(params)
+    setSearch('')
+  }
+  function setSelectedCategory(category: string): void {
+    const params = new URLSearchParams(searchParams)
+    if (category === 'all') params.delete('cat')
+    else params.set('cat', category)
+    setSearchParams(params)
+  }
+  function setPetTab(pet: PetTab): void {
+    const params = new URLSearchParams(searchParams)
+    if (pet === 'all') params.delete('pet')
+    else params.set('pet', pet)
+    setSearchParams(params)
   }
   function handleAddToCart(product: Product) {
     addItem({ product_id: product.id, name: product.name, price: Number(product.price), quantity: 1, image_url: product.image_url, stock: product.stock })

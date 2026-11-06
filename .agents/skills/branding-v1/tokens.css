@@ -1,0 +1,83 @@
+/* ─────────────────────────────────────────────────────────────
+   BRANDING — Color & theme tokens (source of truth)
+   NieR geometric minimalism + metallic chrome. Grayscale only.
+   Reference everywhere via var(--token); never hardcode hex.
+───────────────────────────────────────────────────────────── */
+
+/* Light theme */
+:root {
+  --background: #fafafa;
+  --foreground: #1a1a1a;
+  --accent: #636366;
+  --accent-soft: #d1d1d6;
+  --muted: #8a8a8a;
+  --border: #e0e0e0;
+  --surface: #ffffff;
+
+  /* Section glow accents (subtle, grayscale) */
+  --project-glow-one: #636366;
+  --project-glow-two: #8e8e93;
+  --project-glow-three: #aeaeb2;
+
+  /* Chrome / metallic gradient stops (top → bottom of the sheen) */
+  --chrome-1: #7c7c80;
+  --chrome-2: #636366;
+  --chrome-3: #3a3a3c;
+  --chrome-4: #1c1c1e;
+  --chrome-5: #7c7c80;
+  --chrome-6: #48484a;
+  --chrome-sheen: rgba(255, 255, 255, 0.25);
+  --chrome-sheen-hover: rgba(255, 255, 255, 0.75);
+}
+
+/* Dark theme (applied via <html class="dark">) */
+:root.dark {
+  --background: #1a1a1a;
+  --foreground: #fafafa;
+  --accent: #c7c7cc;
+  --accent-soft: #48484a;
+  --muted: #8a8a8a;
+  --border: #2a2a2a;
+  --surface: #252525;
+
+  --project-glow-one: #c7c7cc;
+  --project-glow-two: #aeaeb2;
+  --project-glow-three: #e5e5ea;
+
+  --chrome-1: #ffffff;
+  --chrome-2: #e5e5ea;
+  --chrome-3: #aeaeb2;
+  --chrome-4: #7c7c80;
+  --chrome-5: #e5e5ea;
+  --chrome-6: #c7c7cc;
+  --chrome-sheen: rgba(255, 255, 255, 0.6);
+  --chrome-sheen-hover: rgba(255, 255, 255, 1);
+}
+
+/* Base body treatment: Geist Sans, light weight, generous line-height. */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Selection, scrollbar, focus — part of the brand feel. */
+::selection {
+  background: var(--accent-soft);
+  color: var(--foreground);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--muted); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+a:focus-visible,
+button:focus-visible,
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
