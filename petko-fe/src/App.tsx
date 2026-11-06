@@ -27,14 +27,23 @@ export default function App() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
+        {/* Temporary Unprotected Routes for UI Testing */}
+        {/* <Route element={<AppLayout />}>
+          <Route path="/"            element={<ProductsPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/cart"        element={<CartPage />} />
+          <Route path="/checkout"    element={<CheckoutPage />} />
+          <Route path="/orders"      element={<OrdersPage />} />
+        </Route> */}
+
         {/* Authenticated customer routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/" element={<ProductsPage />} />
+            <Route path="/"            element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/cart"        element={<CartPage />} />
+            <Route path="/checkout"    element={<CheckoutPage />} />
+            <Route path="/orders"      element={<OrdersPage />} />
           </Route>
         </Route>
 

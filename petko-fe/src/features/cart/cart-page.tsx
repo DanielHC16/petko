@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ShoppingBag, Trash2, ArrowLeft, Ticket, Truck, RefreshCcw, PawPrint } from 'lucide-react'
 import { useCartStore } from '@/store/cart.store'
+import { calculateShippingFee, FREE_SHIPPING_THRESHOLD } from '@/lib/shipping'
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items)
@@ -10,7 +11,7 @@ export default function CartPage() {
   const clearCart = useCartStore((s) => s.clearCart)
 
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
-  const shippingEstimate = 100 // Dummy value based on wireframe having a cost, adjust as needed
+  const shippingEstimate = calculateShippingFee(totalPrice)
 
   return (
     <div className="min-h-screen bg-[#FDF7EE] p-6 lg:p-10 font-sans">
@@ -51,8 +52,17 @@ export default function CartPage() {
           
           {/* Main Cart Items Column */}
           <div className="flex-1 space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={clearCart}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[#E53935] hover:text-red-700"
+              >
+                <Trash2 size={16} /> Clear Cart
+              </button>
+            </div>
             {/* Table Header */}
-            <div className="grid grid-cols-[3fr_1fr_1fr_1fr_auto] gap-4 rounded-xl bg-[#F5E6D3] px-6 py-4 text-sm font-bold text-[#1A237E]">
+            <div className="hidden sm:grid grid-cols-[3fr_1fr_1fr_1fr_auto] gap-4 rounded-xl bg-[#F5E6D3] px-6 py-4 text-sm font-bold text-[#1A237E]">
               <div>Product Details</div>
               <div className="text-center">Price</div>
               <div className="text-center">Quantity</div>
@@ -66,15 +76,10 @@ export default function CartPage() {
                 {items.map((item) => (
                   <div
                     key={item.product_id}
-                    className="grid grid-cols-[3fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
+                    className="grid grid-cols-[1fr_auto_1fr_auto] sm:grid-cols-[3fr_1fr_1fr_1fr_auto] items-center gap-2 sm:gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0"
                   >
                     {/* Product Details */}
-                    <div className="flex items-center gap-4">
-                      <input 
-                        type="checkbox" 
-                        className="h-4 w-4 rounded border-gray-300 text-[#1A237E] focus:ring-[#1A237E]"
-                        defaultChecked
-                      />
+                    <div className="col-span-4 sm:col-span-1 flex min-w-0 items-center gap-4">
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-gray-200 p-1">
                         <img
                           src={item.image_url}
@@ -82,7 +87,7 @@ export default function CartPage() {
                           className="max-h-full max-w-full object-contain"
                         />
                       </div>
-                      <div className="flex flex-col">
+                      <div className="flex min-w-0 flex-col">
                         <h3 className="line-clamp-2 text-sm font-bold text-[#1A237E]">
                           {item.name}
                         </h3>
@@ -102,6 +107,7 @@ export default function CartPage() {
                     {/* Quantity Selector */}
                     <div className="flex items-center justify-center gap-2">
                       <button
+                        aria-label={`Decrease quantity of ${item.name}`}
                         onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))}
                         className="flex h-6 w-6 items-center justify-center rounded bg-[#1A237E] text-white hover:bg-blue-900"
                       >
@@ -111,6 +117,7 @@ export default function CartPage() {
                         {item.quantity}
                       </span>
                       <button
+                        aria-label={`Increase quantity of ${item.name}`}
                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                         disabled={item.quantity >= item.stock}
                         className={`flex h-6 w-6 items-center justify-center rounded text-white ${
@@ -150,9 +157,6 @@ export default function CartPage() {
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-bold text-[#1A237E]">Order Summary</h2>
-                <button className="text-sm font-semibold text-[#1A237E] underline">
-                  Edit Cart
-                </button>
               </div>
 
               <div className="space-y-4 py-4 text-sm">
@@ -165,15 +169,12 @@ export default function CartPage() {
                 <div className="flex justify-between text-gray-600">
                   <div className="flex flex-col">
                     <span>Shipping Estimate</span>
-                    <span className="text-xs text-gray-400">Metro Manila, 1100</span>
+                    <span className="text-xs text-gray-400">Standard delivery; choose delivery at checkout</span>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-bold text-gray-800">
                       ₱{shippingEstimate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                     </span>
-                    <button className="text-xs font-semibold text-[#1A237E] underline">
-                      Change
-                    </button>
                   </div>
                 </div>
               </div>
@@ -186,11 +187,13 @@ export default function CartPage() {
                     <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input
                       type="text"
-                      placeholder="Enter voucher code"
+                      disabled
+                      aria-label="Promo code (coming soon)"
+                      placeholder="Promo codes coming soon"
                       className="w-full rounded-lg border border-gray-300 bg-gray-50 py-2.5 pl-10 pr-3 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-1 focus:ring-[#1A237E]"
                     />
                   </div>
-                  <button className="rounded-lg bg-[#1A237E] px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-900">
+                  <button disabled title="Promo codes are not available yet" className="rounded-lg bg-gray-300 px-5 py-2.5 text-sm font-bold text-gray-600 cursor-not-allowed">
                     Apply
                   </button>
                 </div>
@@ -228,7 +231,7 @@ export default function CartPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-gray-800">Free Shipping</h4>
-                  <p className="text-xs text-gray-500">₱ 899 minimum spend in Metro Manila</p>
+                  <p className="text-xs text-gray-500">₱ {FREE_SHIPPING_THRESHOLD.toLocaleString('en-PH')} minimum spend</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
