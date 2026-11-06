@@ -1,12 +1,9 @@
 import { useState } from 'react'
 import { signInWithGoogle } from '@/lib/auth'
-import logoImg     from '@/assets/logo.png'
-import dogImg      from '@/assets/dog.png'
-import catImg      from '@/assets/cat.png'
-import monumentImg from '@/assets/monument.png'
-import jeepneyImg  from '@/assets/jeepney.png'
-import treeImg     from '@/assets/tree.png'
-import pawBlueImg  from '@/assets/paw_blue.png'
+import logoImg    from '@/assets/logo.png'
+import pageImg    from '@/assets/page.png'
+import treeImg    from '@/assets/tree.png'
+import pawBlueImg from '@/assets/paw_blue.png'
 
 function GoogleIcon() {
   return (
@@ -111,47 +108,38 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen md:flex md:items-center md:justify-center md:bg-petko-cream md:p-6">
-      <div className="relative w-full min-h-screen md:min-h-[88vh] md:w-[98vw] md:max-w-[1400px] md:rounded-3xl md:overflow-hidden md:shadow-card-lg md:animate-fade-up md:grid md:grid-cols-2">
+    <div className="min-h-screen lg:flex lg:items-center lg:justify-center lg:bg-petko-cream lg:p-6">
+      <div className="relative w-full min-h-screen lg:min-h-[78vh] lg:h-[78vh] lg:w-[70vw] lg:rounded-3xl lg:overflow-hidden lg:shadow-card-lg lg:animate-fade-up lg:grid lg:grid-cols-2">
 
-        <div className="absolute inset-0 md:relative md:inset-auto overflow-hidden" aria-hidden="true">
+        {/* Left panel — layered illustration */}
+        <div className="absolute inset-0 lg:relative lg:inset-auto overflow-hidden bg-[#FAF3E0]" aria-hidden="true">
+          {/* Gradient background */}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #e8dfc8 0%, #fdf5e9 42%, #1A3A8F 65%)' }} />
 
           {/* Logo */}
           <img src={logoImg} alt="PetKo" className="absolute object-contain"
-            style={{ top: '15%', left: '50%', transform: 'translateX(-50%)', height: '12%', zIndex: 10}} />
+            style={{ top: '15%', left: '50%', transform: 'translateX(-50%)', height: '12%', zIndex: 10 }} />
 
           {/* Tree left */}
           <img src={treeImg} alt="" className="absolute object-contain"
-            style={{ top: '5%', left: '-3%', height: '65%', opacity: 0.55, zIndex: 2 }} />
+            style={{ top: '5%', left: '-7%', height: '65%', opacity: 0.55, zIndex: 2 }} />
 
           {/* Tree right */}
           <img src={treeImg} alt="" className="absolute object-contain"
             style={{ top: '0%', right: '-11%', height: '85%', opacity: 0.55, transform: 'scaleX(-1)', zIndex: 2 }} />
 
-          {/* Monument */}
-          <img src={monumentImg} alt="" className="absolute object-contain"
-            style={{ bottom: '12%', left: '47%', height: '63%', zIndex: 3 }} />
-
-          {/* Jeepney */}
-          <img src={jeepneyImg} alt="" className="absolute object-contain"
-            style={{ bottom: '16%', left: '-1%', height: '31%', zIndex: 4 }} />
-
-          {/* Dog */}
-          <img src={dogImg} alt="" className="absolute object-contain"
-            style={{ bottom: '10%', left: '12%', height: '50%', zIndex: 5 }} />
-
-          {/* Cat */}
-          <img src={catImg} alt="" className="absolute object-contain"
-            style={{ bottom: '12%', left: '43%', height: '36%', zIndex: 5 }} />
+          {/* page.png — centered character illustration */}
+          <img src={pageImg} alt="PetKo Illustration" className="absolute object-contain"
+            style={{ bottom: '12%', left: '53%', transform: 'translateX(-50%)', height: '66%', maxWidth: 'none', zIndex: 5 }} />
 
           {/* Navy ground */}
           <div className="absolute bottom-0 inset-x-0" style={{ height: '10%', background: '#1A3A8F', zIndex: 1 }} />
         </div>
 
+        {/* Mobile + Tablet sign-in overlay */}
         <div
-          className="md:hidden relative z-20 min-h-screen flex items-center justify-center px-6 py-10"
-          style={{ background: 'rgba(26,58,143,0.75)', backdropFilter: 'blur(3px)' }}
+          className="lg:hidden relative z-20 min-h-screen flex items-center justify-center px-6 py-10"
+          style={{ background: 'rgba(245,237,219,0.92)', backdropFilter: 'blur(4px)' }}
         >
           {/* Paw background card */}
           <div className="relative w-full max-w-sm rounded-3xl overflow-hidden bg-white shadow-card-lg py-2">
@@ -213,7 +201,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="hidden md:flex flex-col items-center justify-center bg-white px-8 py-12 lg:px-12 gap-7 relative overflow-hidden">
+        <div className="hidden lg:flex flex-col items-center justify-center bg-white px-8 py-12 lg:px-12 gap-7 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             {[
               { top: '3%',  left: '5%',   size: 40,  rotate:  '-15deg' },

@@ -3,6 +3,8 @@ import { ShoppingCart, LogOut, LayoutDashboard, Store } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useCartStore } from '@/store/cart.store'
 import { signOut } from '@/lib/auth'
+import logoImg from '@/assets/logo.png'
+import pawImg  from '@/assets/paw_blue.png'
 
 export default function Navbar() {
   const profile = useAuthStore((s) => s.profile)
@@ -19,14 +21,13 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
+    <nav className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm sm:px-6">
+      <div className="mx-auto flex max-w-screen-xl items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3 sm:gap-6">
-          <Link to="/" className="flex items-center gap-2 text-xl font-black text-orange-500">
-            <span className="text-2xl">🐾</span>
-            {/* On phones admins need the room for the view toggle */}
-            <span className={isAdmin ? 'hidden sm:inline' : undefined}>Petko</span>
+          <Link to="/" className="flex items-center gap-2">
+            <img src={pawImg} alt="" className="h-7 w-7 object-contain" aria-hidden="true" />
+            <img src={logoImg} alt="PetKo" className="h-7 object-contain" />
           </Link>
 
           {/* View toggle for admins (the only customer/admin switch, all screen sizes) */}
