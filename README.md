@@ -82,7 +82,6 @@ npm run install:all   # npm ci in petko-be and petko-fe
 npm run build         # nest build + vite build
 npm run lint          # backend eslint + frontend oxlint
 npm test              # backend unit tests
-npm test --prefix petko-fe # frontend shipping regression tests
 ```
 
 ## Repository agents and skills
@@ -97,7 +96,7 @@ To refresh from the original Atom kit without overwriting repository-owned files
 node C:/Users/Hardy/ObsidianVaults/Atom/codex-agent-kit/install.mjs .
 ```
 
-Checkout and order history currently contain UI previews. Ordering and payment submission remain disabled until backend integration is implemented; the sample order is explicitly labelled.
+Checkout and order history currently contain UI previews. Checkout does not persist orders or process payments; backend integration is still required.
 
 ## Deploy to Vercel
 

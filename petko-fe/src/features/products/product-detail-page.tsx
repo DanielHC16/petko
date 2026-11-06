@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { 
-  ChevronRight, 
-  Check, 
-  ShieldCheck, 
-  Truck, 
-  RefreshCw, 
-  Minus, 
-  Plus 
+import {
+  ChevronRight,
+  Check,
+  ShieldCheck,
+  Truck,
+  RefreshCw,
+  Minus,
+  Plus
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProductById, fetchProducts, type Product } from './products-api'
@@ -19,7 +19,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [suggestions, setSuggestions] = useState<Product[]>([])
   const [loadedId, setLoadedId] = useState<string | null>(null)
-  
+
   // Cart & Quantity States
   const [quantity, setQuantity] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
@@ -38,14 +38,17 @@ export default function ProductDetailPage() {
         const data = await fetchProductById(productId)
         if (isMounted) {
           setProduct(data)
+          setQuantity(1)
+          setSuggestions([])
+          setLoadedId(productId)
           try {
-            const relatedData = await fetchProducts({ 
-              category: data.category, 
-              pet_type: data.pet_type 
+            const relatedData = await fetchProducts({
+              category: data.category,
+              pet_type: data.pet_type
             })
             // Filter out the current product and take up to 4 items
             const related = relatedData.filter((p) => p.id !== data.id).slice(0, 4)
-            setSuggestions(related)
+            if (isMounted) setSuggestions(related)
           } catch (suggestionErr) {
             console.error('Failed to load suggestions', suggestionErr)
           }
@@ -68,12 +71,15 @@ export default function ProductDetailPage() {
 
   function handleAddToCart() {
     if (!product) return
+    const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
+    const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
+    if (quantityToAdd <= 0) return
 
     addItem({
       product_id: product.id,
       name: product.name,
       price: Number(product.price),
-      quantity,
+      quantity: quantityToAdd,
       image_url: product.image_url,
       stock: product.stock,
     })
@@ -81,10 +87,10 @@ export default function ProductDetailPage() {
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 1500)
 
-    toast.success(`Added ${quantity} item(s) to your cart!`, {
+    toast.success(`Added ${quantityToAdd} item(s) to your cart!`, {
       icon: '🐾',
     })
-    
+
     setQuantity(1)
   }
 
@@ -132,40 +138,41 @@ export default function ProductDetailPage() {
   return (
 <div className="min-h-screen bg-[#fbe8c1] p-4 font-sans md:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
-        
+
         {/* Breadcrumb Navigation */}
         <nav className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-600">
           <Link to="/" className="transition hover:text-[#0B3B8C]">Home</Link>
           <ChevronRight size={14} className="text-gray-400" />
-          
-          <Link 
+
+          <Link
             to={`/?pet=${product.pet_type}`}
             className="transition hover:text-[#0B3B8C]"
           >
             {product.pet_type === 'cat' ? 'Cats' : product.pet_type === 'dog' ? 'Dogs' : 'All Pets'}
           </Link>
-          
+
           <ChevronRight size={14} className="text-gray-400" />
-          
-          <Link 
+
+          <Link
             to={`/?pet=${product.pet_type}&cat=${product.category}`}
             className="transition hover:text-[#0B3B8C]"
           >
             {CATEGORIES.find(c => c.id === product.category)?.label || product.category}
           </Link>
-          
+
           <ChevronRight size={14} className="text-gray-400" />
           <span className="font-bold text-gray-900">{product.name}</span>
         </nav>
 
         {/* Top Section: Images & Primary Details */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.1fr]">
-          
+
           {/* Left Column: Image Gallery */}
-          <div className="relative flex items-center justify-center rounded-[2rem] border border-gray-200 bg-white p-8 shadow-md">            <img
+          <div className="relative flex items-center justify-center rounded-[2rem] border border-gray-200 bg-white p-8 shadow-md">
+            <img
               src={product.image_url}
               alt={product.name}
-              className="max-h-[450px] w-auto object-contain drop-shadow-xl"
+              className="max-h-[450px] max-w-full w-auto object-contain drop-shadow-xl"
             />
           </div>
 
@@ -218,6 +225,7 @@ export default function ProductDetailPage() {
                 <div className="flex items-center overflow-hidden rounded-xl border-2 border-[#0B3B8C] bg-white">
                   <button
                     type="button"
+                    aria-label="Decrease quantity"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1}
                     className="flex items-center justify-center p-3 text-[#0B3B8C] transition hover:bg-blue-50 disabled:opacity-30"
@@ -229,6 +237,7 @@ export default function ProductDetailPage() {
                   </span>
                   <button
                     type="button"
+                    aria-label="Increase quantity"
                     onClick={() => setQuantity((q) => Math.min(remainingStock, q + 1))}
                     disabled={quantity >= remainingStock}
                     className="flex items-center justify-center p-3 text-[#0B3B8C] transition hover:bg-blue-50 disabled:opacity-30"
@@ -256,14 +265,13 @@ export default function ProductDetailPage() {
                   )}
                 </button>
 
-                {/* Buy Now Button (Placeholder) */}
+                {/* Payment integration is not available yet. */}
                 <button
                   disabled
-                  title="Buy Now coming soon; add items to your cart to continue"
+                  title="Buy Now coming soon"
                   className="flex flex-1 flex-col items-center justify-center rounded-xl bg-[#D32F2F] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#B71C1C] disabled:bg-gray-300 disabled:text-gray-500"
                 >
-                  <span>Buy Now</span>
-                  <span className="text-[10px]">Coming soon</span>
+                  <span>Buy Now (Coming Soon)</span>
                 </button>
               </div>
             </div>
@@ -288,7 +296,7 @@ export default function ProductDetailPage() {
 
         {/* Bottom Section: Description & Cross-Sell */}
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-          
+
           {/* Description Container */}
           <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-8 shadow-md lg:col-span-2">            <h2 className="mb-4 border-b border-gray-200 pb-4 text-lg font-bold text-[#0B3B8C]">
               Description
