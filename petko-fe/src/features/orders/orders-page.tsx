@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   PawPrint, 
   CheckCircle2, 
@@ -24,10 +25,7 @@ export default function OrdersPage() {
             Orders <PawPrint className="text-blue-900 w-8 h-8" fill="#002B5B" />
           </h1>
           <p className="text-gray-800 font-medium mt-2">
-            Order history is coming soon.
-          </p>
-          <p role="status" className="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm font-medium text-orange-900">
-            Sample order preview. The details below are demonstration data, not your order history.
+            Track your companion's order from our warehouse to your home.
           </p>
         </div>
 
@@ -46,7 +44,7 @@ export default function OrdersPage() {
               </div>
               
               <div>
-                <h2 className="text-2xl font-bold text-[#002B5B]">Sample Order #PKO-2026-063</h2>
+                <h2 className="text-2xl font-bold text-[#002B5B]">Order #PKO-2026-063</h2>
                 <p className="text-sm text-gray-600 mt-1">Placed on May 21, 2026 at 10:30 AM</p>
                 
                 <div className="inline-flex items-center gap-1.5 bg-[#dcfce7] text-green-700 px-3 py-1 rounded-full text-sm font-semibold mt-4">
@@ -58,8 +56,8 @@ export default function OrdersPage() {
                   <span className="text-green-600 font-medium">May 23, 2026 at 2:15 PM</span>
                 </p>
                 
-                <button disabled className="mt-4 flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium text-gray-500 opacity-60 cursor-not-allowed shadow-sm">
-                  <RefreshCcw size={16} /> Reorder (coming soon)
+                <button className="mt-4 flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                  <RefreshCcw size={16} /> Reorder
                 </button>
               </div>
             </div>
@@ -83,8 +81,8 @@ export default function OrdersPage() {
               <div className="bg-[#FFE5A3] rounded-xl p-5 w-full max-w-[280px] shadow-sm relative z-10">
                 <h3 className="text-[#002B5B] font-bold text-lg leading-tight">Need Help with your<br/>order?</h3>
                 <p className="text-sm text-[#002B5B]/80 mt-1 mb-4">We're here to help!</p>
-                <button disabled className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg text-sm font-medium text-gray-500 border border-gray-100 shadow-sm opacity-60 cursor-not-allowed">
-                  <MessageCircle size={16} /> Support (coming soon)
+                <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg text-sm font-medium text-gray-700 border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors">
+                  <MessageCircle size={16} /> Contact Support
                 </button>
               </div>
               {/* Pet Image Placeholder */}

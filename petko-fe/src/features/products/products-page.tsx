@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X } from 'lucide-react'
+import { Search, ShoppingBag, ShoppingCart, RotateCcw, ChevronDown, Menu, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
@@ -33,8 +33,30 @@ function isSortOption(v: string): v is SortOption {
 }
 
 // ── Price range slider (kept for future use) ──────────────────────────────────
+const MIN_PRICE = 0
+const MAX_PRICE = 15000
 
 // ── Simple dropdown ───────────────────────────────────────────────────────────
+function Dropdown({ label, active, children }: { label: string; active?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative shrink-0">
+      <button onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm font-medium transition
+          ${active ? 'border-orange-500 text-orange-600' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}>
+        {label} <ChevronDown size={13} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full z-40 mt-1 min-w-[220px] rounded-xl border border-gray-200 bg-white p-4 shadow-lg">
+            {children}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 export default function ProductsPage() {
@@ -42,11 +64,14 @@ export default function ProductsPage() {
   const [search, setSearch]                         = useState('')
   const [selectedCategory, setSelectedCategory]     = useState('all')
   const [petTab, setPetTab]                         = useState<PetTab>('all')
+  const [priceRange]                                = useState<[number, number]>([MIN_PRICE, MAX_PRICE])
   const [sortBy, setSortBy]                         = useState<SortOption>('newest')
   const [loadedKey, setLoadedKey]                   = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen]         = useState(false)
 
   const addItem     = useCartStore((s) => s.addItem)
+  const removeItem  = useCartStore((s) => s.removeItem)
+  const updateQty   = useCartStore((s) => s.updateQuantity)
   const cartItems   = useCartStore((s) => s.items)
 
   const requestKey = JSON.stringify({ cat: selectedCategory, pet: petTab, search, sortBy })
@@ -71,13 +96,14 @@ export default function ProductsPage() {
     }
     load()
     return () => { mounted = false }
-  }, [requestKey, selectedCategory, petTab, search, sortBy])
+  }, [requestKey])
 
   const displayed = useMemo(() => products.filter(p => {
+    const inPrice = Number(p.price) >= priceRange[0] && Number(p.price) <= priceRange[1]
     const inCat   = selectedCategory === 'all' || p.category === selectedCategory
     const inPet   = petTab === 'all' || p.pet_type === petTab || p.pet_type === 'both'
-    return inCat && inPet
-  }), [products, selectedCategory, petTab])
+    return inPrice && inCat && inPet
+  }), [products, priceRange, selectedCategory, petTab])
 
   function clearFilters() {
     setSelectedCategory('all'); setPetTab('all'); setSearch('')
@@ -338,7 +364,7 @@ export default function ProductsPage() {
                     </span>
                     <div className="absolute inset-2 flex items-center justify-center rounded-2xl bg-petko-cream overflow-hidden">
                       <img src={pawYellowImg} alt="" aria-hidden="true"
-                        className="absolute inset-0 m-auto w-4/5 h-4/5 object-contain opacity-15 pointer-events-none" />
+                        className="absolute inset-0 m-auto w-4/5 h-4/5 object-contain opacity-40 pointer-events-none" />
                       <img src={logoImg} alt="PetKo" className="relative w-3/5 object-contain" />
                     </div>
                     <img src={product.image_url} alt="" loading="lazy"
@@ -363,15 +389,51 @@ export default function ProductsPage() {
                       <span className="text-sm font-bold text-orange-500">
                         ₱ {Number(product.price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                       </span>
-                      <span className={`text-xs font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                        {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className={`text-xs font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                        {product.stock > 0 && (
+                          <span className="text-[10px] text-gray-400">{product.stock} in stock</span>
+                        )}
+                      </div>
                     </div>
-                    <button onClick={() => handleAddToCart(product)} disabled={!canAddMore}
-                      className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-gray-50 py-2 text-xs font-semibold text-gray-700 transition
-                        hover:border-orange-500 hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
-                      <ShoppingCart size={12} /> Add to Cart
-                    </button>
+                    {itemInCart ? (
+                      /* Quantity stepper — same style as Add to Cart button */
+                      <div className="mt-1.5 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 overflow-hidden">
+                        <button
+                          onClick={() => {
+                            if (itemInCart.quantity <= 1) removeItem(product.id)
+                            else updateQty(product.id, itemInCart.quantity - 1)
+                          }}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white transition"
+                          aria-label="Remove one"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                          </svg>
+                        </button>
+                        <span className="flex-1 text-center text-xs font-semibold text-gray-700">
+                          {itemInCart.quantity} in cart
+                        </span>
+                        <button
+                          onClick={() => handleAddToCart(product)}
+                          disabled={!canAddMore}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-label="Add one more"
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M12 5v14M5 12h14"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore}
+                        className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-gray-50 py-2 text-xs font-semibold text-gray-700 transition
+                          hover:border-orange-500 hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
+                        <ShoppingCart size={12} /> Add to Cart
+                      </button>
+                    )}
                   </div>
                 </div>
               )

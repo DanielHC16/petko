@@ -27,33 +27,24 @@ export default function App() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-        {/* Temporary Unprotected Routes for UI Testing */}
-        {/* <Route element={<AppLayout />}>
-          <Route path="/"            element={<ProductsPage />} />
-          <Route path="/products/:id" element={<ProductDetailPage />} />
-          <Route path="/cart"        element={<CartPage />} />
-          <Route path="/checkout"    element={<CheckoutPage />} />
-          <Route path="/orders"      element={<OrdersPage />} />
-        </Route> */}
-
         {/* Authenticated customer routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/"            element={<ProductsPage />} />
+            <Route path="/"             element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path="/cart"        element={<CartPage />} />
-            <Route path="/checkout"    element={<CheckoutPage />} />
-            <Route path="/orders"      element={<OrdersPage />} />
+            <Route path="/cart"         element={<CartPage />} />
+            <Route path="/checkout"     element={<CheckoutPage />} />
+            <Route path="/orders"       element={<OrdersPage />} />
           </Route>
         </Route>
 
         {/* Admin-only routes */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
           <Route element={<AppLayout />}>
-            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin"          element={<AdminDashboardPage />} />
             <Route path="/admin/products" element={<AdminProductsPage />} />
-            <Route path="/admin/orders" element={<AdminOrdersPage />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/orders"   element={<AdminOrdersPage />} />
+            <Route path="/admin/users"    element={<AdminUsersPage />} />
           </Route>
         </Route>
 

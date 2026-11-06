@@ -28,16 +28,13 @@ export async function fetchProducts(
   if (params.category && params.category !== 'all') {
     query = query.eq('category', params.category)
   }
-
   if (params.pet_type && params.pet_type !== 'all') {
     query = query.or(`pet_type.eq.${params.pet_type},pet_type.eq.both`)
   }
-
   if (params.search && params.search.trim()) {
     const term = params.search.trim()
     query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%`)
   }
-
   if (params.sortBy === 'price_asc') {
     query = query.order('price', { ascending: true })
   } else if (params.sortBy === 'price_desc') {
@@ -49,9 +46,7 @@ export async function fetchProducts(
   }
 
   const { data, error } = await query
-
   if (error) throw new Error(error.message)
-
   return (data as Product[]) || []
 }
 
@@ -62,9 +57,6 @@ export async function fetchProductById(id: string): Promise<Product> {
     .eq('id', id)
     .single()
 
-  if (error || !data) {
-    throw new Error(error?.message || 'Product not found')
-  }
-
+  if (error || !data) throw new Error(error?.message || 'Product not found')
   return data as Product
 }

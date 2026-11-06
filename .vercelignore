@@ -1,9 +1,6 @@
 # Never upload local secrets, data files or build artifacts to Vercel.
 # Vercel installs and builds from source (see vercel.json).
 .agents
-.codex
-AGENTS.md
-.github
 .vercel
 **/node_modules
 petko-be/dist

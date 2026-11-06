@@ -75,7 +75,5 @@ Thumbs.db
 
 # Vercel CLI link/build output & local agent workspace
 .vercel/
-.agents/*
-!.agents/skills/
-.playwright-mcp/
+.agents/
 /api/**/*.map
