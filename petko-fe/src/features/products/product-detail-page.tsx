@@ -94,6 +94,26 @@ export default function ProductDetailPage() {
     setQuantity(1)
   }
 
+  function handleBuyNow() {
+    if (!product) return
+
+    // Create a temporary direct checkout item
+    const directItem = {
+      product_id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      quantity,
+      image_url: product.image_url,
+      stock: product.stock,
+    }
+
+    // Save it to session storage so the checkout page can read it immediately
+    sessionStorage.setItem('direct_checkout_item', JSON.stringify(directItem))
+
+    // Redirect to checkout with a direct mode parameter
+    window.location.href = '/checkout?mode=direct'
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center bg-[#FFF9EA]">
@@ -265,13 +285,14 @@ export default function ProductDetailPage() {
                   )}
                 </button>
 
-                {/* Payment integration is not available yet. */}
+                {/* Buy Now Button */}
                 <button
-                  disabled
-                  title="Buy Now coming soon"
+                  onClick={handleBuyNow}
+                  disabled={remainingStock <= 0}
                   className="flex flex-1 flex-col items-center justify-center rounded-xl bg-[#D32F2F] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#B71C1C] disabled:bg-gray-300 disabled:text-gray-500"
                 >
-                  <span>Buy Now (Coming Soon)</span>
+                  <span>Buy Now</span>
+                  <span className="text-[10px] font-normal">Express Checkout</span>
                 </button>
               </div>
             </div>
