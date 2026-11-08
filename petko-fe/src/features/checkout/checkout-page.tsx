@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingCart, ChevronRight, Truck, Zap, Tag, ShieldCheck, PackageCheck, RotateCcw, Heart } from 'lucide-react'
 import { useCartStore } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
+import pawImg from '@/assets/paw_white.png'
 import logoImg from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 
@@ -284,9 +285,8 @@ export default function CheckoutPage() {
                   Edit Cart
                 </Link>
               </div>
-
-              {/* items */}
-              <ul className="divide-y divide-gray-100">
+              {/* items — scrollable, max 3 visible */}
+              <ul className="divide-y divide-gray-100 max-h-[280px] overflow-y-auto pr-1">
                 {items.map(item => (
                   <li key={item.product_id} className="flex items-center gap-3 py-3">
                     <div className="relative shrink-0">
