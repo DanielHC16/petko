@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingCart, ChevronRight, Truck, Zap, Tag, ShieldCheck, PackageCheck, RotateCcw, Heart } from 'lucide-react'
 import { useCartStore } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
-import pawImg from '@/assets/paw_white.png'
 import logoImg from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 

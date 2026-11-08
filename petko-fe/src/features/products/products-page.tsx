@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useSearchParams, useLocation } from 'react-router-dom'
-import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X, ChevronDown } from 'lucide-react'
+import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
