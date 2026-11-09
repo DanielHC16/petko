@@ -5,6 +5,7 @@ import { useCartStore } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
 import logoImg from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
+import gcashImg     from '@/assets/GCash_logo.png'
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
 function StepBreadcrumb() {
@@ -248,8 +249,7 @@ export default function CheckoutPage() {
             <SectionCard number={4} title="Payment Method" grow>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <PaymentCard selected={payment === 'gcash'} onSelect={() => setPayment('gcash')} label="GCash" sub="Pay easily via Gcash">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/GCash_logo.svg/200px-GCash_logo.svg.png"
-                    alt="GCash" className="h-7 object-contain" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
+                  <img src={gcashImg} alt="GCash" className="h-7 object-contain" />
                 </PaymentCard>
                 <PaymentCard selected={payment === 'maya'} onSelect={() => setPayment('maya')} label="Maya" sub="Pay with Maya wallet">
                   <span className="text-base font-black" style={{ color: '#00B865' }}>maya</span>
@@ -287,8 +287,8 @@ export default function CheckoutPage() {
               {/* items — scrollable, max 3 visible */}
               <ul className="divide-y divide-gray-100 max-h-[280px] overflow-y-auto pr-1">
                 {items.map(item => (
-                  <li key={item.product_id} className="flex items-center gap-3 py-3">
-                    <div className="relative shrink-0">
+                  <li key={item.product_id} className="flex items-center gap-3 py-3 pl-2">
+                    <div className="relative shrink-0 ml-1">
                       <div className="h-14 w-14 rounded-xl border border-gray-100 overflow-hidden bg-petko-cream flex items-center justify-center">
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />

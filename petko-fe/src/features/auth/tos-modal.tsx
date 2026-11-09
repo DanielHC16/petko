@@ -4,9 +4,12 @@ import pawYellowImg from '@/assets/paw_yellow.png'
 
 interface TosModalProps {
   onAccept: () => void
+  /** true = first-login flow (shows "I have read and agree" footer button)
+   *  false/undefined = opened from footer link (shows top-right ✕ close only) */
+  isFirstLogin?: boolean
 }
 
-export default function TosModal({ onAccept }: TosModalProps) {
+export default function TosModal({ onAccept, isFirstLogin = false }: TosModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrolledToBottom, setScrolledToBottom] = useState(false)
 
@@ -30,13 +33,27 @@ export default function TosModal({ onAccept }: TosModalProps) {
           {/* Decorative paw — clipped inside header */}
           <img src={pawYellowImg} alt="" aria-hidden="true"
             className="absolute -top-4 -right-4 w-32 opacity-25 pointer-events-none rotate-12 z-0" />
-          <img src={logoImg} alt="PetKo" className="h-8 object-contain" />
-          <div>
+          <img src={logoImg} alt="PetKo" className="h-8 object-contain relative z-10" />
+          <div className="flex-1 relative z-10">
             <h2 className="text-lg font-black text-petko-blue" style={{ fontFamily: "'Nunito', sans-serif" }}>
               Terms of Service & Privacy Policy
             </h2>
-            <p className="text-xs text-gray-400">Please read and scroll to the bottom to continue.</p>
+            <p className="text-xs text-gray-400">
+              {isFirstLogin ? 'Please read and scroll to the bottom to continue.' : 'PetKo Terms of Service & Privacy Policy'}
+            </p>
           </div>
+          {/* Top-right close button — shown when opened from footer (not first login) */}
+          {!isFirstLogin && (
+            <button
+              onClick={onAccept}
+              className="relative z-10 ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition"
+              aria-label="Close"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Scrollable content */}
@@ -161,44 +178,44 @@ export default function TosModal({ onAccept }: TosModalProps) {
             <p>If you have questions, concerns, or requests regarding your personal data, privacy rights, or need assistance with your account, please reach out to our team at the contact information provided on the platform.</p>
             <ul className="mt-2 space-y-3 text-gray-600">
               <li className="list-disc list-inside">
-                <strong>Name:</strong> Member One
+                <strong>Name:</strong> Daniel Hardy C. Camacho
                 <div className="pl-5 text-sm">
-                  <strong>Email:</strong> member1@petko.ph
+                  <strong>Email:</strong> danielcamacho0416@gmail.com
                 </div>
               </li>
 
               <li className="list-disc list-inside">
-                <strong>Name:</strong> Member Two
+                <strong>Name:</strong> Raymart A. Diesta
                 <div className="pl-5 text-sm">
-                  <strong>Email:</strong> member2@petko.ph
+                  <strong>Email:</strong> raymartdiesta01@gmail.com
                 </div>
               </li>
 
               <li className="list-disc list-inside">
-                <strong>Name:</strong> Member Three
+                <strong>Name:</strong> Marc Cedric S. Gerona
                 <div className="pl-5 text-sm">
-                  <strong>Email:</strong> member3@petko.ph
+                  <strong>Email:</strong> marcgerona19@gmail.com
                 </div>
               </li>
 
               <li className="list-disc list-inside">
-                <strong>Name:</strong> Member Four
+                <strong>Name:</strong> Daniella Ysabelle D. Ibo
                 <div className="pl-5 text-sm">
-                  <strong>Email:</strong> member4@petko.ph
+                  <strong>Email:</strong> ibodaniella@gmail.com
                 </div>
               </li>
 
               <li className="list-disc list-inside">
-                <strong>Name:</strong> Member Five
+                <strong>Name:</strong> Lauren Aubrey N. Ilasin
                 <div className="pl-5 text-sm">
-                  <strong>Email:</strong> member5@petko.ph
+                  <strong>Email:</strong> ilaurenaubrey@gmail.com
                 </div>
               </li>
 
               <li className="list-disc list-inside">
-                <strong>Name:</strong> Member Six
+                <strong>Name:</strong> Tricia Mae P. Sanchez
                 <div className="pl-5 text-sm">
-                  <strong>Email:</strong> member6@petko.ph
+                  <strong>Email:</strong> sancheztriciap@gmail.com
                 </div>
               </li>
             </ul>
@@ -206,23 +223,25 @@ export default function TosModal({ onAccept }: TosModalProps) {
           <div className="h-4" />
         </div>
 
-        {/* Footer — CTA */}
-        <div className="shrink-0 border-t border-gray-100 px-8 py-5 bg-white">
-          {!scrolledToBottom && (
-            <p className="mb-3 text-center text-xs text-gray-400 flex items-center justify-center gap-1">
-              <span>↓</span> Scroll to the bottom to enable the button
-            </p>
-          )}
-          <button
-            onClick={onAccept}
-            disabled={!scrolledToBottom}
-            className="w-full rounded-xl py-3.5 text-sm font-bold text-white transition
-              bg-petko-blue hover:bg-petko-blue/90 active:scale-[0.98]
-              disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            I have read and agree to the Terms of Service & Privacy Policy
-          </button>
-        </div>
+        {/* Footer — only shown for first-login flow */}
+        {isFirstLogin && (
+          <div className="shrink-0 border-t border-gray-100 px-8 py-5 bg-white">
+            {!scrolledToBottom && (
+              <p className="mb-3 text-center text-xs text-gray-400 flex items-center justify-center gap-1">
+                ↓ Scroll to the bottom to enable the button
+              </p>
+            )}
+            <button
+              onClick={onAccept}
+              disabled={!scrolledToBottom}
+              className="w-full rounded-xl py-3.5 text-sm font-bold text-white transition
+                bg-petko-blue hover:bg-petko-blue/90 active:scale-[0.98]
+                disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              I have read and agree to the Terms of Service &amp; Privacy Policy
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -25,17 +25,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ── Public / Auth ──────────────────────────────────────────────── */}
+        {/*Public / Auth */}
         <Route path="/login"         element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-        {/* ── Dev previews (no auth, no layout) ─────────────────────────── */}
+        {/* Dev previews (no auth, no layout) */}
         <Route path="/loading-preview" element={<LoadingPreview />} />
         <Route path="/tos-preview"     element={<TosPreview />} />
 
-        {/* ── UI Testing — all pages bypass auth ─────────────────────────
+        {/* UI Testing — all pages bypass auth 
             Comment this block out and uncomment ProtectedRoute below
-            when restoring auth for production.                           */}
+            when restoring auth for production.
         <Route element={<AppLayout />}>
           <Route path="/"             element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
@@ -43,9 +43,10 @@ export default function App() {
           <Route path="/checkout"     element={<CheckoutPage />} />
           <Route path="/orders"       element={<OrdersPage />} />
         </Route>
+        */}
 
-        {/* ── Authenticated customer routes (restore for production) ──────
-        <Route element={<ProtectedRoute />}>
+        {/* Authenticated customer routes (restore for production) */}
+        <Route element={<ProtectedRoute />}> 
           <Route element={<AppLayout />}>
             <Route path="/"             element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
@@ -54,9 +55,8 @@ export default function App() {
             <Route path="/orders"       element={<OrdersPage />} />
           </Route>
         </Route>
-        */}
 
-        {/* ── Admin-only routes ──────────────────────────────────────────── */}
+        {/* Admin-only routes */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>
           <Route element={<AppLayout />}>
             <Route path="/admin"          element={<AdminDashboardPage />} />
