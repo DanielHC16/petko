@@ -111,7 +111,9 @@ petko-be/
 
 ## Environment Variables
 
-Create `petko-be/.env` (never commit):
+For the shared team setup, run `vercel pull --environment=development` at the repository root after linking the existing Petko project. Nest loads `.vercel/.env.development.local` automatically. `vercel env pull .env.local --environment=development` at the root is also supported. Shell variables win, then `petko-be/.env`, then root `.env.local`, then the Vercel cache. Restart the server after refreshing keys.
+
+For manual local overrides, create `petko-be/.env` (never commit):
 
 ```env
 # .env — Petko Backend
@@ -134,7 +136,7 @@ SUPABASE_ANON_KEY=your_anon_key_here
 
 Rules:
 - Validation lives in `src/config/env.validation.ts` (Joi). Required: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`. Optional: `FRONTEND_URL`. Defaulted: `NODE_ENV`, `PORT`.
-- `ConfigModule.forRoot({ ignoreEnvFile: Boolean(process.env.VERCEL) })`: on Vercel only project env vars are used. A `.env` file is never read in production.
+- `ConfigModule.forRoot(getEnvConfig())`: resolves local env files relative to the backend, regardless of working directory. `ignoreEnvFile: Boolean(process.env.VERCEL)` ensures Vercel uses only project env vars; deployed functions never read local env files.
 - On Vercel, set only the three `SUPABASE_*` vars. Do not set `NODE_ENV`, `PORT` or `FRONTEND_URL`.
 
 ---
@@ -147,7 +149,7 @@ Rules:
 | **Service role key** | All DB read/write from the backend | **CRITICAL** — bypasses RLS |
 
 **Rules:**
-- The **service role key** lives only in `petko-be/.env` locally and as a Sensitive Vercel env var in production — never sent to the frontend, never logged
+- The **service role key** lives only in ignored backend/shared local env files and the Vercel environment store (Sensitive in production) — never sent to the frontend, never logged
 - The **anon key** is used only for JWT verification with `supabase.auth.getUser(token)`
 - All Supabase DB operations go through the **service role client** (`SupabaseService`) inside NestJS services only
 

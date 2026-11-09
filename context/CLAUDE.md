@@ -138,6 +138,8 @@ One Vercel project at the repo root serves everything from one domain:
 
 Local dev: run `npm run start:dev` in `petko-be` (serves `http://localhost:3000/api`) and `npm run dev` in `petko-fe` (`http://localhost:5173`, which proxies `/api` → `:3000`).
 
+Team env setup: link the existing Petko Vercel project from the repo root and run `vercel pull --environment=development`. Both apps load the resulting `.vercel/.env.development.local`; root `.env.local` from `vercel env pull` is also supported. Existing shell/app-local values override shared defaults. Only `VITE_*` values enter the frontend. Development must contain all five names below; Production/Preview values are separate. See README for teammate setup and troubleshooting.
+
 ### Environment variables (names only)
 
 | Name | Side | Secret |
