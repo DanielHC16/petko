@@ -35,3 +35,12 @@ input[type='range'].appearance-none::-moz-range-thumb {
   border: none;
   background: transparent;
 }
+
+/* Walking paw animation for auth callback */
+@keyframes pawStep {
+  0%   { opacity: 0;   transform: translateY(var(--paw-y, 0px)) rotate(var(--paw-r, 0deg)) scale(0.4); }
+  15%  { opacity: 1;   transform: translateY(var(--paw-y, 0px)) rotate(var(--paw-r, 0deg)) scale(1.1); }
+  40%  { opacity: 1;   transform: translateY(var(--paw-y, 0px)) rotate(var(--paw-r, 0deg)) scale(1);   }
+  70%  { opacity: 0.5; transform: translateY(var(--paw-y, 0px)) rotate(var(--paw-r, 0deg)) scale(1);   }
+  100% { opacity: 0;   transform: translateY(var(--paw-y, 0px)) rotate(var(--paw-r, 0deg)) scale(0.8); }
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useLocation } from 'react-router-dom'
 import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
@@ -9,6 +9,9 @@ import dogcatImg    from '@/assets/proheader.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 import logoImg      from '@/assets/logo.png'
 import pawImg       from '@/assets/paw_white.png'
+import TosModal from '@/features/auth/tos-modal'
+
+const TOS_ACCEPTED_KEY = 'petko_tos_accepted'
 
 const CATEGORIES = [
   { id: 'all',         label: 'All Items' },
@@ -33,7 +36,18 @@ function isSortOption(v: string): v is SortOption {
 }
 
 export default function ProductsPage() {
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
+
+  // TOS overlay — shown only for new users on first login
+  const [showTos, setShowTos] = useState(
+    (location.state as any)?.showTos === true &&
+    localStorage.getItem(TOS_ACCEPTED_KEY) !== 'true'
+  )
+  function handleTosAccept() {
+    localStorage.setItem(TOS_ACCEPTED_KEY, 'true')
+    setShowTos(false)
+  }
   const [products, setProducts]                     = useState<Product[]>([])
   const [search, setSearch]                         = useState('')
   const selectedCategory = searchParams.get('cat') || 'all'
@@ -125,6 +139,7 @@ export default function ProductsPage() {
   const hasActiveFilters = petTab !== 'all' || selectedCategory !== 'all' || search !== ''
 
   return (
+    <>
     <div className="bg-gray-100 min-h-screen">
 
       {/* ── Hero banner ───────────────────────────────────────────────────── */}
@@ -178,7 +193,6 @@ export default function ProductsPage() {
       <div className="sticky top-0 z-20 bg-gray-100 border-b border-gray-200 shadow-sm">
         <div className="max-w-screen-xl mx-auto px-6 py-3 space-y-2">
 
-          {/* ── DESKTOP row 1: search | pet tabs | sort ─────────────────── */}
           <div className="hidden lg:flex items-center gap-3 rounded-xl bg-white border border-gray-200 px-4 py-2.5 shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
@@ -431,5 +445,7 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
+    {showTos && <TosModal onAccept={handleTosAccept} />}
+    </>
   )
 }

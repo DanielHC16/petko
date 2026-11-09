@@ -284,9 +284,8 @@ export default function CheckoutPage() {
                   Edit Cart
                 </Link>
               </div>
-
-              {/* items */}
-              <ul className="divide-y divide-gray-100">
+              {/* items — scrollable, max 3 visible */}
+              <ul className="divide-y divide-gray-100 max-h-[280px] overflow-y-auto pr-1">
                 {items.map(item => (
                   <li key={item.product_id} className="flex items-center gap-3 py-3">
                     <div className="relative shrink-0">
