@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useSearchParams, useLocation } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
@@ -9,9 +9,6 @@ import dogcatImg    from '@/assets/proheader.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 import logoImg      from '@/assets/logo.png'
 import pawImg       from '@/assets/paw_white.png'
-import TosModal from '@/features/auth/tos-modal'
-
-const TOS_ACCEPTED_KEY = 'petko_tos_accepted'
 
 const CATEGORIES = [
   { id: 'all',         label: 'All Items' },
@@ -36,18 +33,7 @@ function isSortOption(v: string): v is SortOption {
 }
 
 export default function ProductsPage() {
-  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-
-  // TOS overlay — shown only for new users on first login
-  const [showTos, setShowTos] = useState(
-    (location.state as any)?.showTos === true &&
-    localStorage.getItem(TOS_ACCEPTED_KEY) !== 'true'
-  )
-  function handleTosAccept() {
-    localStorage.setItem(TOS_ACCEPTED_KEY, 'true')
-    setShowTos(false)
-  }
   const [products, setProducts]                     = useState<Product[]>([])
   const [search, setSearch]                         = useState('')
   const selectedCategory = searchParams.get('cat') || 'all'
@@ -413,7 +399,7 @@ export default function ProductsPage() {
                           aria-label="Remove one"
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                            <path d="M5 12h14"/>
                           </svg>
                         </button>
                         <span className="flex-1 text-center text-xs font-semibold text-gray-700">
@@ -445,7 +431,6 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
-    {showTos && <TosModal onAccept={handleTosAccept} isFirstLogin />}
     </>
   )
 }
