@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { envValidationSchema } from './config/env.validation'
+import { getEnvConfig } from './config/env.config'
 import { SupabaseModule } from './supabase/supabase.module'
 import { UsersModule } from './modules/users/users.module'
 import { ProductsModule } from './modules/products/products.module'
@@ -11,12 +11,8 @@ import { AppService } from './app.service'
 
 @Module({
   imports: [
-    // Config — loads .env locally (never on Vercel) and validates against Joi schema
-    ConfigModule.forRoot({
-      isGlobal: true,
-      ignoreEnvFile: Boolean(process.env.VERCEL),
-      validationSchema: envValidationSchema,
-    }),
+    // Config — local overrides + pulled Vercel Development env; Joi validates both.
+    ConfigModule.forRoot(getEnvConfig()),
 
     // Supabase — @Global(), available everywhere via DI
     SupabaseModule,

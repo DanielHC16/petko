@@ -21,57 +21,45 @@ petko/
 
 ## Getting Started
 
-### 1. Backend (`petko-be`)
+Use Node.js 22 and install the [Vercel CLI](https://vercel.com/docs/cli). Your Vercel account needs access to the team's existing **Petko** project. From the repository root:
 
-1. Navigate to the backend directory:
-   ```bash
-   cd petko-be
-   ```
+```bash
+npm run install:all
+vercel login
+vercel link
+vercel pull --environment=development
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+When linking, select the existing Petko project in the team's Vercel scope; do not create a new project. After the first setup, rerun only `vercel pull --environment=development` to refresh keys.
 
-3. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Fill in the required Supabase values in `.env`.
+Start the apps in separate terminals, both from the repository root:
 
-4. Start the development server:
-   ```bash
-   npm run start:dev
-   ```
-   Runs on `http://localhost:3000/api` (health check: `GET /api/health`).
+```bash
+npm run start:dev --prefix petko-be
+npm run dev --prefix petko-fe
+```
 
----
+The backend runs at `http://localhost:3000/api` (health check: `/api/health`); the frontend runs at `http://localhost:5173` and proxies `/api` to the backend. Both apps load the shared `.vercel/.env.development.local` created by `vercel pull`. The frontend imports only public `VITE_*` variables; `SUPABASE_SERVICE_ROLE_KEY` stays backend-only.
 
-### 2. Frontend (`petko-fe`)
+Alternatively, `vercel env pull .env.local --environment=development` at the repository root is also supported. Existing shell variables take precedence. Backend `petko-be/.env` and frontend `petko-fe/.env*` values override shared defaults, so remove stale or placeholder values from those files if a refreshed pull appears to have no effect. Restart both dev servers after pulling changes.
 
-1. Navigate to the frontend directory:
-   ```bash
-   cd petko-fe
-   ```
+Without Vercel access, copy `petko-be/.env.example` to `petko-be/.env` and `petko-fe/.env.example` to `petko-fe/.env.local`, then obtain the real development values from a project administrator. Placeholder examples cannot connect to Supabase. Never commit downloaded env files.
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Shared Development environment (project administrators)
 
-3. Configure environment variables:
-   ```bash
-   cp .env.example .env.local
-   ```
-   Fill in the required values in `.env.local`.
+In Vercel → Petko → Settings → Environment Variables, configure these five names for **Development**:
 
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-   Runs on `http://localhost:5173`. API calls go to same-origin `/api`, which the Vite dev server proxies to the backend on port 3000.
+| Variable | Used by |
+|---|---|
+| `SUPABASE_URL` | Backend |
+| `SUPABASE_SERVICE_ROLE_KEY` | Backend only; grants privileged database access |
+| `SUPABASE_ANON_KEY` | Backend authentication |
+| `VITE_SUPABASE_URL` | Frontend (public) |
+| `VITE_SUPABASE_ANON_KEY` | Frontend (public) |
 
----
+Use a development Supabase project when available. The frontend URL/anon key must match the backend's project. Production and Preview settings are separate from Development; setting a variable only for Production does not make it available to a development pull. Teammates need project access to download these values. Leave `NODE_ENV`, `PORT`, `FRONTEND_URL`, and `VITE_API_URL` unset for the default local proxy setup.
+
+If Nest reports `"SUPABASE_URL" is required` (or either key is required), it has not received usable backend variables. Confirm the pull succeeded for Development, all five names exist in that environment, and no stale app-local overrides remain. See [Vercel pull](https://vercel.com/docs/cli/pull) and [environment variables](https://vercel.com/docs/environment-variables).
 
 ### Root scripts
 
