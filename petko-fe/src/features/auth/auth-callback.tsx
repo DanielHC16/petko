@@ -3,17 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import { fetchCurrentProfile } from '@/lib/auth'
+import { hasTosAccepted, useTosStore } from '@/store/tos.store'
 import pawBlueImg from '@/assets/paw_blue.png'
-
-const TOS_ACCEPTED_KEY = 'petko_tos_accepted'
-
-function isNewUser(createdAt: string): boolean {
-  return Date.now() - new Date(createdAt).getTime() < 90_000
-}
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const { setSession, setProfile, setLoading } = useAuthStore()
+  const openTos = useTosStore(s => s.open)
 
   useEffect(() => {
     async function handleCallback() {
@@ -26,19 +22,20 @@ export default function AuthCallbackPage() {
         if (profile) setProfile(profile)
         setLoading(false)
 
-        const alreadyAccepted = localStorage.getItem(TOS_ACCEPTED_KEY) === 'true'
-        const newUser         = isNewUser(session.user.created_at)
+        // Navigate to shop first, then trigger TOS if not yet accepted for this user
+        navigate('/', { replace: true })
 
-        // Navigate to shop — if new user, pass flag so shop shows TOS overlay
-        navigate('/', { replace: true, state: newUser && !alreadyAccepted ? { showTos: true } : {} })
+        if (!hasTosAccepted(session.user.id)) {
+          // Small delay to let the shop page mount before showing the modal
+          setTimeout(() => openTos(true), 100)
+        }
       } catch {
         navigate('/login', { replace: true })
       }
     }
     handleCallback()
-  }, [navigate, setSession, setProfile, setLoading])
+  }, [navigate, setSession, setProfile, setLoading, openTos])
 
-  // Loading screen while auth resolves
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-petko-cream">
       <style>{`

@@ -33,10 +33,10 @@ export default function App() {
         <Route path="/loading-preview" element={<LoadingPreview />} />
         <Route path="/tos-preview"     element={<TosPreview />} />
 
-        {/* UI Testing — all pages bypass auth 
-            Comment this block out and uncomment ProtectedRoute below
-            when restoring auth for production.
-        <Route element={<AppLayout />}>
+        {/* UI Testing — all pages bypass auth */}
+           {/* Comment this block out and uncomment ProtectedRoute below
+            when restoring auth for production.*/}
+        {/* <Route element={<AppLayout />}>
           <Route path="/"             element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/cart"         element={<CartPage />} />
@@ -45,7 +45,7 @@ export default function App() {
         </Route>
         */}
 
-        {/* Authenticated customer routes (restore for production) */}
+        {/* Authenticated customer routes (restore for production)  */}
         <Route element={<ProtectedRoute />}> 
           <Route element={<AppLayout />}>
             <Route path="/"             element={<ProductsPage />} />

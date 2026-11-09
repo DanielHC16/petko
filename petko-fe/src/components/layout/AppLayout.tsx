@@ -2,8 +2,12 @@ import { Outlet, Link } from 'react-router-dom'
 import Navbar from './Navbar'
 import logoImg      from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
+import TosModal from '@/features/auth/tos-modal'
+import { useTosStore, setTosAccepted } from '@/store/tos.store'
+import { useAuthStore } from '@/store/auth.store'
 
 function Footer() {
+  const openTos = useTosStore(s => s.open)
   return (
     <footer className="relative overflow-hidden bg-white border-t border-gray-200">
 
@@ -53,9 +57,12 @@ function Footer() {
           {/* About Us */}
           <div className="flex flex-col gap-2">
             <p className="text-sm font-bold text-gray-800">About Us</p>
-            <Link to="/tos-preview" className="text-xs text-gray-500 hover:text-petko-blue transition leading-relaxed">
+            <button
+              onClick={() => openTos(false)}
+              className="text-xs text-gray-500 hover:text-petko-blue transition text-left leading-relaxed"
+            >
               Terms of Service &amp;<br /> Privacy Policy
-            </Link>
+            </button>
           </div>
 
           {/* Get in touch */}
@@ -95,6 +102,14 @@ function Footer() {
 }
 
 export default function AppLayout() {
+  const { isOpen, isFirstLogin, close } = useTosStore()
+  const profile = useAuthStore(s => s.profile)
+
+  function handleTosAccept() {
+    if (profile) setTosAccepted(profile.id)
+    close()
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Navbar />
@@ -102,6 +117,7 @@ export default function AppLayout() {
         <Outlet />
       </main>
       <Footer />
+      {isOpen && <TosModal onAccept={handleTosAccept} isFirstLogin={isFirstLogin} />}
     </div>
   )
 }
