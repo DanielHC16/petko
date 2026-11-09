@@ -140,7 +140,7 @@ export default function ProductsPage() {
 
   return (
     <>
-    <div className="bg-gray-100 min-h-screen">
+    <div className="bg-petko-cream min-h-screen flex flex-col">
 
       {/* ── Hero banner ───────────────────────────────────────────────────── */}
       <div className="rounded-b-2xl">
@@ -190,7 +190,7 @@ export default function ProductsPage() {
       </div>
 
       {/* ── Sticky filter area ────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-gray-100 border-b border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-20 bg-petko-cream border-b border-amber-200 shadow-sm">
         <div className="max-w-screen-xl mx-auto px-6 py-3 space-y-2">
 
           <div className="hidden lg:flex items-center gap-3 rounded-xl bg-white border border-gray-200 px-4 py-2.5 shadow-sm">
@@ -326,7 +326,7 @@ export default function ProductsPage() {
       </div>
 
       {/* ── Product area ──────────────────────────────────────────────────── */}
-      <div className="px-6 pt-5 pb-6 space-y-3 max-w-screen-xl mx-auto">
+      <div className="px-6 pt-5 pb-6 space-y-3 max-w-screen-xl mx-auto w-full flex-1">
 
         <p className="text-xs text-gray-500">Showing {displayed.length} {displayed.length === 1 ? 'product' : 'products'}</p>
 
@@ -445,7 +445,7 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
-    {showTos && <TosModal onAccept={handleTosAccept} />}
+    {showTos && <TosModal onAccept={handleTosAccept} isFirstLogin />}
     </>
   )
 }
