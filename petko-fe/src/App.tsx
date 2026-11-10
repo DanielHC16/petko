@@ -5,6 +5,8 @@ import AppLayout from '@/components/layout/AppLayout'
 // Auth
 import AuthPage from '@/features/auth/auth-page'
 import AuthCallbackPage from '@/features/auth/auth-callback'
+import LoadingPreview from '@/features/auth/loading-preview'
+import TosPreview from '@/features/auth/tos-preview'
 
 // Customer pages
 import ProductsPage from '@/features/products/products-page'
@@ -23,12 +25,28 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<AuthPage />} />
+        {/*Public / Auth */}
+        <Route path="/login"         element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-        {/* Authenticated customer routes */}
-        <Route element={<ProtectedRoute />}>
+        {/* Dev previews (no auth, no layout) */}
+        <Route path="/loading-preview" element={<LoadingPreview />} />
+        <Route path="/tos-preview"     element={<TosPreview />} />
+
+        {/* UI Testing — all pages bypass auth */}
+           {/* Comment this block out and uncomment ProtectedRoute below
+            when restoring auth for production.*/}
+        {/* <Route element={<AppLayout />}>
+          <Route path="/"             element={<ProductsPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/cart"         element={<CartPage />} />
+          <Route path="/checkout"     element={<CheckoutPage />} />
+          <Route path="/orders"       element={<OrdersPage />} />
+        </Route>
+        */}
+
+        {/* Authenticated customer routes (restore for production)  */}
+        <Route element={<ProtectedRoute />}> 
           <Route element={<AppLayout />}>
             <Route path="/"             element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />

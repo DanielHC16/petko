@@ -15,6 +15,8 @@ import {
   formatOrderMoney,
   orderNumber,
 } from '@/lib/order-status'
+import pawYellow from '@/assets/paw_yellow.png'
+import petOrders from '@/assets/pet_orders.png'
 
 function CustomerOrder({
   id,
@@ -176,17 +178,40 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-petko-cream px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+    <div className="min-h-screen bg-[#ecdab6] pb-8 sm:pb-10">
+      <header className="relative mb-8 overflow-hidden rounded-b-[2rem] bg-[#fefaf2] shadow-sm">
+        <img
+          src={pawYellow}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-8 -top-8 h-40 w-40 -rotate-12 object-contain opacity-50 sm:h-52 sm:w-52"
+        />
+        <img
+          src={pawYellow}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-8 -top-10 hidden h-44 w-44 -rotate-[50deg] object-contain opacity-70 md:block"
+        />
+        <div className="relative mx-auto flex min-h-40 max-w-6xl items-center justify-between gap-4 px-6 py-7 sm:px-8">
+          <div className="relative z-10 min-w-0 pl-10 sm:pl-24">
             <h1 className="flex items-center gap-3 font-display text-3xl font-extrabold text-petko-blue sm:text-4xl">
-              Your orders <PawPrint size={29} aria-hidden="true" />
+              Your orders{' '}
+              <PawPrint size={29} aria-hidden="true" className="shrink-0" />
             </h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Follow your companion’s goodies, from our shelves to your door.
+            <p className="mt-2 max-w-md text-sm font-medium text-gray-700">
+              Track your companion’s order from our warehouse to your home.
             </p>
           </div>
+          <img
+            src={petOrders}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none hidden h-36 w-48 shrink-0 object-contain lg:block"
+          />
+        </div>
+      </header>
+      <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6">
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={refreshOrders}
@@ -201,7 +226,7 @@ export default function OrdersPage() {
             />
             Refresh orders
           </button>
-        </header>
+        </div>
         {list.error && (
           <div
             role="alert"

@@ -14,6 +14,7 @@ import { useCartStore } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
 import logoImg from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
+import gcashImg from '@/assets/GCash_logo.png'
 import { useCheckout } from './use-checkout'
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
@@ -479,13 +480,9 @@ export default function CheckoutPage() {
                   sub="Not available yet"
                 >
                   <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/GCash_logo.svg/200px-GCash_logo.svg.png"
+                    src={gcashImg}
                     alt="GCash"
                     className="h-7 object-contain"
-                    onError={(e) => {
-                      ;(e.currentTarget as HTMLImageElement).style.display =
-                        'none'
-                    }}
                   />
                 </PaymentCard>
                 <PaymentCard
@@ -549,14 +546,14 @@ export default function CheckoutPage() {
                 </Link>
               </div>
 
-              {/* items */}
-              <ul className="divide-y divide-gray-100">
+              {/* Items stay scrollable so large carts keep the summary compact. */}
+              <ul className="max-h-[280px] divide-y divide-gray-100 overflow-y-auto pr-1">
                 {items.map((item) => (
                   <li
                     key={item.product_id}
-                    className="flex items-center gap-3 py-3"
+                    className="flex items-center gap-3 py-3 pl-2"
                   >
-                    <div className="relative shrink-0">
+                    <div className="relative ml-1 shrink-0">
                       <div className="h-14 w-14 rounded-xl border border-gray-100 overflow-hidden bg-petko-cream flex items-center justify-center">
                         {item.image_url ? (
                           <img
