@@ -11,6 +11,6 @@
     "lint": "npm run lint:be && npm run lint:fe",
     "lint:be": "cd petko-be && npx eslint \"{src,test}/**/*.ts\"",
     "lint:fe": "npm run lint --prefix petko-fe",
-    "test": "npm test --prefix petko-be"
+    "test": "npm test --prefix petko-be --"
   }
 }

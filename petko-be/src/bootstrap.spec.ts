@@ -45,6 +45,14 @@ describe('createApp (shared bootstrap)', () => {
     ['post', '/api/admin-access-emails'],
     ['delete', '/api/admin-access-emails/00000000-0000-0000-0000-000000000000'],
     ['get', '/api/admin/stats'],
+    ['get', '/api/orders'],
+    ['get', '/api/orders/admin/all'],
+    ['post', '/api/orders'],
+    ['patch', '/api/orders/00000000-0000-4000-8000-000000000000/fulfillment'],
+    [
+      'post',
+      '/api/orders/00000000-0000-4000-8000-000000000000/confirm-receipt',
+    ],
   ] as const)(
     'rejects unauthenticated %s %s with 401',
     async (method, path) => {

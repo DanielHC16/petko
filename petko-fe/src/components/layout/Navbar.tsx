@@ -1,10 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ShoppingCart, LogOut, LayoutDashboard, Store } from 'lucide-react'
+import {
+  ShoppingCart,
+  LogOut,
+  LayoutDashboard,
+  Store,
+  Package,
+} from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useCartStore } from '@/store/cart.store'
 import { signOut } from '@/lib/auth'
 import logoImg from '@/assets/logo.png'
-import pawImg  from '@/assets/paw_blue.png'
+import pawImg from '@/assets/paw_blue.png'
 
 export default function Navbar() {
   const profile = useAuthStore((s) => s.profile)
@@ -22,11 +28,16 @@ export default function Navbar() {
 
   return (
     <nav className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm sm:px-6">
-      <div className="mx-auto flex max-w-screen-xl items-center justify-between">
+      <div className="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between gap-3">
         {/* Brand */}
         <div className="flex items-center gap-3 sm:gap-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src={pawImg} alt="" className="h-7 w-7 object-contain" aria-hidden="true" />
+            <img
+              src={pawImg}
+              alt=""
+              className="h-7 w-7 object-contain"
+              aria-hidden="true"
+            />
             <img src={logoImg} alt="PetKo" className="h-7 object-contain" />
           </Link>
 
@@ -67,6 +78,16 @@ export default function Navbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            to="/orders"
+            aria-label="Your orders"
+            aria-current={location.pathname === '/orders' ? 'page' : undefined}
+            title="Your orders"
+            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
+          >
+            <Package size={16} aria-hidden="true" />
+            <span className="hidden sm:inline">Orders</span>
+          </Link>
           {/* Cart Icon */}
           <Link
             to="/cart"
@@ -97,7 +118,9 @@ export default function Navbar() {
                 </div>
               )}
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-bold text-gray-900">{profile.full_name}</p>
+                <p className="text-xs font-bold text-gray-900">
+                  {profile.full_name}
+                </p>
                 <span
                   className={`inline-block rounded px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider ${
                     isAdmin

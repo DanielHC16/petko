@@ -37,9 +37,9 @@ function Footer() {
           </div>
 
           {/* Categories */}
-          <div className="flex flex-col gap-2">
+          <div className="col-span-2 flex min-w-0 flex-col gap-2 lg:col-span-1">
             <p className="text-sm font-bold text-gray-800">Categories</p>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-1.5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 sm:gap-x-6">
               <Link to="/?cat=all"         className="text-xs text-gray-500 hover:text-petko-blue transition whitespace-nowrap">All Items</Link>
               <Link to="/?cat=food"        className="text-xs text-gray-500 hover:text-petko-blue transition whitespace-nowrap">Pet Food</Link>
               <Link to="/?cat=treats"      className="text-xs text-gray-500 hover:text-petko-blue transition whitespace-nowrap">Treats</Link>

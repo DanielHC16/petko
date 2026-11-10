@@ -84,14 +84,32 @@ To refresh from the original Atom kit without overwriting repository-owned files
 node C:/Users/Hardy/ObsidianVaults/Atom/codex-agent-kit/install.mjs .
 ```
 
-Checkout and order history currently contain UI previews. Checkout does not persist orders or process payments; backend integration is still required.
+## Orders and tracking
+
+Checkout creates real Cash on Delivery orders, reserves stock, and saves item prices and the delivery address. Online payments remain unavailable until a payment gateway is integrated. Standard delivery costs PHP 99 (free for an item subtotal of PHP 999 or more); express delivery costs PHP 199.
+
+Customers track their orders at `/orders`. Admins manage progress at `/admin/orders`: Placed → Processing → Shipped → Out for delivery → Delivered. An admin delivery report stays awaiting confirmation until the customer who placed the order confirms receipt. There is no automatic completion. Customers can report a delivery as not received with a message; admins can respond, but only the customer can confirm receipt. Admins can cancel before shipment, restoring reserved stock once.
+
+Apply [migration-003-order-tracking.sql](petko-be/supabase/migration-003-order-tracking.sql) before deploying this feature. It adds fulfillment fields, immutable history, and backend-only transactional functions while preserving legacy order status and ownership read policies. Existing orders have an imported baseline; earlier milestone dates and missing addresses are not fabricated. Keep the additive database changes when rolling back application code.
+
+Run [verify-order-tracking.sql](petko-be/supabase/verify-order-tracking.sql) in an isolated test database after applying the migration twice. The fixture rolls back its data and checks stock, retries, ownership, transitions, confirmation, and transaction rollback. Unit and HTTP tests use dummy Supabase values and do not connect to a live project:
+
+```bash
+npm run lint
+npm test -- --runInBand
+npm run test:e2e --prefix petko-be -- --runInBand
+npm run build
+```
+
+The architecture and agreed behavior are recorded in [the implementation plan](docs/plans/2026-11-10-order-tracking.md).
 
 ## Deploy to Vercel
 
-The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before the first production deploy, apply these in the Supabase SQL editor, in order (both are safe to re-run):
+The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before deploying, apply these in the Supabase SQL editor, in order (all are safe to re-run):
 
 1. `petko-be/supabase/security-patch-001-lock-user-role.sql`
 2. `petko-be/supabase/migration-002-admin-access-emails.sql`
+3. `petko-be/supabase/migration-003-order-tracking.sql`
 
 ## Admin access
 

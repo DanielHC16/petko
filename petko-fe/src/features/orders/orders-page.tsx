@@ -1,275 +1,363 @@
-import { 
-  CheckCircle2, 
-  RefreshCcw, 
-  MapPin, 
-  MessageCircle, 
-  Package, 
-  ClipboardList, 
-  Truck,
-  Box
-} from 'lucide-react';
-import pawYellow from "../../assets/paw_yellow.png";
-import petOrders from "../../assets/pet_orders.png";
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { CheckCircle2, Package, PawPrint, RefreshCw } from 'lucide-react'
+import OrderDetailCard, {
+  OrderStatusBadge,
+} from '@/components/orders/order-detail'
+import OrderActionDialog from '@/components/orders/order-action-dialog'
+import {
+  useOrderDetail,
+  useOrderList,
+  useOrderMutation,
+} from '@/hooks/use-orders'
+import {
+  formatOrderDate,
+  formatOrderMoney,
+  orderNumber,
+} from '@/lib/order-status'
+import pawYellow from '@/assets/paw_yellow.png'
+import petOrders from '@/assets/pet_orders.png'
+
+function CustomerOrder({
+  id,
+  onUpdated,
+}: {
+  id: string
+  onUpdated: () => void
+}) {
+  const detail = useOrderDetail(id)
+  const [dialog, setDialog] = useState<'confirm' | 'report' | null>(null)
+  const mutation = useOrderMutation(() => {
+    detail.refresh()
+    onUpdated()
+  }, detail.refresh)
+  const order = detail.data
+  const canConfirm =
+    order?.fulfillment_status === 'delivered' && !order.delivery_confirmed_at
+  const hasOpenIssue = Boolean(
+    order?.delivery_issue && !order.delivery_issue.resolved_at,
+  )
+
+  if (!order)
+    return detail.error ? (
+      <div
+        role="alert"
+        className="rounded-2xl border border-red-200 bg-white p-6 text-sm text-red-800"
+      >
+        <p>{detail.error}</p>
+        <button
+          type="button"
+          onClick={detail.refresh}
+          className="mt-3 font-bold underline"
+        >
+          Try loading this order again
+        </button>
+      </div>
+    ) : (
+      <p
+        role="status"
+        className="rounded-2xl border border-orange-200 bg-white p-8 text-center text-sm text-gray-600"
+      >
+        Loading order details…
+      </p>
+    )
+
+  return (
+    <>
+      {detail.error && (
+        <p
+          role="alert"
+          className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-800"
+        >
+          {detail.error} The last loaded details are shown below.{' '}
+          <button
+            type="button"
+            onClick={detail.refresh}
+            className="font-bold underline"
+          >
+            Refresh
+          </button>
+        </p>
+      )}
+      <OrderDetailCard order={order}>
+        {canConfirm && (
+          <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-700">
+              Have your pet’s goodies arrived?
+              <span className="mt-1 block text-xs text-gray-500">
+                Confirm only after you have received this order.
+              </span>
+            </p>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={mutation.isPending || detail.isLoading}
+                onClick={() => {
+                  mutation.clearError()
+                  setDialog('confirm')
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-petko-blue px-4 py-2.5 text-sm font-bold text-white hover:bg-petko-blue-dark disabled:opacity-50"
+              >
+                <CheckCircle2 size={17} />
+                Confirm received
+              </button>
+              {!hasOpenIssue && (
+                <button
+                  type="button"
+                  disabled={mutation.isPending || detail.isLoading}
+                  onClick={() => {
+                    mutation.clearError()
+                    setDialog('report')
+                  }}
+                  className="rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-900 hover:bg-orange-100 disabled:opacity-50"
+                >
+                  I haven’t received it
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </OrderDetailCard>
+      {dialog && (
+        <OrderActionDialog
+          key={dialog}
+          title={
+            dialog === 'confirm'
+              ? 'Confirm you received your order'
+              : 'Report a delivery issue'
+          }
+          description={
+            dialog === 'confirm'
+              ? 'This will complete your order and record your receipt confirmation. Confirm only if the package is with you.'
+              : 'Tell the admin what happened. Your order will stay incomplete while the admin reviews your report.'
+          }
+          confirmLabel={
+            dialog === 'confirm' ? 'Yes, I received it' : 'Send delivery report'
+          }
+          noteLabel={dialog === 'report' ? 'What happened?' : undefined}
+          isPending={mutation.isPending}
+          error={mutation.error}
+          onClose={() => setDialog(null)}
+          onSubmit={(note) =>
+            mutation.mutate(
+              order,
+              dialog === 'confirm'
+                ? { type: 'confirm' }
+                : { type: 'report', message: note },
+            )
+          }
+        />
+      )}
+    </>
+  )
+}
 
 export default function OrdersPage() {
+  const [params, setParams] = useSearchParams()
+  const [refreshToken, setRefreshToken] = useState(0)
+  const pageValue = Number(params.get('page') ?? '1')
+  const page = Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1
+  const list = useOrderList({ page, limit: 5 })
+  const selectedId = params.get('order') || list.data?.orders[0]?.id || null
+  function selectOrder(id: string): void {
+    setParams((current) => {
+      current.set('order', id)
+      return current
+    })
+  }
+  function changePage(next: number): void {
+    setParams((current) => {
+      current.set('page', String(next))
+      current.delete('order')
+      return current
+    })
+  }
+  function refreshOrders(): void {
+    list.refresh()
+    setRefreshToken((value) => value + 1)
+  }
+
   return (
-    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
-      <div className="w-full">
-        {/* Header */}
-        <div className="relative -mx-6 -mt-6 mb-8 flex min-h-[160px] items-center overflow-hidden rounded-b-[2rem] bg-[#fefaf2] shadow-sm sm:-mx-8 sm:-mt-8 lg:-mx-10 lg:-mt-10">
-          
-          {/* Left Decorative Elements */}
-          <div className="absolute left-0 top-0 h-full w-[250px] overflow-visible">
-            <svg className="absolute -left-6 top-4 scale-85 rotate-90 opacity-100" width="170" height="128" viewBox="0 0 170 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M33.1292 194.518C50.699 252.372 113.143 260.774 140.334 178.637C171.072 159.593 245.721 33.6169 162.63 0.195818C114.28 -4.6421 120.256 81.9292 52.015 69.6604C13.0552 62.656 -32.4446 122.142 33.1292 194.518Z" fill="#FDECD4" fillOpacity="0.8"/>
-            </svg>
-            
-            <img
-              src={pawYellow}
-              alt=""
-              aria-hidden="true"
-              className="absolute left-1 -top-2 h-[202px] w-[187px] object-contain opacity-50"
-              style={{ filter: "drop-shadow(0px 4px 7.5px rgba(0,0,0,0.6))" }}
-            />
-
-            <img
-              src={pawYellow}
-              alt=""
-              aria-hidden="true"
-              className="absolute -left-1 -top-5 h-[202px] w-[187px] object-contain opacity-100"
-            />
-          </div>
-
-          {/* Center Content */}
-          <div className="relative z-10 pl-[160px] pr-8 sm:pl-[220px] md:pl-[260px] lg:pl-[280px]">
-            <div className="flex items-center gap-3">
-              <h1 className="text-[32px] font-extrabold text-[#10298E] sm:text-[40px]">Orders</h1>
-              <svg width="38" height="34" viewBox="0 0 38 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3.82946 20.446C1.48691 20.2661 -0.217509 17.5863 0.022544 14.4604C0.262597 11.3346 2.35622 8.94642 4.69877 9.12632C7.04133 9.30622 8.74574 11.9861 8.50569 15.1119C8.26563 18.2378 6.17202 20.6259 3.82946 20.446Z" fill="#10298E"/>
-                <path d="M14.1618 11.3292C11.8193 11.1493 10.1149 8.4695 10.3549 5.34365C10.595 2.2178 12.6886 -0.170367 15.0311 0.00953194C17.3737 0.189431 19.0781 2.86927 18.838 5.99512C18.598 9.12098 16.5044 11.5091 14.1618 11.3292Z" fill="#10298E"/>
-                <path d="M25.7098 13.1526C23.3672 12.9727 21.6628 10.2929 21.9028 7.16701C22.1429 4.04116 24.2365 1.65299 26.5791 1.83289C28.9216 2.01279 30.626 4.69263 30.386 7.81848C30.1459 10.9443 28.0523 13.3325 25.7098 13.1526Z" fill="#10298E"/>
-                <path d="M33.0032 24.7005C30.6606 24.5206 28.9562 21.8408 29.1963 18.7149C29.4363 15.5891 31.5299 13.2009 33.8725 13.3808C36.215 13.5607 37.9195 16.2406 37.6794 19.3664C37.4394 22.4923 35.3457 24.8804 33.0032 24.7005Z" fill="#10298E"/>
-                <path d="M18.7994 13.6941C16.2013 15.0124 10.7397 20.8604 7.56475 23.2402C5.23374 26.2061 5.41051 30.6068 8.1952 31.9916C9.61535 32.6979 14.7138 31.6163 17.2247 30.7756C17.8073 31.7234 20.0608 33.5407 24.4144 33.227C28.768 32.9134 29.2396 28.1661 28.9311 25.8317C28.8703 24.9876 25.4965 20.9886 24.8876 20.3255C24.2788 19.6623 22.047 12.0461 18.7994 13.6941Z" fill="#10298E"/>
-              </svg>
-            </div>
-            <p className="mt-1 text-sm font-medium text-black sm:text-[15px]">
-              Track your companion's order from our warehouse to your home.
+    <div className="min-h-screen bg-[#ecdab6] pb-8 sm:pb-10">
+      <header className="relative mb-8 overflow-hidden rounded-b-[2rem] bg-[#fefaf2] shadow-sm">
+        <img
+          src={pawYellow}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-8 -top-8 h-40 w-40 -rotate-12 object-contain opacity-50 sm:h-52 sm:w-52"
+        />
+        <img
+          src={pawYellow}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-8 -top-10 hidden h-44 w-44 -rotate-[50deg] object-contain opacity-70 md:block"
+        />
+        <div className="relative mx-auto flex min-h-40 max-w-6xl items-center justify-between gap-4 px-6 py-7 sm:px-8">
+          <div className="relative z-10 min-w-0 pl-10 sm:pl-24">
+            <h1 className="flex items-center gap-3 font-display text-3xl font-extrabold text-petko-blue sm:text-4xl">
+              Your orders{' '}
+              <PawPrint size={29} aria-hidden="true" className="shrink-0" />
+            </h1>
+            <p className="mt-2 max-w-md text-sm font-medium text-gray-700">
+              Track your companion’s order from our warehouse to your home.
             </p>
           </div>
-
-          {/* Right Decorative Elements */}
-          <div className="absolute right-0 top-0 hidden h-full w-[200px] overflow-visible md:block">
-            <svg className="absolute -bottom-6 -right-6 scale-85 opacity-80" width="170" height="128" viewBox="0 0 170 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M33.1292 194.518C50.699 252.372 113.143 260.774 140.334 178.637C171.072 159.593 245.721 33.6169 162.63 0.195818C114.28 -4.6421 120.256 81.9292 52.015 69.6604C13.0552 62.656 -32.4446 122.142 33.1292 194.518Z" fill="#FDECD4" fillOpacity="0.8"/>
-            </svg>
-            <img
-              src={pawYellow}
-              alt=""
-              aria-hidden="true"
-              className="absolute -right-4 top-1 h-[152px] w-[137px] object-contain opacity-60 -rotate-[50deg]"
-              style={{ filter: "drop-shadow(0px 4px 7.5px rgba(0,0,0,0.6))" }}
-            />
-            <img
-              src={pawYellow}
-              alt=""
-              aria-hidden="true"
-              className="absolute -right-1 -top-1 h-[152px] w-[137px] object-contain opacity-100 -rotate-[50deg]"
-            />
-          </div>
+          <img
+            src={petOrders}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none hidden h-36 w-48 shrink-0 object-contain lg:block"
+          />
         </div>
-
-        {/* Main Content Container */}
-        <div className="flex flex-col gap-6">
-
-          {/* TOP SECTION: Single Unified Card matching the reference image */}
-          <div className="rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-6 lg:p-8 shadow-sm relative overflow-hidden flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6 lg:gap-8">
-            
-            {/* Left Group: Product Image + Order Details + Shipping Address */}
-            <div className="flex flex-col sm:flex-row items-start gap-6 w-full lg:w-auto lg:flex-1">
-              
-              {/* Product Image / Placeholder */}
-              <div className="w-32 h-40 bg-white rounded-xl border border-gray-200 flex-shrink-0 flex flex-col items-center justify-center text-xs text-gray-400 p-2 text-center shadow-sm">
-                <Box className="w-8 h-8 mb-2 text-gray-300" />
-                Product Image
-              </div>
-
-              {/* Order Details */}
-              <div className="flex-1 min-w-[220px]">
-                <h2 className="text-2xl font-extrabold text-[#10298E]">Order #PKO-2026-063</h2>
-                <p className="text-sm text-gray-600 mt-1">Placed on May 21, 2026 at 10:30 AM</p>
-                
-                <div className="mt-3">
-                  <div className="inline-flex items-center gap-1.5 bg-[#dcfce7] text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-                    <CheckCircle2 size={16} /> Delivered
-                  </div>
-                </div>
-                
-                <p className="text-sm text-gray-600 mt-3">
-                  Your order has been delivered on<br />
-                  <span className="text-green-600 font-medium">May 23, 2026 at 2:15 PM</span>
-                </p>
-                
-                <button className="mt-4 flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-                  <RefreshCcw size={16} /> Reorder
-                </button>
-              </div>
-
-              {/* Shipping Address with vertical divider on desktop */}
-              <div className="border-t sm:border-t-0 sm:border-l border-[#e1cba5] sm:pl-6 pt-4 sm:pt-0 w-full sm:w-auto">
-                <h3 className="text-base font-bold text-gray-700 flex items-center gap-2 mb-3">
-                  <MapPin size={18} /> Shipping Address
-                </h3>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <p className="font-semibold text-gray-900">Juan Dela Cruz</p>
-                  <p>12 Pet Residence 123 St., Brgy Woof</p>
-                  <p>Sta Mesa, Metro Manila 1100</p>
-                  <p>Philippines</p>
-                  <p className="mt-2 text-gray-500">09xxxxxxxxx</p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Group: Customer Support Yellow Card & Pet Illustration */}
-            <div className="flex flex-col sm:flex-row items-center gap-6 w-full lg:w-auto justify-end relative z-10">
-              
-              {/* Yellow Support Box */}
-              <div className="bg-[#FFE5A3] rounded-xl p-5 w-full sm:w-[280px] shadow-sm">
-                <h3 className="text-[#10298E] font-bold text-lg leading-tight">Need Help with your<br />order?</h3>
-                <p className="text-sm text-[#10298E]/80 mt-1 mb-4">We're here to help!</p>
-                <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-100 shadow-sm transition-colors">
-                  <MessageCircle size={16} /> Contact Support
-                </button>
-              </div>
-
-              {/* Pet Illustration */}
-              <div className="hidden xl:block w-48 h-44 flex-shrink-0 relative">
-                <img
-                  src={petOrders}
-                  alt="Pet decoration"
-                  className="absolute right-0 bottom-0 h-44 w-auto object-contain"
-                />
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* BOTTOM ROW: Order Progress (Left) & Order Summary (Right) */}
-          <div className="flex flex-col gap-6 lg:flex-row">
-
-            {/* Left Column: Order Progress */}
-            <div className="flex-1 rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-6 shadow-sm">
-              <h3 className="text-xl font-bold text-[#10298E] mb-6">Order Progress</h3>
-              
-              <div className="relative px-2 md:px-4 py-4">
-                {/* Horizontal Connecting Track for Desktop */}
-                <div className="hidden lg:block absolute top-[34px] left-12 right-12 h-1 bg-green-500 z-0"></div>
-                
-                {/* Timeline Steps Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 relative z-10">
-                  
-                  {/* Step 1: Order Placed */}
-                  <div className="flex lg:flex-col items-center gap-4 lg:gap-2 text-left lg:text-center">
-                    <div className="w-12 h-12 bg-white border-2 border-[#e1cba5] lg:border-green-500 rounded-xl flex items-center justify-center shadow-sm text-[#10298E] shrink-0">
-                      <Package size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#10298E] leading-tight">Order Placed</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">May 21, 2026<br/>10:30am</p>
-                    </div>
-                  </div>
-
-                  {/* Step 2: Processing */}
-                  <div className="flex lg:flex-col items-center gap-4 lg:gap-2 text-left lg:text-center">
-                    <div className="w-12 h-12 bg-white border-2 border-[#e1cba5] lg:border-green-500 rounded-xl flex items-center justify-center shadow-sm text-[#10298E] shrink-0">
-                      <ClipboardList size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#10298E] leading-tight">Processing</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">May 21, 2026<br/>2:45pm</p>
-                    </div>
-                  </div>
-
-                  {/* Step 3: Out for Delivery */}
-                  <div className="flex lg:flex-col items-center gap-4 lg:gap-2 text-left lg:text-center">
-                    <div className="w-12 h-12 bg-white border-2 border-[#e1cba5] lg:border-green-500 rounded-xl flex items-center justify-center shadow-sm text-[#10298E] shrink-0">
-                      <Box size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#10298E] leading-tight">Out for Delivery</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">May 23, 2026<br/>9:05am</p>
-                    </div>
-                  </div>
-
-                  {/* Step 4: Shipped */}
-                  <div className="flex lg:flex-col items-center gap-4 lg:gap-2 text-left lg:text-center">
-                    <div className="w-12 h-12 bg-white border-2 border-[#e1cba5] lg:border-green-500 rounded-xl flex items-center justify-center shadow-sm text-[#10298E] shrink-0">
-                      <Truck size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#10298E] leading-tight">Shipped</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">May 22, 2026<br/>9:10am</p>
-                    </div>
-                  </div>
-
-                  {/* Step 5: Delivered */}
-                  <div className="flex lg:flex-col items-center gap-4 lg:gap-2 text-left lg:text-center">
-                    <div className="w-12 h-12 bg-green-500 border-2 border-green-500 rounded-xl flex items-center justify-center shadow-sm text-white shrink-0">
-                      <CheckCircle2 size={22} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-[#10298E] leading-tight">Delivered</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">May 23, 2026<br/>2:15pm</p>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Delivery Success Message */}
-              <div className="mt-6 bg-[#dcfce7] rounded-lg p-3 flex items-center gap-2 text-sm text-green-800 font-medium">
-                <CheckCircle2 size={18} className="text-green-600 shrink-0" />
-                Your order has been delivered. Thank you for shopping with Petko!
-              </div>
-            </div>
-
-            {/* Right Column: Order Summary */}
-            <div className="w-full lg:w-[380px] shrink-0 rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-6 shadow-sm">
-              <h3 className="text-xl font-bold text-[#10298E] mb-6">
-                Order Summary
-              </h3>
-              
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Subtotal (3 items)</span>
-                  <span className="font-medium text-gray-800">₱ 697.00</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Shipping Fee</span>
-                  <span className="font-semibold text-green-500">FREE</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Discount</span>
-                  <span className="font-medium text-red-500">- ₱ 70.00</span>
-                </div>
-                
-                <div className="pt-4 border-t border-gray-200 mt-2">
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <span className="block font-bold text-[#10298E] text-base">Total Amount</span>
-                      <span className="text-[11px] text-gray-500">Inclusive of VAT where applicable</span>
-                    </div>
-                    <span className="font-bold text-2xl text-red-600">₱ 627.00</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
+      </header>
+      <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={refreshOrders}
+            disabled={list.isLoading}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-semibold text-petko-blue hover:bg-orange-50 disabled:opacity-50"
+          >
+            <RefreshCw
+              size={16}
+              className={
+                list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''
+              }
+            />
+            Refresh orders
+          </button>
         </div>
+        {list.error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          >
+            {list.error}{' '}
+            <button
+              type="button"
+              onClick={refreshOrders}
+              className="font-bold underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {!list.data && list.isLoading && (
+          <p
+            role="status"
+            className="rounded-2xl border border-orange-200 bg-white p-10 text-center text-sm text-gray-600"
+          >
+            Loading your orders…
+          </p>
+        )}
+        {list.data && list.data.orders.length === 0 && (
+          <div className="rounded-2xl border border-orange-200 bg-white px-6 py-12 text-center">
+            <Package
+              size={40}
+              className="mx-auto mb-4 text-petko-gold"
+              aria-hidden="true"
+            />
+            <h2 className="font-display text-xl font-bold text-petko-blue">
+              {page > 1
+                ? 'No orders on this page'
+                : 'Your first delivery starts here'}
+            </h2>
+            <p className="mt-2 text-sm text-gray-500">
+              {page > 1
+                ? 'Head back to see your recent orders.'
+                : 'Once you place an order, you can follow every step here.'}
+            </p>
+            {page > 1 ? (
+              <button
+                onClick={() => changePage(page - 1)}
+                className="mt-5 rounded-xl bg-petko-blue px-5 py-2.5 text-sm font-bold text-white"
+              >
+                Previous page
+              </button>
+            ) : (
+              <Link
+                to="/"
+                className="mt-5 inline-flex rounded-xl bg-petko-blue px-5 py-2.5 text-sm font-bold text-white"
+              >
+                Browse pet essentials
+              </Link>
+            )}
+          </div>
+        )}
+        {list.data && list.data.orders.length > 0 && (
+          <section
+            aria-label="Your order list"
+            className="rounded-2xl border border-orange-200 bg-white p-4 sm:p-5"
+          >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-petko-blue">
+                Your orders ({list.data.total})
+              </h2>
+              <p className="text-xs text-gray-500">
+                Choose an order to see its progress
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {list.data.orders.map((order) => (
+                <button
+                  key={order.id}
+                  type="button"
+                  aria-pressed={selectedId === order.id}
+                  onClick={() => selectOrder(order.id)}
+                  className={`min-w-0 rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue ${selectedId === order.id ? 'border-petko-blue bg-blue-50' : 'border-gray-200 bg-white hover:border-orange-300'}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-petko-blue">
+                      {orderNumber(order.id)}
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {formatOrderMoney(order.total_amount)}
+                    </span>
+                  </div>
+                  <p className="mb-3 mt-1 text-xs text-gray-500">
+                    {formatOrderDate(order.created_at)}
+                  </p>
+                  <OrderStatusBadge order={order} />
+                </button>
+              ))}
+            </div>
+            <nav
+              aria-label="Order pages"
+              className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4 text-xs"
+            >
+              <button
+                type="button"
+                disabled={page <= 1 || list.isLoading}
+                onClick={() => changePage(page - 1)}
+                className="rounded-lg border border-gray-300 px-3 py-2 font-semibold disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="text-gray-500">
+                Page {page} of{' '}
+                {Math.max(1, Math.ceil(list.data.total / list.data.limit))}
+              </span>
+              <button
+                type="button"
+                disabled={
+                  page * list.data.limit >= list.data.total || list.isLoading
+                }
+                onClick={() => changePage(page + 1)}
+                className="rounded-lg border border-gray-300 px-3 py-2 font-semibold disabled:opacity-40"
+              >
+                Next
+              </button>
+            </nav>
+          </section>
+        )}
+        {selectedId && (
+          <CustomerOrder
+            key={`${selectedId}:${refreshToken}`}
+            id={selectedId}
+            onUpdated={list.refresh}
+          />
+        )}
       </div>
     </div>
-  );
+  )
 }
