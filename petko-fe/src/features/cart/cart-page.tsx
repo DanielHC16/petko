@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ShoppingBag, Trash2, ArrowLeft, Ticket, Truck, RefreshCcw } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { useCartStore } from '@/store/cart.store'
 
 export default function CartPage() {
@@ -9,7 +10,8 @@ export default function CartPage() {
   const removeItem = useCartStore((s) => s.removeItem)
   
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
-  const shippingEstimate = 100 // Dummy value based on wireframe having a cost, adjust as needed
+  const isFreeShipping = totalPrice >= 999
+  const shippingEstimate = items.length === 0 ? 0 : isFreeShipping ? 0 : 99
 
   return (
     <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
@@ -160,11 +162,6 @@ export default function CartPage() {
                   >
                     {/* Product Details */}
                     <div className="flex items-center gap-4">
-                      <input 
-                        type="checkbox" 
-                        className="h-4 w-4 rounded border-gray-300 text-[#10298E] focus:ring-[#10298E]"
-                        defaultChecked
-                      />
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[#e1cba5] bg-white p-1">
                         <img
                           src={item.image_url}
@@ -176,8 +173,15 @@ export default function CartPage() {
                         <h3 className="line-clamp-2 text-sm font-bold text-[#10298E]">
                           {item.name}
                         </h3>
-                        <p className="mt-0.5 text-xs text-gray-500">Product Description</p>
-                        <span className="mt-1 text-xs font-semibold text-green-600">In Stock</span>
+                        {item.stock > 0 ? (
+                          <span className="mt-1 text-xs font-semibold text-green-600">
+                            In Stock
+                          </span>
+                        ) : (
+                          <span className="mt-1 text-xs font-semibold text-red-500">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -240,9 +244,6 @@ export default function CartPage() {
             <div className="rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-6 shadow-sm">
               <div className="flex items-center justify-between border-b border-gray-200/60 pb-4">
                 <h2 className="text-lg font-bold text-[#10298E]">Order Summary</h2>
-                <button className="text-sm font-semibold text-[#10298E] underline">
-                  Edit Cart
-                </button>
               </div>
 
               <div className="space-y-4 py-4 text-sm">
@@ -255,15 +256,12 @@ export default function CartPage() {
                 <div className="flex justify-between text-gray-600">
                   <div className="flex flex-col">
                     <span>Shipping Estimate</span>
-                    <span className="text-xs text-gray-400">Metro Manila, 1100</span>
+                    <span className="text-xs text-gray-400">Standard Delivery (3-5 days)</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-bold text-gray-800">
-                      ₱{shippingEstimate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    <span className={`font-bold ${isFreeShipping ? 'text-green-600' : 'text-gray-800'}`}>
+                      {isFreeShipping ? 'FREE' : `₱${shippingEstimate.toFixed(2)}`}
                     </span>
-                    <button className="text-xs font-semibold text-[#10298E] underline">
-                      Change
-                    </button>
                   </div>
                 </div>
               </div>
@@ -271,7 +269,13 @@ export default function CartPage() {
               {/* Promo Code Section */}
               <div className="border-t border-gray-200/60 py-4">
                 <h3 className="mb-2 text-sm font-bold text-gray-700">Promo Code</h3>
-                <div className="flex gap-2">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    toast('Online vouchers and promo codes are not available yet.', { icon: '🎟️' })
+                  }}
+                  className="flex gap-2"
+                >
                   <div className="relative flex-1">
                     <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input
@@ -280,10 +284,13 @@ export default function CartPage() {
                       className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-[#10298E] focus:outline-none focus:ring-1 focus:ring-[#10298E]"
                     />
                   </div>
-                  <button className="rounded-lg bg-[#10298E] px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-900">
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-[#10298E] px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-900 transition"
+                  >
                     Apply
                   </button>
-                </div>
+                </form>
               </div>
 
               {/* Total & Checkout */}
@@ -318,7 +325,7 @@ export default function CartPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-gray-800">Free Shipping</h4>
-                  <p className="text-xs text-gray-500">₱ 899 minimum spend in Metro Manila</p>
+                  <p className="text-xs text-gray-500">₱ 999 minimum spend in Metro Manila</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
