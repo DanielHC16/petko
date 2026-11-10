@@ -10,7 +10,8 @@ It is a full-stack web application with a React/Vite frontend and a NestJS REST 
 - **RBAC**: Two roles — `admin` and `customer` — enforced on both frontend (route guards) and backend (NestJS guards). See "Admin access" below for how a user becomes an admin.
 - **Product Catalog**: Dynamic product galleries with category filtering, search, price range, and pet-type filters
 - **Cart**: Persistent shopping cart stored in Supabase, synced on login
-- **Checkout**: Scaffolded checkout flow with a payment gateway integration slot (TBA)
+- **Checkout**: Real Cash on Delivery checkout with server-priced totals, atomic stock reservation, and retry-safe order placement. Online payments remain unavailable until integrated.
+- **Order Tracking**: Admin-controlled fulfillment with timestamped history, customer-only receipt confirmation, and nonreceipt reports for admin review.
 - **Admin Panel**: Product, order, and user management for admins, plus the editable admin access list
 
 ### Admin access (effective admin role)
@@ -37,7 +38,7 @@ A signed-in user is an admin when **either** is true:
 | Backend | NestJS + TypeScript (strict) |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth — Google SSO |
-| Payments | TBA — scaffold only, gateway left blank |
+| Payments | Cash on Delivery; online payment gateway not integrated |
 | Hosting | Vercel — one project: static FE + NestJS serverless function under `/api` |
 
 ---
@@ -157,6 +158,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 1. Apply the SQL files in `petko-be/supabase/` in order (Supabase SQL editor, or `npx --yes supabase@2.120.0 db query --linked --file supabase/<file>.sql` from `petko-be` once the CLI is logged in and linked). All are safe to re-run:
    - `security-patch-001-lock-user-role.sql` (live project: applied 2026-10-07)
    - `migration-002-admin-access-emails.sql` (live project: applied and re-verified 2026-10-08; table, constraints, RLS, no policies, no anon/authenticated grants)
+   - `migration-003-order-tracking.sql` (apply before deploying order tracking; additive fields, history, backend-only transactional checkout and tracking functions). Validate with `verify-order-tracking.sql` in an isolated test database; never use production fixtures.
 2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
 3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
 4. `vercel deploy --prod`, or push to `main` with the Git integration.
@@ -181,6 +183,20 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 | `GET /users`, `PATCH /users/:id/role`, `POST /users/promote`, `DELETE /users/:id` | admin |
 | `GET /admin-access-emails`, `POST /admin-access-emails`, `DELETE /admin-access-emails/:id` | admin |
 | `GET /admin/stats` | admin (dashboard counts) |
+| `GET /orders`, `GET /orders/:id`, `POST /orders` | signed-in owner (COD placement) |
+| `POST /orders/:id/confirm-receipt`, `POST /orders/:id/delivery-issue` | signed-in owner |
+| `GET /orders/admin/all`, `GET /orders/admin/:id` | admin |
+| `PATCH /orders/:id/fulfillment`, `POST /orders/:id/resolve-delivery-issue` | admin |
+
+### Order tracking and COD checkout
+
+The `orders` Nest module follows controller → service → repository layering. The repository calls service-role-only PostgreSQL functions `petko_create_order` and `petko_mutate_order`; clients cannot execute them directly. Mutations lock the order and compare `expected_version`, returning 409 for stale screens. Status updates and immutable history events commit together.
+
+`fulfillment_status` progresses `placed` → `processing` → `shipped` → `out_for_delivery` → `delivered`. Delivery stays awaiting confirmation until the order owner confirms receipt; completion is derived from `delivery_confirmed_at`, not another fulfillment status. Admins never confirm another customer's receipt. There is no automatic completion. Nonreceipt reports flag admin review; admin responses clear the flag but never confirm receipt. Admin cancellation is allowed only before shipment and restores reserved stock once. `orders.status` retains its legacy values, with cancellation setting it to `cancelled`.
+
+`POST /orders` accepts a per-checkout UUID, product IDs/quantities, shipping snapshot, delivery method, and `payment_method: 'cod'`. The transaction validates products, locks stock in stable order, snapshots prices/names/images, calculates shipping, and deduplicates retries. Standard shipping costs PHP 99 (free at subtotal >= PHP 999); express costs PHP 199. Browser prices and totals are never trusted. Checkout clears the cart only after persistence succeeds. Legacy orders receive an imported tracking baseline with no invented milestone dates or delivery address.
+
+See `docs/plans/2026-11-10-order-tracking.md` for the API contract, interview decisions, and rollout/rollback details.
 
 ### TypeScript config note
 
@@ -190,7 +206,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 
 Resolved: tsconfig `baseUrl` squiggle; editable admin access list with effective admin role; duplicate "Customer View Mode" / "Admin View Mode" banners removed (the Navbar toggle is the only switch); Supabase error messages no longer leak to clients; user delete/demote hardened (no self-lockout, last-admin protection, auth user deleted first); escaped `ilike` and paginated auth lookup for promote-by-email; dashboard counts come from the admin-only `/api/admin/stats` (not anon queries); serverless bootstrap failures (including missing env vars) return the JSON 500 envelope instead of crashing the function; no `any` in FE; oxlint 0 warnings; Tailwind build tools moved to devDependencies.
 
-Remaining: Tailwind 3 build-time audit findings (see Accepted Risks); no rate limiting in code (use Vercel Firewall); FE bundle > 500 kB (Vite warning, code-splitting not done); `admin-products-page.tsx` still calls `api` directly (move its calls into an api module); FE has no unit-test framework (authorization is server-side and unit-tested; UI is checked with Playwright DOM assertions during verification); checkout/payment gateway still a scaffold.
+Remaining: Tailwind 3 build-time audit findings (see Accepted Risks); no rate limiting in code (use Vercel Firewall); FE bundle > 500 kB (Vite warning, code-splitting not done); `admin-products-page.tsx` still calls `api` directly (move its calls into an api module); FE has no unit-test framework (authorization is server-side and unit-tested; UI is checked with Playwright DOM assertions during verification); online payment gateway is not integrated.
 
 ---
 
@@ -246,6 +262,18 @@ Remaining: Tailwind 3 build-time audit findings (see Accepted Risks); no rate li
 | `total_amount` | `numeric` | |
 | `payment_reference` | `text` | Gateway reference — TBA |
 | `created_at` | `timestamptz` | |
+| `fulfillment_status` | `text` | `placed`, `processing`, `shipped`, `out_for_delivery`, `delivered`, `cancelled` |
+| `tracking_version` | `integer` | Incremented atomically for every tracking action |
+| `delivery_confirmed_at` | `timestamptz` | Nullable; set only by the order owner |
+| `subtotal_amount`, `shipping_fee` | `numeric` | Server-priced amounts |
+| `shipping` | `jsonb` | Address/contact snapshot; absent on legacy orders |
+| `payment_method`, `delivery_method` | `text` | COD and standard/express; nullable for legacy records |
+| `courier_name`, `tracking_number` | `text` | Optional admin-provided tracking details |
+| `delivery_issue` | `jsonb` | Current nonreceipt report and admin response; history remains in events |
+| `checkout_request_id`, `checkout_payload` | `uuid`, `jsonb` | Backend-only retry deduplication |
+| `stock_reserved`, `updated_at` | `boolean`, `timestamptz` | Stock restoration guard and latest tracking change |
+
+`order_tracking_events` is backend-only, RLS-protected, and append-only. Each event records the order/version, action, status transition, actor, timestamp, and optional note. Its unique `(order_id, version)` prevents duplicate history.
 
 ### `order_items` table
 | Column | Type | Notes |
@@ -255,6 +283,7 @@ Remaining: Tailwind 3 build-time audit findings (see Accepted Risks); no rate li
 | `product_id` | `uuid` | FK → `products.id` |
 | `quantity` | `integer` | |
 | `unit_price` | `numeric` | Snapshot at time of purchase |
+| `product_name`, `image_url` | `text` | Item snapshots for new orders; current product fallback for legacy items |
 
 ---
 

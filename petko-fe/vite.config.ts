@@ -18,6 +18,8 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
+    // Vercel and isolated checks use injected values exclusively, like Nest.
+    envDir: process.env.VERCEL ? false : undefined,
     plugins: [react()],
     resolve: {
       alias: {
