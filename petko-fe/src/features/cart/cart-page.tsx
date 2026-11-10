@@ -9,7 +9,8 @@ export default function CartPage() {
   const removeItem = useCartStore((s) => s.removeItem)
   
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
-  const shippingEstimate = 100 // Dummy value based on wireframe having a cost, adjust as needed
+  const isFreeShipping = totalPrice >= 999
+  const shippingEstimate = items.length === 0 ? 0 : isFreeShipping ? 0 : 99
 
   return (
     <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
@@ -258,8 +259,8 @@ export default function CartPage() {
                     <span className="text-xs text-gray-400">Metro Manila, 1100</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="font-bold text-gray-800">
-                      ₱{shippingEstimate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    <span className={`font-bold ${isFreeShipping ? 'text-green-600' : 'text-gray-800'}`}>
+                      {isFreeShipping ? 'FREE' : `₱${shippingEstimate.toFixed(2)}`}
                     </span>
                     <button className="text-xs font-semibold text-[#10298E] underline">
                       Change
@@ -318,7 +319,7 @@ export default function CartPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-gray-800">Free Shipping</h4>
-                  <p className="text-xs text-gray-500">₱ 899 minimum spend in Metro Manila</p>
+                  <p className="text-xs text-gray-500">₱ 999 minimum spend in Metro Manila</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

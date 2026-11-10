@@ -17,6 +17,7 @@ interface CheckoutState {
   submit: (
     shipping: OrderShipping,
     delivery: 'standard' | 'express',
+    directItems?: { product_id: string; quantity: number }[],
   ) => Promise<OrderDetail | null>
 }
 
@@ -40,6 +41,7 @@ export function useCheckout(): CheckoutState {
   async function submit(
     shipping: OrderShipping,
     delivery: 'standard' | 'express',
+    directItems?: { product_id: string; quantity: number }[],
   ): Promise<OrderDetail | null> {
     if (busy.current) return null
     const fieldErrors = validateCheckoutShipping(shipping)
@@ -50,8 +52,12 @@ export function useCheckout(): CheckoutState {
       return null
     }
     const profile = useAuthStore.getState().profile
-    const items = useCartStore.getState().items
-    if (!profile || items.length === 0) {
+    const cartItems = useCartStore.getState().items
+    const orderItems = directItems ?? cartItems.map((item) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+    }))
+    if (!profile || orderItems.length === 0) {
       setError('Add items to your cart and sign in before placing an order.')
       return null
     }
@@ -68,10 +74,7 @@ export function useCheckout(): CheckoutState {
       },
       delivery_method: delivery,
       payment_method: 'cod',
-      items: items.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-      })),
+      items: orderItems,
     }
     const fingerprint = JSON.stringify({ user: profile.id, ...payload })
     const request = checkoutRequests.get(fingerprint) ?? {
@@ -87,9 +90,10 @@ export function useCheckout(): CheckoutState {
         checkout_request_id: request.id,
       })
       if (useAuthStore.getState().profile?.id !== profile.id) return null
-      if (!request.reconciled) {
+      if (!request.reconciled && !directItems) {
         // A second component may be retrying the same request. Reconcile once,
         // preserving products or quantities added after the original submission.
+        // Direct orders do not draw from or clear the persistent cart.
         request.reconciled = true
         useCartStore.setState((state) => ({
           items: state.items.flatMap((item) => {

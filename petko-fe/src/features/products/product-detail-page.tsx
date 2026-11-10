@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ChevronRight,
   Check,
@@ -16,6 +16,7 @@ import { getApiErrorMessage } from '@/lib/api-error'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [product, setProduct] = useState<Product | null>(null)
   const [suggestions, setSuggestions] = useState<Product[]>([])
   const [loadedId, setLoadedId] = useState<string | null>(null)
@@ -111,7 +112,7 @@ export default function ProductDetailPage() {
     sessionStorage.setItem('direct_checkout_item', JSON.stringify(directItem))
 
     // Redirect to checkout with a direct mode parameter
-    window.location.href = '/checkout?mode=direct'
+    navigate('/checkout?mode=direct')
   }
 
   if (isLoading) {

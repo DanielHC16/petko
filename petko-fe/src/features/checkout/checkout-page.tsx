@@ -1,5 +1,5 @@
-import { useId, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useId, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ShoppingCart,
   ChevronRight,
@@ -10,7 +10,7 @@ import {
   RotateCcw,
   Heart,
 } from 'lucide-react'
-import { useCartStore } from '@/store/cart.store'
+import { useCartStore, type CartItem } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
 import logoImg from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
@@ -217,10 +217,25 @@ function PaymentCard({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const navigate = useNavigate()
-  const items = useCartStore((s) => s.items)
-  const totalPrice = useCartStore((s) => s.totalPrice())
-  const totalItems = useCartStore((s) => s.totalItems())
+  const [searchParams] = useSearchParams()
+  const isDirect = searchParams.get('mode') === 'direct'
+  const cartItems = useCartStore((s) => s.items)
   const profile = useAuthStore((s) => s.profile)
+
+  const directItem = useMemo((): CartItem | null => {
+    if (!isDirect) return null
+    try {
+      const raw = sessionStorage.getItem('direct_checkout_item')
+      if (!raw) return null
+      return JSON.parse(raw) as CartItem
+    } catch {
+      return null
+    }
+  }, [isDirect])
+
+  const items = isDirect && directItem ? [directItem] : cartItems
+  const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
 
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [email, setEmail] = useState(profile?.email ?? '')
@@ -239,6 +254,9 @@ export default function CheckoutPage() {
   const grandTotal = totalPrice + shippingFee
 
   async function handlePlaceOrder(): Promise<void> {
+    const directOrderItems = isDirect && directItem
+      ? [{ product_id: directItem.product_id, quantity: directItem.quantity }]
+      : undefined
     const order = await checkout.submit(
       {
         full_name: fullName,
@@ -251,8 +269,12 @@ export default function CheckoutPage() {
         postal_code: postalCode,
       },
       delivery,
+      directOrderItems,
     )
-    if (order) navigate(`/orders?order=${order.id}`)
+    if (order) {
+      if (isDirect) sessionStorage.removeItem('direct_checkout_item')
+      navigate(`/orders?order=${order.id}`)
+    }
   }
 
   return (
