@@ -158,7 +158,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 1. Apply the SQL files in `petko-be/supabase/` in order (Supabase SQL editor, or `npx --yes supabase@2.120.0 db query --linked --file supabase/<file>.sql` from `petko-be` once the CLI is logged in and linked). All are safe to re-run:
    - `security-patch-001-lock-user-role.sql` (live project: applied 2026-10-07)
    - `migration-002-admin-access-emails.sql` (live project: applied and re-verified 2026-10-08; table, constraints, RLS, no policies, no anon/authenticated grants)
-   - `migration-003-order-tracking.sql` (apply before deploying order tracking; additive fields, history, backend-only transactional checkout and tracking functions). Validate with `verify-order-tracking.sql` in an isolated test database; never use production fixtures.
+   - `migration-003-order-tracking.sql` (live project: applied and metadata-verified 2026-11-10; additive fields, history, backend-only transactional checkout and tracking functions). Apply before deploying order tracking in other environments. Validate with `verify-order-tracking.sql` in an isolated test database; never use production fixtures.
 2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
 3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
 4. `vercel deploy --prod`, or push to `main` with the Git integration.

@@ -1,6 +1,6 @@
 # Order tracking: design
 
-Status: implemented and verified locally. Production migration/deployment has not been performed. Updated 2026-11-10.
+Status: implemented; local checks and the live migration verified. Application release is tracked in PR #19. Updated 2026-11-10.
 
 ## Goal and success criteria
 
@@ -131,3 +131,9 @@ Completed locally on 2026-11-10 with placeholder credentials and env-file loadin
 - Review findings were fixed: malformed nested checkout payloads, mixed-version history reads, stale selected-order refresh, tracking navigation, receipt wording, and checkout retry identity across route changes.
 
 The final shared frontend API/domain files live in `src/lib/orders-api.ts`, `order-types.ts`, and `order-status.ts`; hooks in `src/hooks/use-orders.ts`; shared presentation in `src/components/orders/`. Checkout uses `features/checkout/use-checkout.ts` and `checkout-validation.ts`. These shared locations let customer/admin views reuse the same contract without reaching into another feature's internals.
+
+## Release verification
+
+The user authorized committing, pushing, opening a PR, merging to main, and applying migration-003 before release. [PR #19](https://github.com/DanielHC16/petko/pull/19) integrates the latest storefront banners, local images, footer, terms, and scrollable checkout summary. A small responsive footer correction prevents category links from clipping on narrow screens.
+
+Migration-003 was applied once to the live Petko project on 2026-11-10. Read-only metadata checks verified required columns/table/functions, history RLS and immutability, uniqueness constraints, service-role-only function execution, and revoked browser write/history privileges. No production test fixtures or customer-data reads were used. All local checks and the desktop/mobile browser flows were repeated after integrating main; GitHub CI and Vercel statuses on the PR record final release checks. Rollback retains the added tracking schema/history and restores the previous application release.
