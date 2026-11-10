@@ -560,12 +560,21 @@ export default function CheckoutPage() {
                 <h2 className="text-sm font-bold text-petko-blue">
                   Order Summary
                 </h2>
-                <Link
-                  to="/cart"
-                  className="text-xs font-semibold text-petko-blue underline underline-offset-2 hover:opacity-80"
-                >
-                  Edit Cart
-                </Link>
+                {isDirect && directItem ? (
+                  <Link
+                    to={`/products/${directItem.product_id}`}
+                    className="text-xs font-semibold text-petko-blue underline underline-offset-2 hover:opacity-80"
+                  >
+                    Change Item
+                  </Link>
+                ) : (
+                  <Link
+                    to="/cart"
+                    className="text-xs font-semibold text-petko-blue underline underline-offset-2 hover:opacity-80"
+                  >
+                    Edit Cart
+                  </Link>
+                )}
               </div>
 
               {/* Items stay scrollable so large carts keep the summary compact. */}
@@ -599,8 +608,12 @@ export default function CheckoutPage() {
                       <p className="text-xs font-semibold text-gray-800 line-clamp-1">
                         {item.name}
                       </p>
-                      <p className="text-[10px] text-gray-400 line-clamp-1">
-                        {item.name}
+                      <p className="text-[10px] text-gray-400 tabular-nums">
+                        ₱{' '}
+                        {item.price.toLocaleString('en-PH', {
+                          minimumFractionDigits: 2,
+                        })}{' '}
+                        each
                       </p>
                     </div>
                     <span className="shrink-0 text-xs font-semibold text-gray-800 tabular-nums">

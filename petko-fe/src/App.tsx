@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import AppLayout from '@/components/layout/AppLayout'
@@ -5,8 +6,6 @@ import AppLayout from '@/components/layout/AppLayout'
 // Auth
 import AuthPage from '@/features/auth/auth-page'
 import AuthCallbackPage from '@/features/auth/auth-callback'
-import LoadingPreview from '@/features/auth/loading-preview'
-import TosPreview from '@/features/auth/tos-preview'
 
 // Customer pages
 import ProductsPage from '@/features/products/products-page'
@@ -15,60 +14,62 @@ import CartPage from '@/features/cart/cart-page'
 import CheckoutPage from '@/features/checkout/checkout-page'
 import OrdersPage from '@/features/orders/orders-page'
 
-// Admin pages
-import AdminDashboardPage from '@/features/admin/admin-dashboard-page'
-import AdminProductsPage from '@/features/admin/admin-products-page'
-import AdminOrdersPage from '@/features/admin/admin-orders-page'
-import AdminUsersPage from '@/features/admin/admin-users-page'
+// Dev previews (lazy loaded)
+const LoadingPreview = lazy(() => import('@/features/auth/loading-preview'))
+const TosPreview = lazy(() => import('@/features/auth/tos-preview'))
+
+// Admin pages (lazy-loaded so they do not bloat the storefront bundle)
+const AdminDashboardPage = lazy(() => import('@/features/admin/admin-dashboard-page'))
+const AdminProductsPage = lazy(() => import('@/features/admin/admin-products-page'))
+const AdminOrdersPage = lazy(() => import('@/features/admin/admin-orders-page'))
+const AdminUsersPage = lazy(() => import('@/features/admin/admin-users-page'))
+
+function PageFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="text-sm font-semibold text-petko-blue">Loading…</div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/*Public / Auth */}
-        <Route path="/login"         element={<AuthPage />} />
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          {/* Public / Auth */}
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-        {/* Dev previews (no auth, no layout) */}
-        <Route path="/loading-preview" element={<LoadingPreview />} />
-        <Route path="/tos-preview"     element={<TosPreview />} />
+          {/* Dev previews */}
+          <Route path="/loading-preview" element={<LoadingPreview />} />
+          <Route path="/tos-preview" element={<TosPreview />} />
 
-        {/* UI Testing — all pages bypass auth */}
-           {/* Comment this block out and uncomment ProtectedRoute below
-            when restoring auth for production.*/}
-        {/* <Route element={<AppLayout />}>
-          <Route path="/"             element={<ProductsPage />} />
-          <Route path="/products/:id" element={<ProductDetailPage />} />
-          <Route path="/cart"         element={<CartPage />} />
-          <Route path="/checkout"     element={<CheckoutPage />} />
-          <Route path="/orders"       element={<OrdersPage />} />
-        </Route>
-        */}
-
-        {/* Authenticated customer routes (restore for production)  */}
-        <Route element={<ProtectedRoute />}> 
-          <Route element={<AppLayout />}>
-            <Route path="/"             element={<ProductsPage />} />
-            <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path="/cart"         element={<CartPage />} />
-            <Route path="/checkout"     element={<CheckoutPage />} />
-            <Route path="/orders"       element={<OrdersPage />} />
+          {/* Authenticated customer routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<ProductsPage />} />
+              <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Admin-only routes */}
-        <Route element={<ProtectedRoute requiredRole="admin" />}>
-          <Route element={<AppLayout />}>
-            <Route path="/admin"          element={<AdminDashboardPage />} />
-            <Route path="/admin/products" element={<AdminProductsPage />} />
-            <Route path="/admin/orders"   element={<AdminOrdersPage />} />
-            <Route path="/admin/users"    element={<AdminUsersPage />} />
+          {/* Admin-only routes */}
+          <Route element={<ProtectedRoute requiredRole="admin" />}>
+            <Route element={<AppLayout />}>
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/products" element={<AdminProductsPage />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
