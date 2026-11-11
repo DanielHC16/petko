@@ -1,30 +1,14 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Package, PawPrint, RefreshCw } from 'lucide-react'
-import OrderDetailCard, {
-  OrderStatusBadge,
-} from '@/components/orders/order-detail'
+import OrderDetailCard, { OrderStatusBadge } from '@/components/orders/order-detail'
 import OrderActionDialog from '@/components/orders/order-action-dialog'
-import {
-  useOrderDetail,
-  useOrderList,
-  useOrderMutation,
-} from '@/hooks/use-orders'
-import {
-  formatOrderDate,
-  formatOrderMoney,
-  orderNumber,
-} from '@/lib/order-status'
-import pawYellow from '@/assets/paw_yellow.png'
+import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'
+import { formatOrderDate, formatOrderMoney, orderNumber } from '@/lib/order-status'
 import petOrders from '@/assets/pet_orders.png'
+import PageBanner from '@/components/layout/PageBanner'
 
-function CustomerOrder({
-  id,
-  onUpdated,
-}: {
-  id: string
-  onUpdated: () => void
-}) {
+function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void }) {
   const detail = useOrderDetail(id)
   const [dialog, setDialog] = useState<'confirm' | 'report' | null>(null)
   const mutation = useOrderMutation(() => {
@@ -83,7 +67,7 @@ function CustomerOrder({
         {canConfirm && (
           <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-gray-700">
-              Have your pet’s goodies arrived?
+              Have your pet's goodies arrived?
               <span className="mt-1 block text-xs text-gray-500">
                 Confirm only after you have received this order.
               </span>
@@ -111,7 +95,7 @@ function CustomerOrder({
                   }}
                   className="rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-900 hover:bg-orange-100 disabled:opacity-50"
                 >
-                  I haven’t received it
+                  I haven't received it
                 </button>
               )}
             </div>
@@ -159,6 +143,7 @@ export default function OrdersPage() {
   const page = Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1
   const list = useOrderList({ page, limit: 5 })
   const selectedId = params.get('order') || list.data?.orders[0]?.id || null
+
   function selectOrder(id: string): void {
     setParams((current) => {
       current.set('order', id)
@@ -179,39 +164,26 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#ecdab6] pb-8 sm:pb-10">
-      <header className="relative mb-8 overflow-hidden rounded-b-[2rem] bg-[#fefaf2] shadow-sm">
-        <img
-          src={pawYellow}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-8 -top-8 h-40 w-40 -rotate-12 object-contain opacity-50 sm:h-52 sm:w-52"
-        />
-        <img
-          src={pawYellow}
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-8 -top-10 hidden h-44 w-44 -rotate-[50deg] object-contain opacity-70 md:block"
-        />
-        <div className="relative mx-auto flex min-h-40 max-w-6xl items-center justify-between gap-4 px-6 py-7 sm:px-8">
-          <div className="relative z-10 min-w-0 pl-10 sm:pl-24">
-            <h1 className="flex items-center gap-3 font-display text-3xl font-extrabold text-petko-blue sm:text-4xl">
+
+      {/* Shared checkout-style banner */}
+      <div className="px-4 pt-4 sm:px-6 lg:px-10">
+        <PageBanner
+          title={
+            <>
               Your orders{' '}
-              <PawPrint size={29} aria-hidden="true" className="shrink-0" />
-            </h1>
-            <p className="mt-2 max-w-md text-sm font-medium text-gray-700">
-              Track your companion’s order from our warehouse to your home.
-            </p>
-          </div>
-          <img
-            src={petOrders}
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none hidden h-36 w-48 shrink-0 object-contain lg:block"
-          />
-        </div>
-      </header>
+              <PawPrint size={28} aria-hidden="true" className="inline-block shrink-0 align-middle" />
+            </>
+          }
+          subtitle="Track your companion's order from our warehouse to your home."
+        />
+      </div>
+
       <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          {/* Pet illustration on larger screens */}
+          <div className="hidden lg:block" aria-hidden="true">
+            <img src={petOrders} alt="" className="h-24 w-auto object-contain opacity-80" />
+          </div>
           <button
             type="button"
             onClick={refreshOrders}
@@ -220,24 +192,19 @@ export default function OrdersPage() {
           >
             <RefreshCw
               size={16}
-              className={
-                list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''
-              }
+              className={list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''}
             />
             Refresh orders
           </button>
         </div>
+
         {list.error && (
           <div
             role="alert"
             className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
           >
             {list.error}{' '}
-            <button
-              type="button"
-              onClick={refreshOrders}
-              className="font-bold underline"
-            >
+            <button type="button" onClick={refreshOrders} className="font-bold underline">
               Try again
             </button>
           </div>
@@ -252,15 +219,9 @@ export default function OrdersPage() {
         )}
         {list.data && list.data.orders.length === 0 && (
           <div className="rounded-2xl border border-orange-200 bg-white px-6 py-12 text-center">
-            <Package
-              size={40}
-              className="mx-auto mb-4 text-petko-gold"
-              aria-hidden="true"
-            />
+            <Package size={40} className="mx-auto mb-4 text-petko-gold" aria-hidden="true" />
             <h2 className="font-display text-xl font-bold text-petko-blue">
-              {page > 1
-                ? 'No orders on this page'
-                : 'Your first delivery starts here'}
+              {page > 1 ? 'No orders on this page' : 'Your first delivery starts here'}
             </h2>
             <p className="mt-2 text-sm text-gray-500">
               {page > 1
@@ -293,9 +254,7 @@ export default function OrdersPage() {
               <h2 className="text-sm font-bold text-petko-blue">
                 Your orders ({list.data.total})
               </h2>
-              <p className="text-xs text-gray-500">
-                Choose an order to see its progress
-              </p>
+              <p className="text-xs text-gray-500">Choose an order to see its progress</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {list.data.orders.map((order) => (
@@ -304,19 +263,17 @@ export default function OrdersPage() {
                   type="button"
                   aria-pressed={selectedId === order.id}
                   onClick={() => selectOrder(order.id)}
-                  className={`min-w-0 rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue ${selectedId === order.id ? 'border-petko-blue bg-blue-50' : 'border-gray-200 bg-white hover:border-orange-300'}`}
+                  className={`min-w-0 rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue ${
+                    selectedId === order.id
+                      ? 'border-petko-blue bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-orange-300'
+                  }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-petko-blue">
-                      {orderNumber(order.id)}
-                    </span>
-                    <span className="text-sm font-bold text-gray-800">
-                      {formatOrderMoney(order.total_amount)}
-                    </span>
+                    <span className="text-sm font-bold text-petko-blue">{orderNumber(order.id)}</span>
+                    <span className="text-sm font-bold text-gray-800">{formatOrderMoney(order.total_amount)}</span>
                   </div>
-                  <p className="mb-3 mt-1 text-xs text-gray-500">
-                    {formatOrderDate(order.created_at)}
-                  </p>
+                  <p className="mb-3 mt-1 text-xs text-gray-500">{formatOrderDate(order.created_at)}</p>
                   <OrderStatusBadge order={order} />
                 </button>
               ))}
@@ -334,14 +291,11 @@ export default function OrdersPage() {
                 Previous
               </button>
               <span className="text-gray-500">
-                Page {page} of{' '}
-                {Math.max(1, Math.ceil(list.data.total / list.data.limit))}
+                Page {page} of {Math.max(1, Math.ceil(list.data.total / list.data.limit))}
               </span>
               <button
                 type="button"
-                disabled={
-                  page * list.data.limit >= list.data.total || list.isLoading
-                }
+                disabled={page * list.data.limit >= list.data.total || list.isLoading}
                 onClick={() => changePage(page + 1)}
                 className="rounded-lg border border-gray-300 px-3 py-2 font-semibold disabled:opacity-40"
               >

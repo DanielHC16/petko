@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 import { fetchProductById, fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
 import { getApiErrorMessage } from '@/lib/api-error'
+import PageBanner from '@/components/layout/PageBanner'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -164,6 +165,12 @@ export default function ProductDetailPage() {
   return (
 <div className="min-h-screen bg-[#fbe8c1] p-4 font-sans md:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
+
+        {/* Page banner */}
+        <PageBanner
+          title={product.name}
+          subtitle={`${product.pet_type === 'cat' ? '🐱 Cat' : product.pet_type === 'dog' ? '🐶 Dog' : '🐾 All Pets'} · ${product.category.charAt(0).toUpperCase() + product.category.slice(1)}`}
+        />
 
         {/* Breadcrumb Navigation */}
         <nav className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-600">

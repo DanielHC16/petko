@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 import { getApiErrorMessage } from '@/lib/api-error'
 import { useAuthStore } from '@/store/auth.store'
 import AdminAccessSection from './admin-access-section'
+import PageBanner from '@/components/layout/PageBanner'
 import {
   deleteUser,
   fetchUsers,
@@ -134,314 +135,315 @@ export default function AdminUsersPage() {
   const customerCount = users.filter((u) => u.role === 'customer').length
 
   return (
-    <div className="space-y-8">
-      {/* Navigation Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-orange-600 mb-2"
-          >
-            <ArrowLeft size={14} />
-            Back to Admin Portal
-          </Link>
-          <h1 className="text-2xl font-black text-gray-900 sm:text-3xl">
-            User Roles &amp; RBAC Management
-          </h1>
-          <p className="mt-1 text-xs text-gray-500">
-            View registered accounts, assign Administrator permissions, or remove user access.
-          </p>
-        </div>
-
-        <button
-          onClick={loadUsers}
-          disabled={isLoading}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
+      <div className="space-y-8">
+        {/* ── Page banner ───────────────────────────────────────────── */}
+        <PageBanner
+          title="User Roles & RBAC Management"
+          subtitle="View registered accounts, assign Administrator permissions, or remove user access."
         >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          Refresh Users
-        </button>
-      </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-6 py-2 sm:px-8">
+            <Link to="/admin"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95">
+              <ArrowLeft size={13} />
+              Back to Admin Portal
+            </Link>
+            <button onClick={loadUsers} disabled={isLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-[#fef8e8] disabled:opacity-50">
+              <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+              Refresh Users
+            </button>
+          </div>
+        </PageBanner>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Total Users
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
-              <Users size={16} />
+        {/* ── Overview Stats ─────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                Total Users
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#10298E]">
+                <Users size={16} />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-black text-[#10298E]">{users.length}</p>
+            <p className="mt-0.5 text-[11px] text-gray-400">Registered across Petko</p>
+          </div>
+
+          <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-700">
+                Admin Users
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-200 text-orange-800">
+                <Shield size={16} />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-black text-orange-950">{adminCount}</p>
+            <p className="mt-0.5 text-[11px] text-orange-700/80">Full administrative access</p>
+          </div>
+
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                Customer Accounts
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-200 text-blue-800">
+                <Users size={16} />
+              </div>
+            </div>
+            <p className="mt-2 text-2xl font-black text-blue-950">{customerCount}</p>
+            <p className="mt-0.5 text-[11px] text-blue-700/80">Standard store shoppers</p>
+          </div>
+        </div>
+
+        {/* ── Add / Promote Admin Form ──────────────────────────────── */}
+        <div className="rounded-2xl border border-orange-200 bg-[#fdf2e1] p-5 shadow-sm sm:p-6">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+              <UserPlus size={18} />
+            </div>
+            <div>
+              <h2
+                className="text-base font-bold text-[#10298E]"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                Manually Add or Promote Admin User
+              </h2>
+              <p className="text-xs text-gray-600">
+                Enter any Gmail or email address. If they haven&apos;t signed in with Google yet, their role will be pre-configured.
+              </p>
             </div>
           </div>
-          <p className="mt-2 text-2xl font-black text-gray-900">{users.length}</p>
-          <p className="mt-0.5 text-[11px] text-gray-400">Registered across Petko</p>
-        </div>
 
-        <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-orange-700">
-              Admin Users
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-200 text-orange-800">
-              <Shield size={16} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-orange-950">{adminCount}</p>
-          <p className="mt-0.5 text-[11px] text-orange-700/80">Full administrative access</p>
-        </div>
-
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
-              Customer Accounts
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-200 text-blue-800">
-              <Users size={16} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black text-blue-950">{customerCount}</p>
-          <p className="mt-0.5 text-[11px] text-blue-700/80">Standard store shoppers</p>
-        </div>
-      </div>
-
-      {/* Add / Promote Admin Form */}
-      <div className="rounded-2xl border border-orange-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-            <UserPlus size={18} />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-gray-900">
-              Manually Add or Promote Admin User
-            </h2>
-            <p className="text-xs text-gray-500">
-              Enter any Gmail or email address. If they haven&apos;t signed in with Google yet, their role will be pre-configured.
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handlePromoteUser} className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <input
-            type="email"
-            required
-            value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
-            placeholder="e.g. colleague@gmail.com or admin@domain.com"
-            className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-          />
-
-          <select
-            value={roleInput}
-            onChange={(e) => {
-              if (isRole(e.target.value)) setRoleInput(e.target.value)
-            }}
-            className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 focus:border-orange-500 focus:outline-none"
-          >
-            <option value="admin">🛡️ Role: Admin</option>
-            <option value="customer">👤 Role: Customer</option>
-          </select>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <RefreshCw size={16} className="animate-spin" />
-            ) : (
-              <CheckCircle size={16} />
-            )}
-            <span>Assign Role</span>
-          </button>
-        </form>
-      </div>
-
-      {/* Admin Access Email List */}
-      <AdminAccessSection onChange={loadUsers} />
-
-      {/* Users Table */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        {/* Table Toolbar */}
-        <div className="flex flex-col gap-3 border-b border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-bold text-gray-900">
-            Registered Users ({filteredUsers.length})
-          </h2>
-
-          <div className="relative w-full sm:w-72">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={16}
-            />
+          <form onSubmit={handlePromoteUser} className="mt-5 flex flex-col gap-3 sm:flex-row">
             <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or email..."
-              className="w-full rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-xs text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+              type="email"
+              required
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="e.g. colleague@gmail.com or admin@domain.com"
+              className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
             />
-          </div>
+
+            <select
+              value={roleInput}
+              onChange={(e) => {
+                if (isRole(e.target.value)) setRoleInput(e.target.value)
+              }}
+              className="rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 focus:border-orange-500 focus:outline-none"
+            >
+              <option value="admin">🛡️ Role: Admin</option>
+              <option value="customer">👤 Role: Customer</option>
+            </select>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <RefreshCw size={16} className="animate-spin" />
+              ) : (
+                <CheckCircle size={16} />
+              )}
+              <span>Assign Role</span>
+            </button>
+          </form>
         </div>
 
-        {isLoading ? (
-          <div className="p-8 text-center text-xs text-gray-500">
-            Loading users list...
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="p-12 text-center text-xs text-gray-500">
-            No users match your search keyword.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-gray-100 bg-gray-50 text-gray-500 uppercase tracking-wider font-semibold">
-                <tr>
-                  <th className="px-6 py-3.5">User</th>
-                  <th className="px-6 py-3.5">Email</th>
-                  <th className="px-6 py-3.5">Current Role</th>
-                  <th className="px-6 py-3.5">Joined</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredUsers.map((user) => {
-                  const isCurrent = user.id === currentAdmin?.id
-                  const isUpdating = updatingId === user.id
-                  const isDeleting = deletingId === user.id
+        {/* ── Admin Access Email List ────────────────────────────────── */}
+        <AdminAccessSection onChange={loadUsers} />
 
-                  return (
-                    <tr key={user.id} className="hover:bg-gray-50/80 transition">
-                      {/* Name & Avatar */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {user.avatar_url ? (
-                            <img
-                              src={user.avatar_url}
-                              alt={user.full_name}
-                              className="h-8 w-8 rounded-full border border-gray-200 object-cover"
-                            />
+        {/* ── Users Table ─────────────────────────────────────────────── */}
+        <div className="rounded-2xl border border-[#e1cba5] bg-white shadow-sm overflow-hidden">
+          {/* Table Toolbar */}
+          <div className="flex flex-col gap-3 border-b border-[#e1cba5] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <h2
+              className="text-base font-bold text-[#10298E]"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              Registered Users ({filteredUsers.length})
+            </h2>
+
+            <div className="relative w-full sm:w-72">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full rounded-lg border border-[#e1cba5] bg-[#fefaf2] py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="p-8 text-center text-sm text-gray-500">
+              Loading users list...
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="p-12 text-center text-sm text-gray-500">
+              No users match your search keyword.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E]">
+                  <tr>
+                    <th className="px-4 py-3 sm:px-6">User</th>
+                    <th className="hidden px-6 py-3 md:table-cell">Email</th>
+                    <th className="px-4 py-3 sm:px-6">Current Role</th>
+                    <th className="hidden px-6 py-3 sm:table-cell">Joined</th>
+                    <th className="px-4 py-3 text-right sm:px-6">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e1cba5]/60">
+                  {filteredUsers.map((user) => {
+                    const isCurrent = user.id === currentAdmin?.id
+                    const isUpdating = updatingId === user.id
+                    const isDeleting = deletingId === user.id
+
+                    return (
+                      <tr key={user.id} className="hover:bg-[#fef8e8] transition">
+                        {/* Name & Avatar */}
+                        <td className="px-4 py-3 sm:px-6">
+                          <div className="flex items-center gap-3">
+                            {user.avatar_url ? (
+                              <img
+                                src={user.avatar_url}
+                                alt={user.full_name}
+                                className="h-9 w-9 rounded-full border border-[#e1cba5] object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
+                                {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-bold text-[#10298E]">
+                                {user.full_name || 'No Name Set'}
+                                {isCurrent && (
+                                  <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                                    You
+                                  </span>
+                                )}
+                              </p>
+                              {/* Show email inline on mobile (when Email column hidden) */}
+                              <p className="truncate text-[11px] text-gray-400 md:hidden">{user.email}</p>
+                              <p className="hidden font-mono text-[10px] text-gray-400 md:block">ID: {user.id.slice(0, 8)}...</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Email */}
+                        <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">
+                          {user.email}
+                        </td>
+
+                        {/* Role Badge */}
+                        <td className="px-4 py-3 sm:px-6">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                              user.role === 'admin'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {user.role === 'admin' ? (
+                              <Shield size={12} />
+                            ) : (
+                              <Users size={12} />
+                            )}
+                            {user.role.toUpperCase()}
+                          </span>
+                          {user.admin_access_listed && (
+                            <span className="ml-1.5 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-700">
+                              Access list
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Joined Date */}
+                        <td className="hidden px-6 py-3 text-gray-500 sm:table-cell">
+                          {user.created_at
+                            ? new Date(user.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : 'Recent'}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3 text-right sm:px-6">
+                          {isCurrent ? (
+                            <span className="text-[11px] font-medium text-gray-400">
+                              Current Session
+                            </span>
                           ) : (
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
-                              {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                            <div className="flex items-center justify-end gap-2">
+                              {user.admin_access_listed ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  title="Remove their email from the admin access list to demote"
+                                  className="cursor-not-allowed rounded-lg border border-[#e1cba5] bg-[#fefaf2] px-3 py-1.5 text-xs font-semibold text-gray-600 opacity-70"
+                                >
+                                  Demote to Customer
+                                </button>
+                              ) : (
+                              <button
+                                onClick={() => handleToggleRole(user)}
+                                disabled={isUpdating || isDeleting}
+                                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                                  user.role === 'admin'
+                                    ? 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                    : 'border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100'
+                                }`}
+                              >
+                                {isUpdating
+                                  ? 'Updating...'
+                                  : user.role === 'admin'
+                                    ? 'Demote to Customer'
+                                    : 'Promote to Admin'}
+                              </button>
+                              )}
+
+                              <button
+                                onClick={() => handleDeleteUser(user)}
+                                disabled={isUpdating || isDeleting}
+                                className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                                title="Delete User Account"
+                                aria-label={`Delete user ${user.email}`}
+                              >
+                                <Trash2 size={14} className={isDeleting ? 'animate-pulse' : ''} />
+                              </button>
                             </div>
                           )}
-                          <div>
-                            <p className="font-bold text-gray-900">
-                              {user.full_name || 'No Name Set'}
-                              {isCurrent && (
-                                <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
-                                  You
-                                </span>
-                              )}
-                            </p>
-                            <p className="font-mono text-[10px] text-gray-400">ID: {user.id.slice(0, 8)}...</p>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
-                      {/* Email */}
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {user.email}
-                      </td>
-
-                      {/* Role Badge */}
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                            user.role === 'admin'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {user.role === 'admin' ? (
-                            <Shield size={12} />
-                          ) : (
-                            <Users size={12} />
-                          )}
-                          {user.role.toUpperCase()}
-                        </span>
-                        {user.admin_access_listed && (
-                          <span className="ml-1.5 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-700">
-                            Access list
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Joined Date */}
-                      <td className="px-6 py-4 text-gray-500">
-                        {user.created_at
-                          ? new Date(user.created_at).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })
-                          : 'Recent'}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-6 py-4 text-right">
-                        {isCurrent ? (
-                          <span className="text-[11px] font-medium text-gray-400">
-                            Current Session
-                          </span>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
-                            {user.admin_access_listed ? (
-                              <button
-                                type="button"
-                                disabled
-                                title="Remove their email from the admin access list to demote"
-                                className="cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 opacity-70"
-                              >
-                                Demote to Customer
-                              </button>
-                            ) : (
-                            <button
-                              onClick={() => handleToggleRole(user)}
-                              disabled={isUpdating || isDeleting}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                                user.role === 'admin'
-                                  ? 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                  : 'border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100'
-                              }`}
-                            >
-                              {isUpdating
-                                ? 'Updating...'
-                                : user.role === 'admin'
-                                  ? 'Demote to Customer'
-                                  : 'Promote to Admin'}
-                            </button>
-                            )}
-
-                            <button
-                              onClick={() => handleDeleteUser(user)}
-                              disabled={isUpdating || isDeleting}
-                              className="rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
-                              title="Delete User Account"
-                              aria-label={`Delete user ${user.email}`}
-                            >
-                              <Trash2 size={14} className={isDeleting ? 'animate-pulse' : ''} />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        {/* ── Safety Notice ───────────────────────────────────────────── */}
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
+          <ShieldAlert className="shrink-0 text-amber-600" size={18} />
+          <div>
+            <p className="font-bold">Admin Privileges &amp; Account Removal</p>
+            <p className="mt-0.5 text-amber-800">
+              Admins have full write access to product catalogs, user roles, and order statuses. Removing an account permanently deletes their database profile and revokes authentication credentials.
+            </p>
           </div>
-        )}
-      </div>
-
-      {/* Safety Notice */}
-      <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
-        <ShieldAlert className="shrink-0 text-amber-600" size={18} />
-        <div>
-          <p className="font-bold">Admin Privileges &amp; Account Removal</p>
-          <p className="mt-0.5 text-amber-800">
-            Admins have full write access to product catalogs, user roles, and order statuses. Removing an account permanently deletes their database profile and revokes authentication credentials.
-          </p>
         </div>
       </div>
     </div>

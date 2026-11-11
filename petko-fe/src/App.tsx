@@ -20,9 +20,9 @@ const TosPreview = lazy(() => import('@/features/auth/tos-preview'))
 
 // Admin pages (lazy-loaded so they do not bloat the storefront bundle)
 const AdminDashboardPage = lazy(() => import('@/features/admin/admin-dashboard-page'))
-const AdminProductsPage = lazy(() => import('@/features/admin/admin-products-page'))
-const AdminOrdersPage = lazy(() => import('@/features/admin/admin-orders-page'))
-const AdminUsersPage = lazy(() => import('@/features/admin/admin-users-page'))
+const AdminProductsPage  = lazy(() => import('@/features/admin/admin-products-page'))
+const AdminOrdersPage    = lazy(() => import('@/features/admin/admin-orders-page'))
+const AdminUsersPage     = lazy(() => import('@/features/admin/admin-users-page'))
 
 function PageFallback() {
   return (
@@ -38,31 +38,31 @@ export default function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           {/* Public / Auth */}
-          <Route path="/login" element={<AuthPage />} />
+          <Route path="/login"         element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           {/* Dev previews */}
           <Route path="/loading-preview" element={<LoadingPreview />} />
-          <Route path="/tos-preview" element={<TosPreview />} />
+          <Route path="/tos-preview"     element={<TosPreview />} />
 
           {/* Authenticated customer routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<ProductsPage />} />
+              <Route path="/"             element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/cart"         element={<CartPage />} />
+              <Route path="/checkout"     element={<CheckoutPage />} />
+              <Route path="/orders"       element={<OrdersPage />} />
             </Route>
           </Route>
 
           {/* Admin-only routes */}
           <Route element={<ProtectedRoute requiredRole="admin" />}>
             <Route element={<AppLayout />}>
-              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin"          element={<AdminDashboardPage />} />
               <Route path="/admin/products" element={<AdminProductsPage />} />
-              <Route path="/admin/orders" element={<AdminOrdersPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/orders"   element={<AdminOrdersPage />} />
+              <Route path="/admin/users"    element={<AdminUsersPage />} />
             </Route>
           </Route>
 

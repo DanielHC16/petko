@@ -1,3 +1,5 @@
+// import '@/lib/mock-setup' // local mock — removed, real backend in use
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'react-hot-toast'
