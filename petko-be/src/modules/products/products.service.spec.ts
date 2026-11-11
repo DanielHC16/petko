@@ -141,6 +141,70 @@ describe('ProductsService', () => {
     })
   })
 
+  describe('out-of-stock auto-deactivation', () => {
+    it('sets is_active to false when creating a product with 0 stock', async () => {
+      builder.result = {
+        data: { id: 'p1', stock: 0, is_active: false },
+        error: null,
+      }
+      await service.create({
+        name: 'Item',
+        price: 100,
+        stock: 0,
+        category: 'food',
+        pet_type: 'dog',
+        is_active: true,
+      })
+      expect(builder.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ stock: 0, is_active: false }),
+      )
+    })
+
+    it('sets is_active to false when stock is updated to 0', async () => {
+      builder.result = {
+        data: { id: 'p1', stock: 0, is_active: false },
+        error: null,
+      }
+      await service.update('p1', { stock: 0 })
+      expect(builder.update).toHaveBeenCalledWith(
+        expect.objectContaining({ stock: 0, is_active: false }),
+      )
+    })
+
+    it('rejects activating a product if stock is updated to 0 at the same time', async () => {
+      await expect(
+        service.update('p1', { stock: 0, is_active: true }),
+      ).rejects.toThrow(
+        new BadRequestException(
+          'Cannot activate a product that is out of stock.',
+        ),
+      )
+    })
+
+    it('rejects activating a product if its existing stock is 0', async () => {
+      builder.result = {
+        data: { id: 'p1', stock: 0, is_active: false },
+        error: null,
+      }
+      await expect(service.update('p1', { is_active: true })).rejects.toThrow(
+        new BadRequestException(
+          'Cannot activate a product that is out of stock.',
+        ),
+      )
+    })
+
+    it('allows activating a product when stock > 0', async () => {
+      builder.result = {
+        data: { id: 'p1', stock: 10, is_active: true },
+        error: null,
+      }
+      await service.update('p1', { stock: 10, is_active: true })
+      expect(builder.update).toHaveBeenCalledWith(
+        expect.objectContaining({ stock: 10, is_active: true }),
+      )
+    })
+  })
+
   describe('countProducts', () => {
     it('returns total and active counts', async () => {
       builder.result = { data: null, error: null, count: 4 }
