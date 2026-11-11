@@ -9,6 +9,7 @@ import { AdminStatsModule } from './modules/admin-stats/admin-stats.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { OrdersModule } from './modules/orders/orders.module'
+import { AnalyticsModule } from './modules/analytics/analytics.module'
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { OrdersModule } from './modules/orders/orders.module'
     AdminAccessEmailsModule,
     AdminStatsModule,
     OrdersModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

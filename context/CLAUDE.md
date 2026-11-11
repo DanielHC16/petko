@@ -13,6 +13,7 @@ It is a full-stack web application with a React/Vite frontend and a NestJS REST 
 - **Checkout**: Real Cash on Delivery checkout with server-priced totals, atomic stock reservation, and retry-safe order placement. Online payments remain unavailable until integrated.
 - **Order Tracking**: Admin-controlled fulfillment with timestamped history, customer-only receipt confirmation, and nonreceipt reports for admin review.
 - **Admin Panel**: Product, order, and user management for admins, plus the editable admin access list
+- **Admin Analytics**: Placed order value and customer-confirmed sales, buyers, browser sessions/page views, daily trends, and top products at `/admin/analytics`
 
 ### Admin access (effective admin role)
 
@@ -159,6 +160,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
    - `security-patch-001-lock-user-role.sql` (live project: applied 2026-10-07)
    - `migration-002-admin-access-emails.sql` (live project: applied and re-verified 2026-10-08; table, constraints, RLS, no policies, no anon/authenticated grants)
    - `migration-003-order-tracking.sql` (live project: applied and metadata-verified 2026-11-10; additive fields, history, backend-only transactional checkout and tracking functions). Apply before deploying order tracking in other environments. Validate with `verify-order-tracking.sql` in an isolated test database; never use production fixtures.
+   - `migration-004-admin-analytics.sql` (additive backend-only traffic tables and aggregation functions). Apply before deploying analytics; validate with `verify-admin-analytics.sql` only in an isolated database. Retain the schema/data on application rollback.
 2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
 3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
 4. `vercel deploy --prod`, or push to `main` with the Git integration.
@@ -183,6 +185,8 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 | `GET /users`, `PATCH /users/:id/role`, `POST /users/promote`, `DELETE /users/:id` | admin |
 | `GET /admin-access-emails`, `POST /admin-access-emails`, `DELETE /admin-access-emails/:id` | admin |
 | `GET /admin/stats` | admin (dashboard counts) |
+| `GET /admin/analytics?start=YYYY-MM-DD&end=YYYY-MM-DD` | admin (aggregate sales and traffic; inclusive Manila dates, maximum 366 days) |
+| `POST /analytics/events` | optional authentication; guests can record login views only, identity/role derived by the server |
 | `GET /orders`, `GET /orders/:id`, `POST /orders` | signed-in owner (COD placement) |
 | `POST /orders/:id/confirm-receipt`, `POST /orders/:id/delivery-issue` | signed-in owner |
 | `GET /orders/admin/all`, `GET /orders/admin/:id` | admin |
@@ -197,6 +201,14 @@ The `orders` Nest module follows controller → service → repository layering.
 `POST /orders` accepts a per-checkout UUID, product IDs/quantities, shipping snapshot, delivery method, and `payment_method: 'cod'`. The transaction validates products, locks stock in stable order, snapshots prices/names/images, calculates shipping, and deduplicates retries. Standard shipping costs PHP 99 (free at subtotal >= PHP 999); express costs PHP 199. Browser prices and totals are never trusted. Checkout clears the cart only after persistence succeeds. Legacy orders receive an imported tracking baseline with no invented milestone dates or delivery address.
 
 See `docs/plans/2026-11-10-order-tracking.md` for the API contract, interview decisions, and rollout/rollback details.
+
+### Admin analytics
+
+Reports default to the last 30 calendar days in `Asia/Manila`; dates are inclusive and use server-side database aggregates, avoiding PostgREST row-limit truncation. Placed merchandise value uses order creation dates; completed sales use customer receipt-confirmation dates, independently of order creation. Cancelled orders are excluded. Shipping is excluded for new orders; imported legacy subtotals retain migration 003's historical fallback and may include shipping. Confirmation is not evidence of COD collection. Buyer cohorts use first-ever noncancelled order dates; top products use purchase-time quantity/price snapshots.
+
+Traffic counts browser sessions and page views, not unique people. Guests record login-page views while the catalog remains protected. Authenticated admins exclude their entire current session, including earlier anonymous views; anonymous admins cannot be identified until sign-in. Capture accepts finite page categories and UUIDs only, with server timestamps and no raw URLs, IP addresses, or email fields. Collection errors never block checkout or navigation. Reports expose aggregate data only and display collection coverage rather than inventing historical visits.
+
+Analytics follows controller/service/repository separation and service-role-only database RPCs. See `docs/plans/2026-11-11-admin-analytics.md` for the contract and rollback. Fixtures must never run against production.
 
 ### TypeScript config note
 

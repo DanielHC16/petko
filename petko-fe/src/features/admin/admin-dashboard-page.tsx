@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   UserPlus,
   ArrowRight,
+  BarChart3,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getApiErrorMessage } from '@/lib/api-error'
@@ -210,8 +211,15 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Products */}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            to="/admin/analytics"
+            className="flex flex-col justify-between rounded-xl border border-orange-200 bg-white p-5 transition hover:border-orange-400 hover:shadow-sm"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-700"><BarChart3 size={22} aria-hidden="true" /></div>
+            <div className="mt-4"><p className="font-bold text-gray-900">Store Analytics</p><p className="mt-0.5 text-xs text-gray-600">Buying trends, completed sales, customer visits, and top products</p></div>
+          </Link>
+          {/* Products */}
             <Link
               to="/admin/products"
               className="flex flex-col justify-between rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-5 shadow-sm transition hover:border-orange-400 hover:shadow-md"
