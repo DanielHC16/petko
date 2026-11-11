@@ -90,6 +90,7 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto): Promise<ProductEntity> {
+    const isActive = dto.stock <= 0 ? false : (dto.is_active ?? true)
     const { data, error } = await this.supabase.admin
       .from('products')
       .insert({
@@ -102,7 +103,7 @@ export class ProductsService {
         image_url:
           dto.image_url?.trim() ||
           'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop',
-        is_active: dto.is_active ?? true,
+        is_active: isActive,
       })
       .select('*')
       .single<ProductEntity>()
@@ -124,13 +125,37 @@ export class ProductsService {
     if (dto.description !== undefined)
       updatePayload.description = dto.description.trim()
     if (dto.price !== undefined) updatePayload.price = dto.price
-    if (dto.stock !== undefined) updatePayload.stock = dto.stock
+    if (dto.stock !== undefined) {
+      updatePayload.stock = dto.stock
+      if (dto.stock <= 0) {
+        updatePayload.is_active = false
+      }
+    }
     if (dto.category !== undefined)
       updatePayload.category = dto.category.toLowerCase().trim()
     if (dto.pet_type !== undefined) updatePayload.pet_type = dto.pet_type
     if (dto.image_url !== undefined)
       updatePayload.image_url = dto.image_url.trim()
-    if (dto.is_active !== undefined) updatePayload.is_active = dto.is_active
+    if (dto.is_active !== undefined) {
+      if (dto.is_active) {
+        if (dto.stock !== undefined && dto.stock <= 0) {
+          throw new BadRequestException(
+            'Cannot activate a product that is out of stock.',
+          )
+        }
+        if (dto.stock === undefined) {
+          const current = await this.findById(id)
+          if (current.stock <= 0) {
+            throw new BadRequestException(
+              'Cannot activate a product that is out of stock.',
+            )
+          }
+        }
+        updatePayload.is_active = true
+      } else {
+        updatePayload.is_active = false
+      }
+    }
 
     const { data, error } = await this.supabase.admin
       .from('products')

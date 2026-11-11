@@ -124,6 +124,7 @@ export default function AdminProductsPage() {
 
     setIsSaving(true)
     try {
+      const isOutOfStock = stockNum <= 0
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -132,7 +133,7 @@ export default function AdminProductsPage() {
         category: formData.category,
         pet_type: formData.pet_type,
         image_url: formData.image_url.trim() || 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop',
-        is_active: formData.is_active,
+        is_active: isOutOfStock ? false : formData.is_active,
       }
       if (editingProduct) {
         await api.patch(`/products/${editingProduct.id}`, payload)
@@ -151,6 +152,10 @@ export default function AdminProductsPage() {
   }
 
   async function handleToggleActive(product: Product) {
+    if (!product.is_active && product.stock <= 0) {
+      toast.error('Cannot activate an out-of-stock product. Update stock first.', { icon: '⚠️' })
+      return
+    }
     const nextState = !product.is_active
     try {
       await api.patch(`/products/${product.id}`, { is_active: nextState })
@@ -191,7 +196,7 @@ export default function AdminProductsPage() {
   }, [products, search, categoryFilter, petTypeFilter, stockFilter])
 
   const totalCount = products.length
-  const activeCount = products.filter((p) => p.is_active).length
+  const activeCount = products.filter((p) => p.is_active && p.stock > 0).length
   const lowStockCount = products.filter((p) => p.stock <= 5).length
 
   return (
@@ -401,14 +406,21 @@ export default function AdminProductsPage() {
                           <td className="px-4 py-3">
                             <button
                               onClick={() => handleToggleActive(product)}
+                              disabled={product.stock <= 0}
                               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition whitespace-nowrap ${
-                                product.is_active
+                                product.stock <= 0
+                                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-75'
+                                  : product.is_active
                                   ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
                                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                               }`}
-                              title="Click to toggle visibility in store"
+                              title={
+                                product.stock <= 0
+                                  ? 'Out-of-stock items are automatically deemed inactive'
+                                  : 'Click to toggle visibility in store'
+                              }
                             >
-                              {product.is_active ? '● Active' : '○ Inactive'}
+                              {product.stock <= 0 ? '○ Inactive' : product.is_active ? '● Active' : '○ Inactive'}
                             </button>
                           </td>
 
@@ -590,14 +602,35 @@ export default function AdminProductsPage() {
                 </div>
 
                 {/* Is Active Toggle */}
-                <div className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-[#fefaf2] p-3">
-                  <input type="checkbox" id="modal-is-active" checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="h-4 w-4 rounded text-orange-600 focus:ring-orange-500" />
-                  <label htmlFor="modal-is-active" className="text-xs font-semibold text-gray-800 cursor-pointer">
-                    Publish to Storefront (Item is active and purchasable by customers)
-                  </label>
-                </div>
+                {(() => {
+                  const stockNum = parseInt(formData.stock, 10)
+                  const isOut = isNaN(stockNum) || stockNum <= 0
+                  return (
+                    <div className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-[#fefaf2] p-3">
+                      <input
+                        type="checkbox"
+                        id="modal-is-active"
+                        checked={isOut ? false : formData.is_active}
+                        disabled={isOut}
+                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                        className="h-4 w-4 rounded text-orange-600 focus:ring-orange-500 disabled:opacity-50"
+                      />
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="modal-is-active"
+                          className={`text-xs font-semibold ${isOut ? 'text-gray-400 cursor-not-allowed' : 'text-gray-800 cursor-pointer'}`}
+                        >
+                          Publish to Storefront (Item is active and purchasable by customers)
+                        </label>
+                        {isOut && (
+                          <span className="text-[11px] text-amber-700 font-medium mt-0.5">
+                            Out-of-stock items are automatically deemed inactive.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Description */}
                 <div>

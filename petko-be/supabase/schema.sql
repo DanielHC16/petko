@@ -93,6 +93,28 @@ create policy "Anyone can view active products"
   on public.products for select
   using (is_active = true);
 
+-- Auto-deactivate out-of-stock products trigger
+create or replace function public.handle_product_stock_status()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if new.stock <= 0 then
+    new.is_active := false;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_product_stock_status on public.products;
+create trigger trg_product_stock_status
+  before insert or update of stock, is_active
+  on public.products
+  for each row
+  execute function public.handle_product_stock_status();
+
 -- Only service role (NestJS backend) can insert/update/delete
 -- (Enforced by the backend — no public write RLS needed)
 
