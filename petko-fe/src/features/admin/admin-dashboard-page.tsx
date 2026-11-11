@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Link
               to="/"
               className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm"
@@ -174,19 +174,6 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="text-sm font-semibold text-[#10298E]">Test Checkout</p>
                 <p className="text-xs text-gray-500">Summary &amp; gateway slot</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/orders"
-              className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                <ListOrdered size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#10298E]">Customer Orders</p>
-                <p className="text-xs text-gray-500">Order tracking page</p>
               </div>
             </Link>
           </div>
@@ -256,7 +243,7 @@ export default function AdminDashboardPage() {
               <div className="mt-4">
                 <p className="font-bold text-[#10298E]">Order Management</p>
                 <p className="mt-0.5 text-xs text-gray-600">
-                  Review and update order status (pending, paid, shipped)
+                  Customer orders, fulfillment pipeline, and tracking
                 </p>
               </div>
             </Link>
