@@ -30,6 +30,10 @@ const CHAIN_METHODS = [
   'single',
   'maybeSingle',
   'returns',
+  'range',
+  'not',
+  'is',
+  'lte',
 ] as const
 
 export interface SupabaseQueryMock {

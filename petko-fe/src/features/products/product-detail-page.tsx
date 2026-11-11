@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ChevronRight,
   Check,
@@ -17,6 +17,7 @@ import PageBanner from '@/components/layout/PageBanner'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [product, setProduct] = useState<Product | null>(null)
   const [suggestions, setSuggestions] = useState<Product[]>([])
   const [loadedId, setLoadedId] = useState<string | null>(null)
@@ -74,7 +75,10 @@ export default function ProductDetailPage() {
     if (!product) return
     const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
     const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
-    if (quantityToAdd <= 0) return
+    if (quantityToAdd <= 0) {
+      toast.error('You already have all available stock in your cart.', { icon: '⚠️' })
+      return
+    }
 
     addItem({
       product_id: product.id,
@@ -96,14 +100,16 @@ export default function ProductDetailPage() {
   }
 
   function handleBuyNow() {
-    if (!product) return
+    if (!product || product.stock <= 0) return
+
+    const buyQty = Math.max(1, Math.min(quantity, product.stock))
 
     // Create a temporary direct checkout item
     const directItem = {
       product_id: product.id,
       name: product.name,
       price: Number(product.price),
-      quantity,
+      quantity: buyQty,
       image_url: product.image_url,
       stock: product.stock,
     }
@@ -112,7 +118,7 @@ export default function ProductDetailPage() {
     sessionStorage.setItem('direct_checkout_item', JSON.stringify(directItem))
 
     // Redirect to checkout with a direct mode parameter
-    window.location.href = '/checkout?mode=direct'
+    navigate('/checkout?mode=direct')
   }
 
   if (isLoading) {
@@ -159,6 +165,12 @@ export default function ProductDetailPage() {
   return (
 <div className="min-h-screen bg-[#fbe8c1] p-4 font-sans md:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
+
+        {/* Page banner */}
+        <PageBanner
+          title={product.name}
+          subtitle={`${product.pet_type === 'cat' ? '🐱 Cat' : product.pet_type === 'dog' ? '🐶 Dog' : '🐾 All Pets'} · ${product.category.charAt(0).toUpperCase() + product.category.slice(1)}`}
+        />
 
         {/* Breadcrumb Navigation */}
         <nav className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-600">
@@ -259,8 +271,8 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     aria-label="Increase quantity"
-                    onClick={() => setQuantity((q) => Math.min(remainingStock, q + 1))}
-                    disabled={quantity >= remainingStock}
+                    onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                    disabled={quantity >= product.stock}
                     className="flex items-center justify-center p-3 text-[#0B3B8C] transition hover:bg-blue-50 disabled:opacity-30"
                   >
                     <Plus size={18} strokeWidth={3} />
@@ -289,7 +301,7 @@ export default function ProductDetailPage() {
                 {/* Buy Now Button */}
                 <button
                   onClick={handleBuyNow}
-                  disabled={remainingStock <= 0}
+                  disabled={product.stock <= 0}
                   className="flex flex-1 flex-col items-center justify-center rounded-xl bg-[#D32F2F] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#B71C1C] disabled:bg-gray-300 disabled:text-gray-500"
                 >
                   <span>Buy Now</span>

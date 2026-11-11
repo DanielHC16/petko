@@ -140,10 +140,9 @@ function Footer() {
             <Link to="/?pet=cat"  className="text-xs text-gray-500 hover:text-petko-blue transition">Cats</Link>
           </div>
 
-          {/* Categories */}
-          <div className="flex flex-col gap-2">
+          <div className="col-span-2 flex min-w-0 flex-col gap-2 lg:col-span-1">
             <p className="text-sm font-bold text-gray-800">Categories</p>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-1.5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 sm:gap-x-6">
               {FOOTER_CATEGORIES.map(cat => (
                 <Link key={cat.to} to={cat.to}
                   className="text-xs text-gray-500 hover:text-petko-blue transition whitespace-nowrap">
