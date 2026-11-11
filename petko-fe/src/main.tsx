@@ -1,7 +1,4 @@
-// Enable in-memory mock data when VITE_MOCK=true (no backend needed).
-// Must run before any other import so patches are in place before the
-// Supabase onAuthStateChange listener fires.
-import '@/lib/mock-setup'
+// import '@/lib/mock-setup' // local mock — removed, real backend in use
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

@@ -93,16 +93,17 @@ export default function AdminDashboardPage() {
                 Welcome back,<br />
                 <span className="text-[#E31B23]">{profile?.full_name?.split(' ')[0] || 'Admin'}!</span>
               </h1>
+
               <p className="mt-1 text-[10px] sm:text-[12px] font-medium text-gray-600 leading-snug">
                 Signed in as <span className="font-mono text-orange-600">{profile?.email}</span>
               </p>
-              
+
               <Link to="/"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#10298E] px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95">
-                  <Eye size={14} />
-                    Launch Customer View
-                  <ExternalLink size={12} className="opacity-80" />
-                </Link>
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#10298E] px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95">
+                <Eye size={14} />
+                Launch Customer View
+                <ExternalLink size={12} className="opacity-80" />
+              </Link>
             </div>
 
             {/* Dog/cat illustration */}

@@ -27,32 +27,32 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm sm:px-6">
-      <div className="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between gap-3">
-        {/* Brand */}
-        <div className="flex items-center gap-3 sm:gap-6">
-          <Link to="/" className="flex items-center gap-2">
+    <nav className="border-b border-gray-200 bg-white px-3 py-2.5 shadow-sm sm:px-5">
+      <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-2">
+        {/* Brand + toggle — left side, never wraps */}
+        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-4">
+          <Link to="/" className="flex shrink-0 items-center gap-1.5">
             <img
               src={pawImg}
               alt=""
-              className="h-7 w-7 object-contain"
+              className="h-6 w-6 object-contain sm:h-7 sm:w-7"
               aria-hidden="true"
             />
-            <img src={logoImg} alt="PetKo" className="h-7 object-contain" />
+            <img src={logoImg} alt="PetKo" className="h-6 object-contain sm:h-7" />
           </Link>
 
-          {/* View toggle for admins (the only customer/admin switch, all screen sizes) */}
+          {/* View toggle for admins */}
           {isAdmin && (
             <div
               role="group"
               aria-label="Switch view"
-              className="flex items-center rounded-lg bg-gray-100 p-1 text-xs font-semibold"
+              className="flex shrink-0 items-center rounded-lg bg-gray-100 p-1 text-xs font-semibold"
             >
               <Link
                 to="/"
                 aria-current={inAdminRoute ? undefined : 'page'}
                 title="Storefront"
-                className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3 ${
+                className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
                   !inAdminRoute
                     ? 'bg-white text-orange-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -65,7 +65,7 @@ export default function Navbar() {
                 to="/admin"
                 aria-current={inAdminRoute ? 'page' : undefined}
                 title="Admin Panel"
-                className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3 ${
+                className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
                   inAdminRoute
                     ? 'bg-white text-orange-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -78,25 +78,25 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Right Actions — always on same row */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <Link
             to="/orders"
             aria-label="Your orders"
             aria-current={location.pathname === '/orders' ? 'page' : undefined}
             title="Your orders"
-            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
+            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
           >
-            <Package size={16} aria-hidden="true" />
+            <Package size={15} aria-hidden="true" />
             <span className="hidden sm:inline">Orders</span>
           </Link>
           {/* Cart Icon */}
           <Link
             to="/cart"
-            className="relative flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
+            className="relative flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
             aria-label="Shopping Cart"
           >
-            <ShoppingCart size={16} />
+            <ShoppingCart size={15} />
             <span className="hidden sm:inline">Cart</span>
             {totalItems > 0 && (
               <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[11px] font-bold text-white">
@@ -105,26 +105,26 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* User profile & Role Badge */}
+          {/* User avatar only (no name on mobile to save space) */}
           {profile && (
-            <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-2 sm:pl-3">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
                   alt={profile.full_name}
-                  className="h-8 w-8 rounded-full border border-gray-200 object-cover"
+                  className="h-8 w-8 shrink-0 rounded-full border border-gray-200 object-cover"
                 />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-600">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-600">
                   {profile.full_name?.charAt(0) || 'U'}
                 </div>
               )}
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-bold text-gray-900">
+                <p className="text-xs font-bold text-gray-900 max-w-[120px] truncate">
                   {profile.full_name}
                 </p>
                 <span
-                  className={`inline-block rounded px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider ${
+                  className={`inline-block rounded px-1.5 text-[10px] font-bold uppercase tracking-wider ${
                     isAdmin
                       ? 'bg-orange-100 text-orange-700'
                       : 'bg-blue-100 text-blue-700'
@@ -139,11 +139,11 @@ export default function Navbar() {
           {/* Sign Out */}
           <button
             onClick={handleSignOut}
-            className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+            className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
             aria-label="Sign out"
             title="Sign out"
           >
-            <LogOut size={18} />
+            <LogOut size={17} />
           </button>
         </div>
       </div>
