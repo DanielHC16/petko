@@ -31,6 +31,21 @@ describe('UsersController', () => {
     expect(metadataOf(ROLES_KEY, 'getMe')).toBeUndefined()
   })
 
+  it('saves TOS acceptance only for the current user without requiring an admin role', async () => {
+    expect(metadataOf(GUARDS_METADATA, 'acceptTos')).toEqual([AuthGuard])
+    expect(metadataOf(ROLES_KEY, 'acceptTos')).toBeUndefined()
+    const service = {
+      acceptTos: jest.fn().mockResolvedValue({ tos_accepted: true }),
+    }
+    const controller = new UsersController(service as unknown as UsersService)
+    await expect(
+      controller.acceptTos({ tos_accepted: true }, {
+        id: 'current-user',
+      } as UserProfile),
+    ).resolves.toEqual({ tos_accepted: true })
+    expect(service.acceptTos).toHaveBeenCalledWith('current-user')
+  })
+
   it('passes the current user id to role changes', async () => {
     const service = {
       updateRole: jest.fn().mockResolvedValue({}),

@@ -7,6 +7,7 @@ It is a full-stack web application with a React/Vite frontend and a NestJS REST 
 
 ### Core Features
 - **User Management**: Registration, login, and profile management via Google SSO (Supabase Auth)
+- **Terms Acceptance**: Account-level `tos_accepted` boolean, saved only by explicit agreement and reused across logins/devices; the footer remains a read-only terms viewer
 - **RBAC**: Two roles — `admin` and `customer` — enforced on both frontend (route guards) and backend (NestJS guards). See "Admin access" below for how a user becomes an admin.
 - **Product Catalog**: Dynamic product galleries with category filtering, search, price range, and pet-type filters
 - **Cart**: Persistent shopping cart stored in Supabase, synced on login
@@ -161,6 +162,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
    - `migration-002-admin-access-emails.sql` (live project: applied and re-verified 2026-10-08; table, constraints, RLS, no policies, no anon/authenticated grants)
    - `migration-003-order-tracking.sql` (live project: applied and metadata-verified 2026-11-10; additive fields, history, backend-only transactional checkout and tracking functions). Apply before deploying order tracking in other environments. Validate with `verify-order-tracking.sql` in an isolated test database; never use production fixtures.
    - `migration-004-admin-analytics.sql` (additive backend-only traffic tables and aggregation functions). Apply before deploying analytics; validate with `verify-admin-analytics.sql` only in an isolated database. Retain the schema/data on application rollback.
+   - `migration-005-tos-acceptance.sql` (adds `users.tos_accepted`, default false, preserving existing profile/role permissions). Apply before deploying terms persistence. Run `verify-tos-acceptance.sql` only in an isolated database; retain the column/agreements when rolling back app code.
 2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
 3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
 4. `vercel deploy --prod`, or push to `main` with the Git integration.
@@ -182,6 +184,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 | `GET /products`, `GET /products/:id` | public |
 | `GET /products/admin/all`, `POST /products`, `PATCH /products/:id`, `DELETE /products/:id` | admin |
 | `GET /users/me` | any signed-in user (returns the effective role) |
+| `POST /users/me/tos-acceptance` | any signed-in user; body `{ "tos_accepted": true }`, updates only the authenticated user's acceptance |
 | `GET /users`, `PATCH /users/:id/role`, `POST /users/promote`, `DELETE /users/:id` | admin |
 | `GET /admin-access-emails`, `POST /admin-access-emails`, `DELETE /admin-access-emails/:id` | admin |
 | `GET /admin/stats` | admin (dashboard counts) |
@@ -209,6 +212,12 @@ Reports default to the last 30 calendar days in `Asia/Manila`; dates are inclusi
 Traffic counts browser sessions and page views, not unique people. Guests record login-page views while the catalog remains protected. Authenticated admins exclude their entire current session, including earlier anonymous views; anonymous admins cannot be identified until sign-in. Capture accepts finite page categories and UUIDs only, with server timestamps and no raw URLs, IP addresses, or email fields. Collection errors never block checkout or navigation. Reports expose aggregate data only and display collection coverage rather than inventing historical visits.
 
 Analytics follows controller/service/repository separation and service-role-only database RPCs. See `docs/plans/2026-11-11-admin-analytics.md` for the contract and rollback. Fixtures must never run against production.
+
+### Terms acceptance
+
+`users.tos_accepted` is a nonnullable boolean defaulting to false. `/users/me` includes it; the authenticated acceptance endpoint only sets the current user's flag to true and is idempotent. Browser database clients cannot update this column or roles; existing display-field permissions remain unchanged. No TOS text/versioning changes are included.
+
+The frontend uses the server profile as the source of truth, prompts when agreement is outstanding, and waits for a successful save before dismissing the first-agreement modal. Footer viewing/closing never saves consent. Old localStorage flags are not imported because the old footer-close callback also marked them accepted; existing users can receive one final prompt. Acceptance requests and UI updates must stay bound to the account that clicked, including during sign-out, account switching, or stale profile refreshes.
 
 ### TypeScript config note
 

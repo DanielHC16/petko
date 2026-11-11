@@ -7,6 +7,7 @@ export interface UserProfile {
   full_name: string
   avatar_url: string
   role: 'admin' | 'customer'
+  tos_accepted: boolean
 }
 
 interface AuthState {

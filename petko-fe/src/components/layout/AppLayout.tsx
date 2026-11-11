@@ -4,8 +4,8 @@ import Navbar from './Navbar'
 import logoImg      from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 import TosModal from '@/features/auth/tos-modal'
-import { useTosStore, setTosAccepted, hasTosAccepted } from '@/store/tos.store'
-import { useAuthStore } from '@/store/auth.store'
+import { useTosStore } from '@/store/tos.store'
+import { useTosAcceptance } from '@/features/auth/use-tos-acceptance'
 
 const FOOTER_CATEGORIES = [
   { to: '/?cat=all',         label: 'All Items' },
@@ -87,7 +87,7 @@ function Footer() {
             {/* About Us */}
             <div className="flex flex-col gap-2">
               <p className="text-sm font-bold text-gray-800">About Us</p>
-              <button onClick={() => openTos(false)}
+              <button onClick={openTos}
                 className="text-xs text-gray-500 hover:text-petko-blue transition text-left leading-relaxed">
                 Terms of Service &amp;<br />Privacy Policy
               </button>
@@ -155,7 +155,7 @@ function Footer() {
           {/* About Us */}
           <div className="flex flex-col gap-2">
             <p className="text-sm font-bold text-gray-800">About Us</p>
-            <button onClick={() => openTos(false)}
+            <button onClick={openTos}
               className="text-xs text-gray-500 hover:text-petko-blue transition text-left leading-relaxed">
               Terms of Service &amp;<br /> Privacy Policy
             </button>
@@ -197,17 +197,8 @@ function Footer() {
 }
 
 export default function AppLayout() {
-  const { isOpen, isFirstLogin, close } = useTosStore()
-  const profile = useAuthStore(s => s.profile)
-
-  // If the modal was opened as "first login" but this user already accepted
-  // (e.g. a page refresh re-triggers the auth listener), close it silently.
-  const alreadyAccepted = isFirstLogin && profile != null && hasTosAccepted(profile.id)
-
-  function handleTosAccept() {
-    if (profile) setTosAccepted(profile.id)
-    close()
-  }
+  const { isOpen, close } = useTosStore()
+  const acceptance = useTosAcceptance()
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -216,8 +207,11 @@ export default function AppLayout() {
         <Outlet />
       </main>
       <Footer />
-      {isOpen && !alreadyAccepted && (
-        <TosModal onAccept={handleTosAccept} isFirstLogin={isFirstLogin} />
+      {acceptance.needsAcceptance ? (
+        <TosModal key={acceptance.userId} onAccept={() => void acceptance.accept()}
+          isFirstLogin isSaving={acceptance.isSaving} error={acceptance.error} />
+      ) : isOpen && (
+        <TosModal onAccept={close} />
       )}
     </div>
   )

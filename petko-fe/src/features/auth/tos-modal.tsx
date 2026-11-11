@@ -7,9 +7,11 @@ interface TosModalProps {
   /** true = first-login flow (shows "I have read and agree" footer button)
    *  false/undefined = opened from footer link (shows top-right ✕ close only) */
   isFirstLogin?: boolean
+  isSaving?: boolean
+  error?: string | null
 }
 
-export default function TosModal({ onAccept, isFirstLogin = false }: TosModalProps) {
+export default function TosModal({ onAccept, isFirstLogin = false, isSaving = false, error = null }: TosModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrolledToBottom, setScrolledToBottom] = useState(false)
 
@@ -23,7 +25,8 @@ export default function TosModal({ onAccept, isFirstLogin = false }: TosModalPro
 
   return (
     /* Backdrop */
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="tos-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
 
       {/* Modal card */}
       <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -35,7 +38,7 @@ export default function TosModal({ onAccept, isFirstLogin = false }: TosModalPro
             className="absolute -top-4 -right-4 w-32 opacity-25 pointer-events-none rotate-12 z-0" />
           <img src={logoImg} alt="PetKo" className="h-8 object-contain relative z-10" />
           <div className="flex-1 relative z-10">
-            <h2 className="text-lg font-black text-petko-blue" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            <h2 id="tos-title" className="text-lg font-black text-petko-blue" style={{ fontFamily: "'Nunito', sans-serif" }}>
               Terms of Service & Privacy Policy
             </h2>
             <p className="text-xs text-gray-400">
@@ -60,6 +63,8 @@ export default function TosModal({ onAccept, isFirstLogin = false }: TosModalPro
         <div
           ref={scrollRef}
           onScroll={handleScroll}
+          tabIndex={0}
+          aria-label="Read terms and privacy policy"
           className="flex-1 overflow-y-auto px-8 py-6 text-sm text-gray-700 space-y-6 leading-relaxed"
         >
           {/* ── Terms of Service ─────────────────────────────────────────── */}
@@ -226,6 +231,7 @@ export default function TosModal({ onAccept, isFirstLogin = false }: TosModalPro
         {/* Footer — only shown for first-login flow */}
         {isFirstLogin && (
           <div className="shrink-0 border-t border-gray-100 px-8 py-5 bg-white">
+            {error && <p role="alert" className="mb-3 text-center text-sm font-semibold text-red-700">{error}</p>}
             {!scrolledToBottom && (
               <p className="mb-3 text-center text-xs text-gray-400 flex items-center justify-center gap-1">
                 ↓ Scroll to the bottom to enable the button
@@ -233,12 +239,13 @@ export default function TosModal({ onAccept, isFirstLogin = false }: TosModalPro
             )}
             <button
               onClick={onAccept}
-              disabled={!scrolledToBottom}
+              disabled={!scrolledToBottom || isSaving}
+              aria-busy={isSaving}
               className="w-full rounded-xl py-3.5 text-sm font-bold text-white transition
                 bg-petko-blue hover:bg-petko-blue/90 active:scale-[0.98]
                 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              I have read and agree to the Terms of Service &amp; Privacy Policy
+              {isSaving ? 'Saving agreement…' : 'I have read and agree to the Terms of Service & Privacy Policy'}
             </button>
           </div>
         )}

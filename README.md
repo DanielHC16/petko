@@ -103,6 +103,12 @@ npm run build
 
 The architecture and agreed behavior are recorded in [the implementation plan](docs/plans/2026-11-10-order-tracking.md).
 
+## Terms acceptance
+
+TOS agreement is stored on the signed-in user's database profile as `tos_accepted`. Explicitly agreeing saves it through `POST /api/users/me/tos-acceptance`; subsequent logins and other devices read the saved value from `/api/users/me`. Closing the footer's terms viewer does not record acceptance. Failed saves leave the agreement open for retry.
+
+Apply [migration-005-tos-acceptance.sql](petko-be/supabase/migration-005-tos-acceptance.sql) before deploying. Existing accounts default to false and may receive one final prompt: old browser flags cannot establish agreement because the previous footer-close behavior also set them. Run `verify-tos-acceptance.sql` only in an isolated database. On application rollback, retain the additive column and saved agreements.
+
 ## Admin analytics
 
 Admins can open `/admin/analytics` from the dashboard to view placed order value, completed sales, buyers, visits, daily trends, and top products. Reports default to the last 30 calendar days in Philippine time, with 7/30/90-day presets and custom dates up to 366 days.
@@ -121,6 +127,7 @@ The whole app deploys as one Vercel project from the repo root: the frontend is 
 2. `petko-be/supabase/migration-002-admin-access-emails.sql`
 3. `petko-be/supabase/migration-003-order-tracking.sql`
 4. `petko-be/supabase/migration-004-admin-analytics.sql`
+5. `petko-be/supabase/migration-005-tos-acceptance.sql`
 
 ## Admin access
 

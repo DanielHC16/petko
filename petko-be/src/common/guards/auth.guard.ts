@@ -56,7 +56,7 @@ export class AuthGuard implements CanActivate {
     const [{ data: profile, error: profileError }, listed] = await Promise.all([
       this.supabase.admin
         .from('users')
-        .select('id, email, full_name, avatar_url, role')
+        .select('id, email, full_name, avatar_url, role, tos_accepted')
         .eq('id', user.id)
         .single<UserProfile>(),
       this.isListedAdmin(user),

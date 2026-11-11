@@ -21,6 +21,8 @@ import {
 } from './users.service'
 import { UpdateUserRoleDto } from './dto/update-user-role.dto'
 import { PromoteUserDto } from './dto/promote-user.dto'
+import { AcceptTosDto } from './dto/accept-tos.dto'
+import type { TosAcceptance } from './users.types'
 
 @Controller('users')
 export class UsersController {
@@ -30,6 +32,15 @@ export class UsersController {
   @UseGuards(AuthGuard)
   getMe(@CurrentUser() user: UserProfile): UserProfile {
     return user
+  }
+
+  @Post('me/tos-acceptance')
+  @UseGuards(AuthGuard)
+  async acceptTos(
+    @Body() _dto: AcceptTosDto,
+    @CurrentUser() user: UserProfile,
+  ): Promise<TosAcceptance> {
+    return this.usersService.acceptTos(user.id)
   }
 
   @Get()

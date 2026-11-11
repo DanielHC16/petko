@@ -12,6 +12,7 @@ const owner: UserProfile = {
   full_name: 'Owner',
   avatar_url: '',
   role: 'customer',
+  tos_accepted: false,
 }
 const admin: UserProfile = { ...owner, id: 'admin', role: 'admin' }
 const payload: CreateOrderDto = {

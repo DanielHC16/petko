@@ -14,6 +14,7 @@ create table if not exists public.users (
   full_name   text not null default '',
   avatar_url  text not null default '',
   role        text not null default 'customer' check (role in ('admin', 'customer')),
+  tos_accepted boolean not null default false,
   created_at  timestamptz not null default now()
 );
 
@@ -31,8 +32,13 @@ create policy "Users can update their own profile"
 -- Column-level lock (see security-patch-001-lock-user-role.sql):
 -- clients may only edit their display fields, never `role`.
 -- Role changes go through the NestJS backend (service role) only.
-revoke update on public.users from anon, authenticated;
+revoke update on public.users from public, anon, authenticated;
 grant update (full_name, avatar_url) on public.users to authenticated;
+
+-- Also expand existing schemas without resetting a previous agreement.
+alter table public.users add column if not exists tos_accepted boolean not null default false;
+revoke update (role, tos_accepted) on public.users from public, anon, authenticated;
+grant select (tos_accepted), update (tos_accepted) on public.users to service_role;
 
 -- ────────────────────────────────────────────────────────────
 -- 2. AUTO-INSERT TRIGGER

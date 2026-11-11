@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import { fetchCurrentProfile } from '@/lib/auth'
-import { hasTosAccepted, useTosStore } from '@/store/tos.store'
 import pawBlueImg from '@/assets/paw_blue.png'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const { setSession, setProfile, setLoading } = useAuthStore()
-  const openTos = useTosStore(s => s.open)
 
   useEffect(() => {
     async function handleCallback() {
@@ -22,19 +20,14 @@ export default function AuthCallbackPage() {
         if (profile) setProfile(profile)
         setLoading(false)
 
-        // Navigate to shop first, then trigger TOS if not yet accepted for this user
+        // The layout derives the terms prompt from the persisted user profile.
         navigate('/', { replace: true })
-
-        if (!hasTosAccepted(session.user.id)) {
-          // Small delay to let the shop page mount before showing the modal
-          setTimeout(() => openTos(true), 100)
-        }
       } catch {
         navigate('/login', { replace: true })
       }
     }
     handleCallback()
-  }, [navigate, setSession, setProfile, setLoading, openTos])
+  }, [navigate, setSession, setProfile, setLoading])
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-petko-cream">
