@@ -1,6 +1,7 @@
 import { formatOrderMoney } from '@/lib/order-status'
 import { formatAnalyticsDate } from './analytics-dates'
 import type { AnalyticsDay } from './analytics-types'
+import AnalyticsDailyTable from './analytics-daily-table'
 
 export type AnalyticsMetricTab = 'placed_value' | 'completed_sales' | 'sessions' | 'customers'
 
@@ -212,66 +213,8 @@ export default function AnalyticsTrends({ daily, activeTab = 'placed_value' }: A
         <span>{daily.at(-1) && formatAnalyticsDate(daily[daily.length - 1].date)}</span>
       </div>
 
-      {/* Daily Data Table */}
-      <details className="mt-5 border-t border-gray-100 pt-4" open>
-        <summary className="cursor-pointer rounded font-semibold text-petko-blue hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-petko-blue">
-          View daily breakdown table ({daily.length} days)
-        </summary>
-        <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200" tabIndex={0} role="region" aria-label="Daily analytics table">
-          <table className="w-full whitespace-nowrap text-left text-xs">
-            <thead className="bg-orange-50/80 text-gray-700">
-              <tr>
-                <th scope="col" className="px-4 py-3 font-bold">Date</th>
-                <th scope="col" className={`px-4 py-3 font-bold text-right ${activeTab === 'placed_value' || activeTab === 'customers' ? 'bg-blue-50/80 text-petko-blue' : ''}`}>
-                  Placed orders
-                </th>
-                <th scope="col" className={`px-4 py-3 font-bold text-right ${activeTab === 'placed_value' ? 'bg-blue-50/80 text-petko-blue' : ''}`}>
-                  Placed value
-                </th>
-                <th scope="col" className={`px-4 py-3 font-bold text-right ${activeTab === 'completed_sales' ? 'bg-orange-100/70 text-orange-800' : ''}`}>
-                  Completed orders
-                </th>
-                <th scope="col" className={`px-4 py-3 font-bold text-right ${activeTab === 'completed_sales' ? 'bg-orange-100/70 text-orange-800' : ''}`}>
-                  Completed sales
-                </th>
-                <th scope="col" className={`px-4 py-3 font-bold text-right ${activeTab === 'sessions' ? 'bg-amber-50 text-amber-900' : ''}`}>
-                  Sessions
-                </th>
-                <th scope="col" className={`px-4 py-3 font-bold text-right ${activeTab === 'sessions' ? 'bg-amber-50 text-amber-900' : ''}`}>
-                  Page views
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {daily.map((day) => (
-                <tr key={day.date} className="hover:bg-gray-50/60 transition-colors">
-                  <th scope="row" className="px-4 py-3 font-medium text-gray-800">
-                    {formatAnalyticsDate(day.date)}
-                  </th>
-                  <td className={`px-4 py-3 text-right tabular-nums ${activeTab === 'placed_value' || activeTab === 'customers' ? 'font-bold text-petko-blue bg-blue-50/30' : ''}`}>
-                    {day.placedOrders.toLocaleString()}
-                  </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${activeTab === 'placed_value' ? 'font-bold text-petko-blue bg-blue-50/30' : ''}`}>
-                    {formatOrderMoney(day.placedValue)}
-                  </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${activeTab === 'completed_sales' ? 'font-bold text-orange-700 bg-orange-50/30' : ''}`}>
-                    {day.completedOrders.toLocaleString()}
-                  </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${activeTab === 'completed_sales' ? 'font-bold text-orange-700 bg-orange-50/30' : ''}`}>
-                    {formatOrderMoney(day.completedSales)}
-                  </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${activeTab === 'sessions' ? 'font-bold text-amber-900 bg-amber-50/30' : ''}`}>
-                    {day.sessions.toLocaleString()}
-                  </td>
-                  <td className={`px-4 py-3 text-right tabular-nums ${activeTab === 'sessions' ? 'font-bold text-amber-900 bg-amber-50/30' : ''}`}>
-                    {day.pageViews.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      {/* Daily Data Table with Activity Filtering, Search, Sort & Pagination */}
+      <AnalyticsDailyTable daily={daily} activeTab={activeTab} />
     </section>
   )
 }
