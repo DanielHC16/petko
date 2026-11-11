@@ -11,6 +11,8 @@ import type { UserProfile } from '@/common/types/authenticated-request.type'
 import type { Role } from '@/common/decorators/roles.decorator'
 import { escapeLikePattern, normalizeEmail } from '@/common/utils/email.util'
 import { AdminAccessEmailsService } from '@/modules/admin-access-emails/admin-access-emails.service'
+import { UsersRepository } from './users.repository'
+import type { TosAcceptance } from './users.types'
 
 export interface UserRecord extends UserProfile {
   created_at: string
@@ -28,7 +30,8 @@ export interface UserRoleCounts {
   customers: number
 }
 
-const USER_COLUMNS = 'id, email, full_name, avatar_url, role, created_at'
+const USER_COLUMNS =
+  'id, email, full_name, avatar_url, role, tos_accepted, created_at'
 
 /** auth.admin.listUsers page size and page cap (20k users) for promote lookups. */
 const AUTH_PAGE_SIZE = 1000
@@ -46,7 +49,12 @@ export class UsersService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly accessEmails: AdminAccessEmailsService,
+    private readonly repository: UsersRepository,
   ) {}
+
+  async acceptTos(userId: string): Promise<TosAcceptance> {
+    return this.repository.acceptTos(userId)
+  }
 
   async findById(id: string): Promise<UserRecord | null> {
     const { data, error } = await this.supabase.admin

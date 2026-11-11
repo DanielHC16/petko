@@ -10,6 +10,7 @@ const customer: UserProfile = {
   full_name: 'Customer',
   avatar_url: '',
   role: 'customer',
+  tos_accepted: false,
 }
 const event = {
   session_id: '00000000-0000-4000-8000-000000000002',

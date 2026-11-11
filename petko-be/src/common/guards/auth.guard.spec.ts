@@ -15,6 +15,7 @@ const customer: UserProfile = {
   full_name: 'Listed',
   avatar_url: '',
   role: 'customer',
+  tos_accepted: false,
 }
 
 interface FakeRequest {
@@ -71,6 +72,10 @@ describe('AuthGuard', () => {
 
     const req = await run()
     expect(req.user?.role).toBe('admin')
+    expect(req.user?.tos_accepted).toBe(false)
+    expect(db.queries[0].argsOf('select')).toEqual([
+      'id, email, full_name, avatar_url, role, tos_accepted',
+    ])
   })
 
   it('matches a mixed-case auth email against the lowercase row', async () => {

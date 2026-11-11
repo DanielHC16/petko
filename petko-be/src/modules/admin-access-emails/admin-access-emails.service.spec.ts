@@ -20,6 +20,7 @@ const me: UserProfile = {
   full_name: 'Daniel',
   avatar_url: '',
   role: 'admin',
+  tos_accepted: false,
 }
 
 describe('AdminAccessEmailsService', () => {

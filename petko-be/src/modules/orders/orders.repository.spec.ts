@@ -114,6 +114,7 @@ describe('OrdersRepository', () => {
       full_name: '',
       avatar_url: '',
       role: 'customer',
+      tos_accepted: false,
     }
     await repository.mutate('order', owner, 'confirm_receipt', 4, {})
     expect(rpc).toHaveBeenCalledWith('petko_mutate_order', {

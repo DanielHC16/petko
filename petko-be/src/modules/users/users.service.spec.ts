@@ -11,6 +11,7 @@ import {
 } from '@/common/testing/supabase-query.mock'
 import type { AdminAccessEmailsService } from '@/modules/admin-access-emails/admin-access-emails.service'
 import { UsersService, type UserRecord } from './users.service'
+import type { UsersRepository } from './users.repository'
 
 function user(
   id: string,
@@ -23,6 +24,7 @@ function user(
     role,
     full_name: id,
     avatar_url: '',
+    tos_accepted: false,
     created_at: '2024-01-01T00:00:00Z',
   }
 }
@@ -36,6 +38,7 @@ describe('UsersService', () => {
     createUser: jest.Mock
   }
   let service: UsersService
+  const repository = { acceptTos: jest.fn() }
 
   beforeEach(() => {
     db = createSupabaseQueryMock()
@@ -56,12 +59,21 @@ describe('UsersService', () => {
         admin: { from: db.from, auth: { admin: auth } },
       } as unknown as SupabaseService,
       accessEmails as unknown as AdminAccessEmailsService,
+      repository as unknown as UsersRepository,
     )
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
+  })
+
+  it('saves TOS acceptance through the repository for the authenticated ID', async () => {
+    repository.acceptTos.mockResolvedValue({ tos_accepted: true })
+    await expect(service.acceptTos('current-user')).resolves.toEqual({
+      tos_accepted: true,
+    })
+    expect(repository.acceptTos).toHaveBeenCalledWith('current-user')
   })
 
   describe('findAll', () => {
