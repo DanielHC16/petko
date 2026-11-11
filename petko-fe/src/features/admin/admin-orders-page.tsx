@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { AlertCircle, ArrowLeft, Package, RefreshCw } from 'lucide-react'
+import { AlertCircle, ArrowLeft, ExternalLink, Package, RefreshCw } from 'lucide-react'
 import { OrderStatusBadge } from '@/components/orders/order-detail'
 import { useOrderList } from '@/hooks/use-orders'
 import {
@@ -69,18 +69,27 @@ export default function AdminOrdersPage() {
               <ArrowLeft size={13} />
               Back to Admin Portal
             </Link>
-            <button
-              type="button"
-              onClick={refreshOrders}
-              disabled={list.isLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-            >
-              <RefreshCw
-                size={14}
-                className={list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''}
-              />
-              Refresh orders
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to="/orders"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 shadow-sm transition hover:bg-orange-50 active:scale-95"
+              >
+                <ExternalLink size={13} />
+                View Customer Orders Page
+              </Link>
+              <button
+                type="button"
+                onClick={refreshOrders}
+                disabled={list.isLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+              >
+                <RefreshCw
+                  size={14}
+                  className={list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''}
+                />
+                Refresh orders
+              </button>
+            </div>
           </div>
         </PageBanner>
 
@@ -123,9 +132,19 @@ export default function AdminOrdersPage() {
               <AlertCircle size={16} className="text-orange-700" aria-hidden="true" />
               Needs delivery review
             </label>
-            <p className="text-xs font-semibold text-gray-500">
-              {list.data ? `${list.data.total} orders` : 'Orders'}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-semibold text-gray-500">
+                {list.data ? `${list.data.total} orders` : 'Orders'}
+              </p>
+              <span className="text-gray-300">·</span>
+              <Link
+                to="/orders"
+                className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline"
+              >
+                <ExternalLink size={12} />
+                Customer View (/orders)
+              </Link>
+            </div>
           </div>
 
           {list.error && (
