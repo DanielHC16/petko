@@ -103,6 +103,16 @@ npm run build
 
 The architecture and agreed behavior are recorded in [the implementation plan](docs/plans/2026-11-10-order-tracking.md).
 
+## Admin analytics
+
+Admins can open `/admin/analytics` from the dashboard to view placed order value, completed sales, buyers, visits, daily trends, and top products. Reports default to the last 30 calendar days in Philippine time, with 7/30/90-day presets and custom dates up to 366 days.
+
+Placed value uses order creation dates; completed sales use customer receipt-confirmation dates. Both exclude cancelled orders and use merchandise subtotals, excluding shipping for new checkout orders. Imported legacy subtotals retain their historical fallback and may include shipping. Receipt confirmation does not establish that COD cash was collected. New and returning buyers are classified by their first noncancelled order.
+
+Visits count browser sessions, not unique people. Guests contribute login-page views; authenticated customers contribute storefront views. Admin sessions are excluded once identified, including an earlier guest login view in the same session. Unidentified guests cannot be recognized as admins. No raw URLs, email addresses, or IP addresses are collected by analytics, and no individual browsing history is exposed in reports. Traffic is approximate and begins at collection launch; historical traffic is unavailable.
+
+Apply [migration-004-admin-analytics.sql](petko-be/supabase/migration-004-admin-analytics.sql) before deploying analytics. Its tables and functions are backend-only with RLS and revoked client privileges. Run [verify-admin-analytics.sql](petko-be/supabase/verify-admin-analytics.sql) only in an isolated test database after applying the migration twice. Retain the additive schema/data when rolling back the application. See [the analytics plan](docs/plans/2026-11-11-admin-analytics.md) for contracts and verification.
+
 ## Deploy to Vercel
 
 The whole app deploys as one Vercel project from the repo root: the frontend is served as static files and the NestJS API runs as a single serverless function under `/api`. See "Deployment" in [`context/CLAUDE.md`](context/CLAUDE.md) for env vars and steps. Before deploying, apply these in the Supabase SQL editor, in order (all are safe to re-run):
@@ -110,6 +120,7 @@ The whole app deploys as one Vercel project from the repo root: the frontend is 
 1. `petko-be/supabase/security-patch-001-lock-user-role.sql`
 2. `petko-be/supabase/migration-002-admin-access-emails.sql`
 3. `petko-be/supabase/migration-003-order-tracking.sql`
+4. `petko-be/supabase/migration-004-admin-analytics.sql`
 
 ## Admin access
 
