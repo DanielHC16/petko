@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 import { fetchProductById, fetchProducts, type Product } from './products-api'
 import { useCartStore } from '@/store/cart.store'
 import { getApiErrorMessage } from '@/lib/api-error'
+import PageBanner from '@/components/layout/PageBanner'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()

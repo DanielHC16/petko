@@ -112,14 +112,18 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
   return (
     <section
       aria-labelledby="admin-access-heading"
-      className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+      className="rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-6 shadow-sm"
     >
       <div className="flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
           <KeyRound size={18} aria-hidden="true" />
         </div>
         <div>
-          <h2 id="admin-access-heading" className="text-base font-bold text-gray-900">
+          <h2
+            id="admin-access-heading"
+            className="text-base font-bold text-[#10298E]"
+            style={{ fontFamily: "'Nunito', sans-serif" }}
+          >
             Admin access list
           </h2>
           <p className="text-xs text-gray-600">
@@ -142,7 +146,7 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
           value={emailInput}
           onChange={(e) => setEmailInput(e.target.value)}
           placeholder="e.g. teammate@gmail.com"
-          className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-500 focus:border-orange-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+          className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-500 focus:border-orange-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
         />
         <button
           type="submit"
@@ -169,7 +173,7 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
       ) : (
         <ul
           aria-label="Emails with admin access"
-          className="mt-5 divide-y divide-gray-100 rounded-xl border border-gray-200"
+          className="mt-5 divide-y divide-[#e1cba5]/60 rounded-xl border border-[#e1cba5] bg-white"
         >
           {emails.map((row) => {
             const isOwn = row.email === ownEmail
@@ -187,7 +191,7 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
                 className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-gray-900">
+                  <p className="truncate font-medium text-[#10298E]">
                     {row.email}
                     {isOwn && (
                       <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-800">

@@ -40,6 +40,7 @@ export default function Navbar() {
               <Link
                 to="/"
                 aria-current={inAdminRoute ? undefined : 'page'}
+                title="Storefront"
                 className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3 ${
                   !inAdminRoute
                     ? 'bg-white text-orange-600 shadow-sm'
@@ -47,11 +48,12 @@ export default function Navbar() {
                 }`}
               >
                 <Store size={14} aria-hidden="true" />
-                Storefront
+                <span className="hidden sm:inline">Storefront</span>
               </Link>
               <Link
                 to="/admin"
                 aria-current={inAdminRoute ? 'page' : undefined}
+                title="Admin Panel"
                 className={`flex items-center gap-1 rounded-md px-2 py-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3 ${
                   inAdminRoute
                     ? 'bg-white text-orange-600 shadow-sm'
@@ -59,7 +61,7 @@ export default function Navbar() {
                 }`}
               >
                 <LayoutDashboard size={14} aria-hidden="true" />
-                Admin Panel
+                <span className="hidden sm:inline">Admin Panel</span>
               </Link>
             </div>
           )}

@@ -36,14 +36,14 @@ export default function App() {
         {/* UI Testing — all pages bypass auth */}
            {/* Comment this block out and uncomment ProtectedRoute below
             when restoring auth for production.*/}
-        {/* <Route element={<AppLayout />}>
+      <Route element={<AppLayout />}>
           <Route path="/"             element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/cart"         element={<CartPage />} />
           <Route path="/checkout"     element={<CheckoutPage />} />
           <Route path="/orders"       element={<OrdersPage />} />
         </Route>
-        */}
+     
 
         {/* Authenticated customer routes (restore for production)  */}
         <Route element={<ProtectedRoute />}> 
