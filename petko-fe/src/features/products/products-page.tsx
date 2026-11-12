@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Search, ShoppingBag, ShoppingCart, RotateCcw, Menu, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
+import { PRODUCT_CATEGORIES, groupProductFamilies } from '@/lib/product-catalog'
 import { useCartStore } from '@/store/cart.store'
 import { getApiErrorMessage } from '@/lib/api-error'
 import dogcatImg    from '@/assets/proheader.png'
@@ -10,20 +11,7 @@ import pawYellowImg from '@/assets/paw_yellow.png'
 import logoImg      from '@/assets/logo.png'
 import pawImg       from '@/assets/paw_white.png'
 
-const CATEGORIES = [
-  { id: 'all',         label: 'All Items' },
-  { id: 'food',        label: 'Pet Food' },
-  { id: 'treats',      label: 'Treats' },
-  { id: 'toys',        label: 'Toys' },
-  { id: 'grooming',    label: 'Grooming' },
-  { id: 'wellness',    label: 'Health & Wellness' },
-  { id: 'litter',      label: 'Litter & Toilet' },
-  { id: 'bedding',     label: 'Beds & Furniture' },
-  { id: 'apparel',     label: 'Clothing' },
-  { id: 'cleaning',    label: 'Training & Cleaning' },
-  { id: 'travel',      label: 'Travel & Outdoor' },
-  { id: 'accessories', label: 'Collars & Leashes' },
-]
+const CATEGORIES = [{ id: 'all', label: 'All Items' }, ...PRODUCT_CATEGORIES]
 
 const SORT_OPTIONS = ['newest', 'price_asc', 'price_desc', 'name'] as const
 type SortOption = (typeof SORT_OPTIONS)[number]
@@ -41,6 +29,8 @@ export default function ProductsPage() {
   const petTab: PetTab = requestedPet === 'cat' || requestedPet === 'dog' ? requestedPet : 'all'
   const [sortBy, setSortBy]                         = useState<SortOption>('newest')
   const [loadedKey, setLoadedKey]                   = useState<string | null>(null)
+  const [loadError, setLoadError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen]         = useState(false)
 
   const addItem     = useCartStore((s) => s.addItem)
@@ -48,7 +38,7 @@ export default function ProductsPage() {
   const updateQty   = useCartStore((s) => s.updateQuantity)
   const cartItems   = useCartStore((s) => s.items)
 
-  const requestKey = JSON.stringify({ cat: selectedCategory, pet: petTab, search, sortBy })
+  const requestKey = JSON.stringify({ cat: selectedCategory, pet: petTab, search, sortBy, retryCount })
   const isLoading  = loadedKey !== requestKey
 
   useEffect(() => {
@@ -61,22 +51,18 @@ export default function ProductsPage() {
           pet_type: petTab === 'all' ? 'all' : petTab,
           search, sortBy,
         })
-        if (mounted) setProducts(data)
+        if (mounted) { setProducts(data); setLoadError('') }
       } catch (err) {
-        if (mounted) toast.error(getApiErrorMessage(err, 'Failed to load products'))
+        if (mounted) setLoadError(getApiErrorMessage(err, 'Failed to load products'))
       } finally {
         if (mounted) setLoadedKey(key)
       }
     }
     load()
     return () => { mounted = false }
-  }, [requestKey, selectedCategory, petTab, search, sortBy])
+  }, [requestKey, selectedCategory, petTab, search, sortBy, retryCount])
 
-  const displayed = useMemo(() => products.filter(p => {
-    const inCat   = selectedCategory === 'all' || p.category === selectedCategory
-    const inPet   = petTab === 'all' || p.pet_type === petTab || p.pet_type === 'both'
-    return inCat && inPet
-  }), [products, selectedCategory, petTab])
+  const displayed = useMemo(() => groupProductFamilies(products, sortBy), [products, sortBy])
 
   function clearFilters() {
     const params = new URLSearchParams(searchParams)
@@ -215,11 +201,11 @@ export default function ProductsPage() {
           </div>
 
           {/* ── DESKTOP row 2: category pills ───────────────────────────── */}
-          <div className="hidden lg:flex items-center gap-1.5">
-            <div className="flex flex-1 items-center gap-1 min-w-0">
+          <div className="hidden lg:flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-1 flex-wrap items-center gap-1 min-w-0">
               {CATEGORIES.map(cat => (
                 <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex-1 rounded-full px-1.5 py-0.5 text-xs font-medium transition text-center whitespace-nowrap
+                  className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium transition text-center whitespace-nowrap
                     ${selectedCategory === cat.id
                       ? 'bg-orange-500 text-white shadow-sm'
                       : 'border border-gray-300 bg-white text-gray-600 hover:border-orange-400 hover:text-orange-600'}`}>
@@ -327,6 +313,14 @@ export default function ProductsPage() {
               </div>
             ))}
           </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-2xl border border-red-200 bg-white p-8 text-center">
+            <p className="text-sm text-red-700">{loadError}</p>
+            <button onClick={() => setRetryCount((count) => count + 1)}
+              className="mt-4 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-petko-blue">
+              Try again
+            </button>
+          </div>
         ) : displayed.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
             <ShoppingBag className="mx-auto text-gray-300" size={44} />
@@ -339,7 +333,9 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {displayed.map(product => {
+            {displayed.map(family => {
+              const { product } = family
+              const hasOptions = Boolean(product.parent_product_name)
               const itemInCart = cartItems.find(i => i.product_id === product.id)
               const canAddMore = product.stock > (itemInCart?.quantity ?? 0)
               return (
@@ -369,25 +365,31 @@ export default function ProductsPage() {
                   </Link>
                   <div className="flex flex-col gap-1 px-3 pt-2 pb-3">
                     <Link to={`/products/${product.id}`}
-                      className="text-sm font-bold text-petko-blue line-clamp-1 hover:underline"
+                      className="min-h-10 text-sm font-bold text-petko-blue line-clamp-2 hover:underline"
                       style={{ fontFamily: "'Nunito', sans-serif" }}>
-                      {product.name}
+                      {family.name}
                     </Link>
                     <p className="text-xs text-gray-400 line-clamp-1">{product.description}</p>
                     <div className="mt-0.5 flex items-center justify-between">
                       <span className="text-sm font-bold text-orange-500">
-                        ₱ {Number(product.price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        {family.minPrice !== family.maxPrice && <span className="text-[10px] font-medium">From </span>}
+                        ₱ {family.minPrice.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                       </span>
                       <div className="flex flex-col items-end">
-                        <span className={`text-xs font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                        <span className={`text-xs font-semibold ${family.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          {family.stock > 0 ? 'In Stock' : 'Out of Stock'}
                         </span>
-                        {product.stock > 0 && (
-                          <span className="text-[10px] text-gray-400">{product.stock} in stock</span>
+                        {family.stock > 0 && (
+                          <span className="text-[10px] text-gray-400">{hasOptions ? `${family.variants.length} ${family.variants.length === 1 ? 'option' : 'options'}` : `${product.stock} in stock`}</span>
                         )}
                       </div>
                     </div>
-                    {itemInCart ? (
+                    {hasOptions ? (
+                      <Link to={`/products/${product.id}`}
+                        className="mt-1.5 flex w-full items-center justify-center rounded-lg border border-orange-300 bg-orange-50 py-2 text-xs font-semibold text-orange-800 transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-petko-blue">
+                        Choose options
+                      </Link>
+                    ) : itemInCart ? (
                       /* Quantity stepper — same style as Add to Cart button */
                       <div className="mt-1.5 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 overflow-hidden">
                         <button

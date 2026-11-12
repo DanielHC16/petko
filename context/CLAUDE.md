@@ -95,7 +95,7 @@ Before generating any new feature, module, or component, **read the relevant sta
 ### 9. Rate Limiting and Accepted Risks
 - No rate limiting in code: in-memory throttling doesn't work across serverless instances. Use a Vercel Firewall rate-limit rule on `/api/*` (e.g. 100 req/min per IP, stricter on `POST/PATCH/DELETE`).
 - `npm audit` (full) in `petko-fe` reports 7 findings (5 high, 2 moderate) in the Tailwind 3 build chain (`tailwindcss`, `chokidar`, `braces`, `micromatch`, `fast-glob`, `postcss-*`). They run only inside `vite build` and never ship; they're devDependencies and `npm audit --omit=dev` is 0 in both apps. Fixing them needs a Tailwind 4 migration (deferred).
-- The local product CSV (`petko-be/petko-dummy-data-s1.csv`) is dummy seed data, not tracked in git, and excluded from Vercel uploads by `.vercelignore`.
+- The legacy product CSV is obsolete. The current catalog source snapshots live in `petko-be/data/`; `scripts/seed.js` audits them and `scripts/prepare-catalog.mjs` generates the reviewed SQL seed/rollback. Scripts/data are excluded from Vercel uploads. See `docs/plans/2026-11-12-catalog-variations.md` before reseeding.
 
 ---
 
@@ -164,6 +164,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
    - `migration-004-admin-analytics.sql` (additive backend-only traffic tables and aggregation functions). Apply before deploying analytics; validate with `verify-admin-analytics.sql` only in an isolated database. Retain the schema/data on application rollback.
    - `migration-005-tos-acceptance.sql` (adds `users.tos_accepted`, default false, preserving existing profile/role permissions). Apply before deploying terms persistence. Run `verify-tos-acceptance.sql` only in an isolated database; retain the column/agreements when rolling back app code.
    - `migration-006-auto-deactivate-out-of-stock.sql` (adds `trg_product_stock_status` trigger to automatically set `is_active = false` when stock <= 0, and updates existing out-of-stock rows). Apply before deploying out-of-stock auto-deactivation. Validate with `verify-auto-deactivate-out-of-stock.sql` in an isolated database only.
+   - `migration-007-product-variations.sql` (SKU, product family, bounded variation attributes, and content fields; applied to production 2026-11-12). Keep each variation as a separate product ID, preserving existing checkout/cart/stock contracts. Run `verify-product-variations.sql` only in an isolated database. Retain additive columns on application rollback. The separate catalog seed is destructive and is not a routine deployment migration.
 2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
 3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
 4. `vercel deploy --prod`, or push to `main` with the Git integration.

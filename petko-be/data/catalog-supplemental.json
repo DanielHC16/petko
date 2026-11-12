@@ -1,0 +1,814 @@
+{
+  "range": "PetKo_Final_Products_100!A1:F150",
+  "majorDimension": "ROWS",
+  "values": [
+    [
+      "Category",
+      "Product Name",
+      "Price",
+      "Description",
+      "Image URL",
+      "Image Filename"
+    ],
+    [
+      "Pet Food",
+      "PetKo Masaganang Sigla Dog Dry Food 1kg",
+      "₱289.00",
+      "Complete dry kibble for adult dogs, made for everyday meals that keep your dog full and active.",
+      "https://lh3.googleusercontent.com/d/16PCI6vPm7SENUpVqIxcreaA9vwjSfj-b",
+      "Petko Masaganang Sigla - 1kg.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Masaganang Sigla Dog Dry Food 3kg",
+      "₱799.00",
+      "Complete dry kibble for adult dogs, made for everyday meals that keep your dog full and active.",
+      "https://lh3.googleusercontent.com/d/1e7549cwz6gcOSEMgmtswhCwLPJAfUXEK",
+      "Petko Masaganang Sigla - 3kg.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Linamnam na Hapag Dog Wet Food Can 400g",
+      "₱99.00",
+      "Meaty wet dog food in savory gravy, good as a full meal or mixed with dry food.",
+      "https://lh3.googleusercontent.com/d/1ygfQRbfCaPyVYl7hrdAvYcc0qo4IiFTr",
+      "Petko Linamnam na Hapag - Can 400g.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Linamnam na Hapag Dog Wet Food Pouch 100g",
+      "₱45.00",
+      "Meaty wet dog food in savory gravy, good as a full meal or mixed with dry food.",
+      "https://lh3.googleusercontent.com/d/1zbBk1qnfnpRjsrWtzSkAMExr4wsrmS7m",
+      "Petko Linamnam na Hapag - Pouch 100g.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Busog at Liksi Cat Dry Food 1kg",
+      "₱299.00",
+      "Complete dry kibble for cats, made for daily meals that keep your cat full and playful.",
+      "https://lh3.googleusercontent.com/d/1GxUkNHUB8AoVAd2XiSSAteKBiGq_E2KM",
+      "Petko Busog at Liksi - 1kg.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Busog at Liksi Cat Dry Food 3kg",
+      "₱829.00",
+      "Complete dry kibble for cats, made for daily meals that keep your cat full and playful.",
+      "https://lh3.googleusercontent.com/d/1Vvdn8MAKOGdRB1hRTCgud3XMfqFEfdqx",
+      "Petko Busog at Liksi - 3kg.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Linamnam ng Pusa Cat Wet Food Pouch 85g",
+      "₱39.00",
+      "Tender wet cat food chunks in gravy, perfect as a tasty meal or topper for dry food.",
+      "https://lh3.googleusercontent.com/d/1FlPGc6gdVWUKEYjQs-z8cS_YdHywrTkW",
+      "Petko Linamnam ng Pusa - Pouch 85g.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Linamnam ng Pusa Cat Wet Food Can 400g",
+      "₱115.00",
+      "Tender wet cat food chunks in gravy, perfect as a tasty meal or topper for dry food.",
+      "https://lh3.googleusercontent.com/d/1SuB9GtIHivSso3QeJ7_amfrMXoHcfQBu",
+      "Petko Linamnam ng Pusa - Can 400g.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Natatanging Aruga Specialized Pet Food Urinary Care 1.5kg",
+      "₱899.00",
+      "Specialized pet food for dogs and cats with special diet needs. Ask your veterinarian which formula fits your pet.",
+      "https://lh3.googleusercontent.com/d/1HbTS4OD6YK1_ZPinNQ1D0rJxmW9c590U",
+      "Petko Natatanging Aruga - Urinary Care 1.5kg.png"
+    ],
+    [
+      "Pet Food",
+      "PetKo Natatanging Aruga Specialized Pet Food Weight Control 1.5kg",
+      "₱899.00",
+      "Specialized pet food for dogs and cats with special diet needs. Ask your veterinarian which formula fits your pet.",
+      "https://lh3.googleusercontent.com/d/1aJhagjERyZC9peZv77SyIuaBQjN8__s7",
+      "Petko Natatanging Aruga - Weight Control 1.5kg.png"
+    ],
+    [
+      "Treats",
+      "PetKo Kagat ng Saya Dog Biscuits 150g",
+      "₱129.00",
+      "Crunchy bone-shaped dog biscuits, great as a reward during training or an everyday snack.",
+      "https://lh3.googleusercontent.com/d/1RSM1VZ2OHVTS-p36ngk0k9UgDnv9doz9",
+      "Petko Kagat ng Saya - 150g.png"
+    ],
+    [
+      "Treats",
+      "PetKo Kagat ng Saya Dog Biscuits 300g Jar",
+      "₱239.00",
+      "Crunchy bone-shaped dog biscuits, great as a reward during training or an everyday snack.",
+      "https://lh3.googleusercontent.com/d/1ZJ4ocbnzImyHCSe-lhtZjj__QpRju-EY",
+      "Petko Kagat ng Saya - 300g Jar.png"
+    ],
+    [
+      "Treats",
+      "PetKo Hiwang Ligaya Chicken Jerky Strips 80g",
+      "₱89.00",
+      "Chewy chicken jerky strips for dogs, made for rewarding good behavior or as an everyday snack. Comes in a resealable pouch to keep the strips fresh.",
+      "https://lh3.googleusercontent.com/d/1XUzoKt8ErqY48cSYav5ilLtXVrd0Une0",
+      "Petko Hiwang Ligaya - 80g.png"
+    ],
+    [
+      "Treats",
+      "PetKo Hiwang Ligaya Chicken Jerky Strips 250g",
+      "₱189.00",
+      "Chewy chicken jerky strips for dogs, made for rewarding good behavior or as an everyday snack. Comes in a resealable pouch to keep the strips fresh.",
+      "https://lh3.googleusercontent.com/d/1MbzNzqIkdo_ShwQ7LSbVxT7ppuolu4wR",
+      "Petko Hiwang Ligaya - 250g.png"
+    ],
+    [
+      "Treats",
+      "PetKo Ngiting Malinis Dental Treats 10 pcs",
+      "₱149.00",
+      "Green dental chew sticks for dogs with a ridged shape designed to help clean teeth and freshen breath while your dog enjoys a treat.",
+      "https://lh3.googleusercontent.com/d/1gjL2f-Nd2OzdGfyay3jqgUCOdWd6WsXG",
+      "Petko Ngiting Malinis - 10 pcs.png"
+    ],
+    [
+      "Treats",
+      "PetKo Ngiting Malinis Dental Treats 20 pcs",
+      "₱269.00",
+      "Green dental chew sticks for dogs with a ridged shape designed to help clean teeth and freshen breath while your dog enjoys a treat.",
+      "https://lh3.googleusercontent.com/d/1ic1kZsiZY2zqV_scBGYpCzcnkKxRf4v8",
+      "Petko Ngiting Malinis - 20 pcs.png"
+    ],
+    [
+      "Treats",
+      "PetKo Lambing ng Pusa Cat Treats Tuna 60g",
+      "₱79.00",
+      "Crunchy fish-shaped cat treats, perfect for bonding time or rewarding your cat. Comes in a resealable pouch.",
+      "https://lh3.googleusercontent.com/d/1SIkxQxfqXWTOJAIXWIc9Pdi6zkzoeXBg",
+      "Petko Lambing ng Pusa - Tuna 60g.png"
+    ],
+    [
+      "Treats",
+      "PetKo Lambing ng Pusa Cat Treats Chicken 60g",
+      "₱79.00",
+      "Crunchy fish-shaped cat treats, perfect for bonding time or rewarding your cat. Comes in a resealable pouch.",
+      "https://lh3.googleusercontent.com/d/1JfgxmgZvr3H0TLN3d0VPlAiHnf3R48Vd",
+      "Petko Lambing ng Pusa - Chicken 60g.png"
+    ],
+    [
+      "Treats",
+      "PetKo Matibay na Ngata Long-Lasting Chews 250g",
+      "₱249.00",
+      "Long-lasting chew bones for dogs that keep them busy and satisfy their natural urge to chew.",
+      "https://lh3.googleusercontent.com/d/1oGdMIWlJAhFFMQG_8TApPK0AJhFHuIke",
+      "Petko Matibay na Ngata - 250g.png"
+    ],
+    [
+      "Treats",
+      "PetKo Matibay na Ngata Long-Lasting Chews 500g",
+      "₱449.00",
+      "Long-lasting chew bones for dogs that keep them busy and satisfy their natural urge to chew.",
+      "https://lh3.googleusercontent.com/d/1PpN7jGD5fTCaQipPcRsgGY4ZYJ04675r",
+      "Petko Matibay na Ngata - 500g.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Buhanging Presko Clumping Cat Litter 5kg",
+      "₱399.00",
+      "Clumping cat litter with odor control that forms firm clumps for easy scooping, keeping the litter box clean and fresh.",
+      "https://lh3.googleusercontent.com/d/1oy0GBLg2NARn-yQIQ-HvR0KRUMFY_XEa",
+      "Petko Buhanging Presko - 5kg.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Buhanging Presko Clumping Cat Litter 10kg",
+      "₱749.00",
+      "Clumping cat litter with odor control that forms firm clumps for easy scooping, keeping the litter box clean and fresh.",
+      "https://lh3.googleusercontent.com/d/1aBAyqsTQJFkYO_PYNi29bcTk5dQsOsV8",
+      "Petko Buhanging Presko - 10kg.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Munting Banyo Covered Cat Litter Box Blue",
+      "₱1,299.00",
+      "Covered litter box with a swing door that gives cats privacy and helps keep litter and odor inside. Has a removable base for easy cleaning.",
+      "https://lh3.googleusercontent.com/d/1PCDrRtw7764ZiZ66qjnRS7cDr6cPQ81E",
+      "Petko Munting Banyo - Blue.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Munting Banyo Covered Cat Litter Box Red",
+      "₱1,299.00",
+      "Covered litter box with a swing door that gives cats privacy and helps keep litter and odor inside. Has a removable base for easy cleaning.",
+      "https://lh3.googleusercontent.com/d/1zrWPzheYcNTjPdbFfzfm2n-W5wcQ1dV6",
+      "Petko Munting Banyo - Red.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Sandok Linis Litter Scoop Blue",
+      "₱129.00",
+      "Sturdy slotted litter scoop with a comfortable grip handle that separates clumps from clean litter quickly.",
+      "https://lh3.googleusercontent.com/d/10EbqFwiAKHDjSoKOiEwC9fk6Zi6j-NZv",
+      "Petko Sandok Linis - Blue.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Sandok Linis Litter Scoop Yellow",
+      "₱129.00",
+      "Sturdy slotted litter scoop with a comfortable grip handle that separates clumps from clean litter quickly.",
+      "https://lh3.googleusercontent.com/d/1Jpr41lw8HgNzf3Z3k4R66lulGTh6MkzO",
+      "Petko Sandok Linis - Yellow.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Halimuyak ng Tahanan Litter Deodorizer Spray 500ml",
+      "₱279.00",
+      "Fresh-scented litter deodorizer made to help reduce litter box odor at home.",
+      "https://lh3.googleusercontent.com/d/13oRCkmiVkXBDVOrA9pthFMMTq-ymgeT-",
+      "Petko Halimuyak ng Tahanan - Spray 500ml.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Halimuyak ng Tahanan Litter Deodorizer Powder 400g",
+      "₱249.00",
+      "Fresh-scented litter deodorizer made to help reduce litter box odor at home.",
+      "https://lh3.googleusercontent.com/d/1_Ws9QsiErgAFNATj9Qvpq9BA8-8KI-SZ",
+      "Petko Halimuyak ng Tahanan - Powder 400g.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Bantay Kalat Litter Mat Medium 60x45cm",
+      "₱349.00",
+      "Honeycomb-textured litter mat placed in front of the litter box to catch litter stuck on your cat's paws and keep floors clean.",
+      "https://lh3.googleusercontent.com/d/1uNSN6FdREwd3v_uog3Wbya_FEZ_WzPA2",
+      "Petko Bantay Kalat - Medium 60x45cm.png"
+    ],
+    [
+      "Cat Litter & Toilet",
+      "PetKo Bantay Kalat Litter Mat Large 75x55cm",
+      "₱449.00",
+      "Honeycomb-textured litter mat placed in front of the litter box to catch litter stuck on your cat's paws and keep floors clean.",
+      "https://lh3.googleusercontent.com/d/1TA1JNMdbOO2Tv9HWt2elw0q6Pripyfl-",
+      "Petko Bantay Kalat - Large 75x55cm.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Mangkok ng Busog Pet Bowl 400ml",
+      "₱199.00",
+      "Stainless steel pet bowl for food or water. The anti-slip rubber base helps keep the bowl in place during meals.",
+      "https://lh3.googleusercontent.com/d/13GQUkl54TtWeu2ShfXaDa-MB6TMWV2VP",
+      "Petko Mangkok ng Busog - 400ml.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Mangkok ng Busog Pet Bowl 800ml",
+      "₱299.00",
+      "Stainless steel pet bowl for food or water. The anti-slip rubber base helps keep the bowl in place during meals.",
+      "https://lh3.googleusercontent.com/d/11tR0EWRcUrXZeL-0qIFmvHNDZfxNIlbb",
+      "Petko Mangkok ng Busog - 800ml.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Mataas na Hapag Elevated Pet Bowls Blue",
+      "₱899.00",
+      "Raised double bowl stand with two stainless steel bowls that lets pets eat and drink at a more comfortable height.",
+      "https://lh3.googleusercontent.com/d/1_Ib3mHYueg0Szb5ilFZuC42lKkwVFB8s",
+      "Petko Mataas na Hapag - Blue.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Mataas na Hapag Elevated Pet Bowls Red",
+      "₱899.00",
+      "Raised double bowl stand with two stainless steel bowls that lets pets eat and drink at a more comfortable height.",
+      "https://lh3.googleusercontent.com/d/1beXmvJW6MXknn0nBBxhGyF4XWtsvogH-",
+      "Petko Mataas na Hapag - Red.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Kusang Hain Automatic Feeder 3L",
+      "₱2,499.00",
+      "Automatic pet feeder with a clear food container and a digital timer that serves meals on schedule, even when you are not home.",
+      "https://lh3.googleusercontent.com/d/1Q-Qhtwyv0uvz5feVtBpm8FagUXc5uvVI",
+      "Petko Kusang Hain - 3L.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Kusang Hain Automatic Feeder 6L",
+      "₱3,299.00",
+      "Automatic pet feeder with a clear food container and a digital timer that serves meals on schedule, even when you are not home.",
+      "https://lh3.googleusercontent.com/d/1a8aD59nQJwr7MKTZPWPaR-tx1Df7J-To",
+      "Petko Kusang Hain - 6L.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Bukal ng Ginhawa Pet Water Fountain 1.5L",
+      "₱1,299.00",
+      "Pet water fountain with continuously flowing water and a clear tank, encouraging pets to drink more throughout the day.",
+      "https://lh3.googleusercontent.com/d/1JEzJQrR1Zqp7odfkx7T677zZikRpVLsW",
+      "Petko Bukal ng Ginhawa - 1.5L.png"
+    ],
+    [
+      "Feeding Supplies",
+      "PetKo Bukal ng Ginhawa Pet Water Fountain 2.5L",
+      "₱1,699.00",
+      "Pet water fountain with continuously flowing water and a clear tank, encouraging pets to drink more throughout the day.",
+      "https://lh3.googleusercontent.com/d/1ouWr8SLo-LVX-oCbUz4j6RxK9s8DU3fG",
+      "Petko Bukal ng Ginhawa - 2.5L.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Kuwintas ng Lambing Pet Collar Blue",
+      "₱249.00",
+      "Adjustable nylon collar with a metal buckle for dogs and cats.",
+      "https://lh3.googleusercontent.com/d/1pz1cb9WpaVb4uNrtUyhxpI4UP9lOhx79",
+      "Petko Kuwintas ng Lambing - Blue.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Kuwintas ng Lambing Pet Collar Red",
+      "₱249.00",
+      "Adjustable nylon collar with a metal buckle for dogs and cats.",
+      "https://lh3.googleusercontent.com/d/1amzOjlQLx-dLGKXYSNVV_T6clCBkaoBV",
+      "Petko Kuwintas ng Lambing - Red.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Yakap Lakad Pet Harness Blue",
+      "₱599.00",
+      "Padded no-pull harness with adjustable straps and reflective stitching for comfortable and safer walks.",
+      "https://lh3.googleusercontent.com/d/1CbKipvVLSGfHu0rayASsbiQ1KUU6LMgj",
+      "Petko Yakap Lakad - Blue.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Yakap Lakad Pet Harness Red",
+      "₱599.00",
+      "Padded no-pull harness with adjustable straps and reflective stitching for comfortable and safer walks.",
+      "https://lh3.googleusercontent.com/d/1-RzcYpIcfD_sdtt8imcd1rHFS09XVydZ",
+      "Petko Yakap Lakad - Red.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Tali ng Pasyal Pet Leash Standard 1.5m",
+      "₱299.00",
+      "Dog leash with a secure metal clip for daily walks.",
+      "https://lh3.googleusercontent.com/d/1GVYTAlojOfeSR-HFu8qQj9I6xT0nFiXV",
+      "Petko Tali ng Pasyal - Standard 1.5m.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Tali ng Pasyal Pet Leash Retractable 5m",
+      "₱599.00",
+      "Dog leash with a secure metal clip for daily walks.",
+      "https://lh3.googleusercontent.com/d/1CfEQj1l1adE8Dm2IuqD1GIB3MVuMdIUB",
+      "Petko Tali ng Pasyal - Retractable 5m.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Pangalan Ko Pet ID Tag Bone Blue",
+      "₱149.00",
+      "Metal pet ID tag that can be engraved with your pet's name.",
+      "https://lh3.googleusercontent.com/d/1S3ipYMGWveAthUq7IdSskEgylS_OBC7U",
+      "Petko Pangalan Ko - Bone Blue.png"
+    ],
+    [
+      "Collars, Harnesses & Leashes",
+      "PetKo Pangalan Ko Pet ID Tag Paw Red",
+      "₱149.00",
+      "Metal pet ID tag that can be engraved with your pet's name.",
+      "https://lh3.googleusercontent.com/d/1gqGUhWJmW6Yt_lUsujtIkdHDeQ4abZR_",
+      "Petko Pangalan Ko - Paw Red.png"
+    ],
+    [
+      "Toys",
+      "PetKo Kagat-Laro Chew Toy Bone",
+      "₱199.00",
+      "Durable rubber chew toy made for dogs who love to chew and play.",
+      "https://lh3.googleusercontent.com/d/12KThkFQwUvNoBI3H1XksHa3gUr0LLbmX",
+      "Petko Kagat-Laro - Bone.png"
+    ],
+    [
+      "Toys",
+      "PetKo Kagat-Laro Chew Toy Ring",
+      "₱199.00",
+      "Durable rubber chew toy made for dogs who love to chew and play.",
+      "https://lh3.googleusercontent.com/d/1lEhTQXarM5XQw1cy4C9s7qBZGMV5zJrI",
+      "Petko Kagat-Laro - Ring.png"
+    ],
+    [
+      "Toys",
+      "PetKo Hilahang Lubid Rope Toy Small 30cm",
+      "₱159.00",
+      "Braided cotton rope toy with knotted ends, great for tug-of-war and interactive play with your dog.",
+      "https://lh3.googleusercontent.com/d/15UU5t7IGSp-p9IO-2loK5vEGNmvGdW16",
+      "Petko Hilahang Lubid - Small 30cm.png"
+    ],
+    [
+      "Toys",
+      "PetKo Hilahang Lubid Rope Toy Large 60cm",
+      "₱259.00",
+      "Braided cotton rope toy with knotted ends, great for tug-of-war and interactive play with your dog.",
+      "https://lh3.googleusercontent.com/d/1udYV8yPAZPOcv7Wv4UKaQwA3SB1NAKt0",
+      "Petko Hilahang Lubid - Large 60cm.png"
+    ],
+    [
+      "Toys",
+      "PetKo Tili-Tili Squeaky Toy Fish",
+      "₱229.00",
+      "Soft plush squeaky toy for fun fetch and cuddle time.",
+      "https://lh3.googleusercontent.com/d/1CfLh8skdP1KPPgpJlAAtHqiDXlMLa8Vb",
+      "Petko Tili-Tili - Fish.png"
+    ],
+    [
+      "Toys",
+      "PetKo Tili-Tili Squeaky Toy Drumstick",
+      "₱229.00",
+      "Soft plush squeaky toy for fun fetch and cuddle time.",
+      "https://lh3.googleusercontent.com/d/1wyYjecWYeolV--KbzcKSAYV7epcJXMLc",
+      "Petko Tili-Tili - Drumstick.png"
+    ],
+    [
+      "Toys",
+      "PetKo Sayaw ng Balahibo Cat Teaser Red Feathers",
+      "₱129.00",
+      "Cat teaser wand with colorful feathers and a small bell that encourages cats to jump, chase, and stay active.",
+      "https://lh3.googleusercontent.com/d/1NrMfWTyyxgPUI0fnQ68hnZcKs5jCtA7p",
+      "Petko Sayaw ng Balahibo - Red Feathers.png"
+    ],
+    [
+      "Toys",
+      "PetKo Sayaw ng Balahibo Cat Teaser Blue Feathers",
+      "₱129.00",
+      "Cat teaser wand with colorful feathers and a small bell that encourages cats to jump, chase, and stay active.",
+      "https://lh3.googleusercontent.com/d/1Qw6ZTI1mt75KC7Z_1YVlJB5yjkkgD1C9",
+      "Petko Sayaw ng Balahibo - Blue Feathers.png"
+    ],
+    [
+      "Toys",
+      "PetKo Bolang Takbuhan Pet Ball Set 3 pcs",
+      "₱149.00",
+      "Set of bouncy rubber balls for fetch and outdoor play, packed in a mesh bag.",
+      "https://lh3.googleusercontent.com/d/1vskX-P8gQcqeEy6oNiNQ6lGjB0FmqS8U",
+      "Petko Bolang Takbuhan - 3 pcs.png"
+    ],
+    [
+      "Toys",
+      "PetKo Bolang Takbuhan Pet Ball Set 6 pcs",
+      "₱249.00",
+      "Set of bouncy rubber balls for fetch and outdoor play, packed in a mesh bag.",
+      "https://lh3.googleusercontent.com/d/1m_RVJoR3KvB6MQFBcsU6bJtB3053X-LU",
+      "Petko Bolang Takbuhan - 6 pcs.png"
+    ],
+    [
+      "Toys",
+      "PetKo Halamang Kiliti Catnip Toy Fish",
+      "₱149.00",
+      "Small plush toy filled with catnip to keep cats playful and entertained.",
+      "https://lh3.googleusercontent.com/d/1ypmfbQ9QGTDpQv-ZuXcfPL8s3c3l8y6x",
+      "Petko Halamang Kiliti - Fish.png"
+    ],
+    [
+      "Toys",
+      "PetKo Halamang Kiliti Catnip Toy Mouse",
+      "₱149.00",
+      "Small plush toy filled with catnip to keep cats playful and entertained.",
+      "https://lh3.googleusercontent.com/d/1bT5AKk7ukmWQAbBdt0oG49EHPHIYHxe0",
+      "Petko Halamang Kiliti - Mouse.png"
+    ],
+    [
+      "Toys",
+      "PetKo Talinong Laro Puzzle Toy Level 1 Easy",
+      "₱599.00",
+      "Puzzle feeder toy with sliding lids that hide kibble, giving dogs mental stimulation while they find their food.",
+      "https://lh3.googleusercontent.com/d/1777x7cVSl_L8BKB4MiJvnvLLagOuGRF4",
+      "Petko Talinong Laro - Level 1 Easy.png"
+    ],
+    [
+      "Toys",
+      "PetKo Talinong Laro Puzzle Toy Level 2 Medium",
+      "₱699.00",
+      "Puzzle feeder toy with sliding lids that hide kibble, giving dogs mental stimulation while they find their food.",
+      "https://lh3.googleusercontent.com/d/1ROoMr0xqwnQ4w4d6BE5q8zApXWQ0JC_2",
+      "Petko Talinong Laro - Level 2 Medium.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Paliguang Mabango Pet Shampoo 250ml",
+      "₱189.00",
+      "Gentle pet shampoo for regular baths that cleans the coat and leaves a fresh scent.",
+      "https://lh3.googleusercontent.com/d/10AQw1o1q25zXmRX1T2WiYqYSygdlT9Hx",
+      "Petko Paliguang Mabango - 250ml.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Paliguang Mabango Pet Shampoo 500ml",
+      "₱289.00",
+      "Gentle pet shampoo for regular baths that cleans the coat and leaves a fresh scent.",
+      "https://lh3.googleusercontent.com/d/1eQDwhhFNV-fECVwbI9m-ryNkE63fz9VK",
+      "Petko Paliguang Mabango - 500ml.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Lambot ng Balahibo Pet Conditioner 250ml",
+      "₱199.00",
+      "Pet conditioner made to leave the coat soft and shiny after bathing.",
+      "https://lh3.googleusercontent.com/d/1HIrQF5MwwcEX8RaxH0GtQ_JtjBqvN1fM",
+      "Petko Lambot ng Balahibo - 250ml.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Lambot ng Balahibo Pet Conditioner 500ml",
+      "₱299.00",
+      "Pet conditioner made to leave the coat soft and shiny after bathing.",
+      "https://lh3.googleusercontent.com/d/1oe_CO5WGdl3HDHju32L05N__uKqhqw58",
+      "Petko Lambot ng Balahibo - 500ml.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Punas Presko Pet Wipes 20 sheets",
+      "₱49.00",
+      "Pet wet wipes for quick cleaning of paws, face, and fur between baths.",
+      "https://lh3.googleusercontent.com/d/1oxX3nb3wSP8eA9LyNAOMyCfLW2g36WtF",
+      "Petko Punas Presko - 20 sheets.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Punas Presko Pet Wipes 80 sheets",
+      "₱99.00",
+      "Pet wet wipes for quick cleaning of paws, face, and fur between baths.",
+      "https://lh3.googleusercontent.com/d/1-4SMIyx3SQMnexNayOwX2jiLMMRE_ijn",
+      "Petko Punas Presko - 80 sheets.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Suklay Ganda Grooming Brush Slicker Brush",
+      "₱249.00",
+      "Grooming tool with a comfortable grip handle for removing loose fur and detangling coats of dogs and cats.",
+      "https://lh3.googleusercontent.com/d/1q3lrHtH7SO77RV6NRwfh8qwqAqJMoKds",
+      "Petko Suklay Ganda - Slicker Brush.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Suklay Ganda Grooming Brush Steel Comb",
+      "₱179.00",
+      "Grooming tool with a comfortable grip handle for removing loose fur and detangling coats of dogs and cats.",
+      "https://lh3.googleusercontent.com/d/1CYn5o-AkohG58uIy97DASl73bLDaumEW",
+      "Petko Suklay Ganda - Steel Comb.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Alagang Kuko't Ngipin Nail and Dental Kit Small",
+      "₱399.00",
+      "Grooming kit with a nail clipper, nail file, pet toothbrush, and pet toothpaste, all in one zip pouch.",
+      "https://lh3.googleusercontent.com/d/1kHVx59OQKiMplhOFjhWzGeJ3gwGKX3Eo",
+      "Petko Alagang Kuko't Ngipin - Small.png"
+    ],
+    [
+      "Grooming & Hygiene",
+      "PetKo Alagang Kuko't Ngipin Nail and Dental Kit Large",
+      "₱499.00",
+      "Grooming kit with a nail clipper, nail file, pet toothbrush, and pet toothpaste, all in one zip pouch.",
+      "https://lh3.googleusercontent.com/d/131F-4JAWlIxb8UnghfjtMgUoSXGQ2ZTw",
+      "Petko Alagang Kuko't Ngipin - Large.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Bantay Pulgas Flea and Tick Spray 100ml",
+      "₱249.00",
+      "Flea and tick spray for dogs and cats, made to help protect pets from fleas and ticks. Follow label directions or ask your veterinarian before use.",
+      "https://lh3.googleusercontent.com/d/19f_WUg_4S7ZDob7qw2SvUyeNumowkDlf",
+      "Petko Bantay Pulgas - 100ml.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Bantay Pulgas Flea and Tick Spray 250ml",
+      "₱449.00",
+      "Flea and tick spray for dogs and cats, made to help protect pets from fleas and ticks. Follow label directions or ask your veterinarian before use.",
+      "https://lh3.googleusercontent.com/d/1gBYNaxd6pnK4jQEpJvlFBoPDUU-IunwU",
+      "Petko Bantay Pulgas - 250ml.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Tibay ng Katawan Daily Pet Multivitamins Tablets 60 pcs",
+      "₱499.00",
+      "Daily multivitamins for pets, made to support overall health and energy.",
+      "https://lh3.googleusercontent.com/d/1338PIdnYNIMLUFeJv0CQx3rvUKAVQXlK",
+      "Petko Tibay ng Katawan - Tablets 60 pcs.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Tibay ng Katawan Daily Pet Multivitamins Liquid 60ml",
+      "₱349.00",
+      "Daily multivitamins for pets, made to support overall health and energy.",
+      "https://lh3.googleusercontent.com/d/1Mh27UA8VeZEOSYcKYkAaXH8D7n2m9xm5",
+      "Petko Tibay ng Katawan - Liquid 60ml.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Ginhawang Tiyan Pet Probiotics 10 sachets",
+      "₱449.00",
+      "Probiotic powder sachets that can be mixed into your pet's food, made to support healthy digestion.",
+      "https://lh3.googleusercontent.com/d/130Ow177OUnFKAA8Fora1WM3Hd-Gv5UYh",
+      "Petko Ginhawang Tiyan - 10 sachets.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Ginhawang Tiyan Pet Probiotics 30 sachets",
+      "₱1,199.00",
+      "Probiotic powder sachets that can be mixed into your pet's food, made to support healthy digestion.",
+      "https://lh3.googleusercontent.com/d/1ac6oossVUkoM3pc2ZvE8wVk5zkm_GFYh",
+      "Petko Ginhawang Tiyan - 30 sachets.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Unang Lunas Pet First-Aid Kit Compact",
+      "₱599.00",
+      "Pet first-aid kit for minor wounds and emergencies at home or on the go.",
+      "https://lh3.googleusercontent.com/d/1mRB4PmdiSgjnsI4Y23FEYKxlVbU5vTdS",
+      "Petko Unang Lunas - Compact.png"
+    ],
+    [
+      "Health & Wellness",
+      "PetKo Unang Lunas Pet First-Aid Kit Complete",
+      "₱899.00",
+      "Pet first-aid kit for minor wounds and emergencies at home or on the go.",
+      "https://lh3.googleusercontent.com/d/1gEN6p3-DrVlO9AlvK62xGXUF0b2an47C",
+      "Petko Unang Lunas - Complete.png"
+    ],
+    [
+      "Beds & Furniture",
+      "PetKo Himbing na Higaan Pet Bed Small 50cm",
+      "₱899.00",
+      "Round plush pet bed with a soft cushion and raised rim where pets can curl up and sleep comfortably.",
+      "https://lh3.googleusercontent.com/d/1ECfWoN2WrOMkmMlbv_pAyoj6PkPnJi08",
+      "Petko Himbing na Higaan - Small 50cm.png"
+    ],
+    [
+      "Beds & Furniture",
+      "PetKo Himbing na Higaan Pet Bed Large 80cm",
+      "₱1,499.00",
+      "Round plush pet bed with a soft cushion and raised rim where pets can curl up and sleep comfortably.",
+      "https://lh3.googleusercontent.com/d/1yjCwacM2RxzO3kvMRvc8UhYDdsa9x-qJ",
+      "Petko Himbing na Higaan - Large 80cm.png"
+    ],
+    [
+      "Beds & Furniture",
+      "PetKo Kalmutan Cat Scratcher Scratch Pad",
+      "₱349.00",
+      "Cat scratcher that gives cats a safe place to scratch and helps protect your furniture.",
+      "https://lh3.googleusercontent.com/d/1he7pWvTMhPCbysdbzcmYq0mKfpp5JYY3",
+      "Petko Kalmutan - Scratch Pad.png"
+    ],
+    [
+      "Beds & Furniture",
+      "PetKo Kalmutan Cat Scratcher Scratch Post",
+      "₱799.00",
+      "Cat scratcher that gives cats a safe place to scratch and helps protect your furniture.",
+      "https://lh3.googleusercontent.com/d/1rCDdEIPZygdf7QrO6v0EI1lkkULaFvs7",
+      "Petko Kalmutan - Scratch Post.png"
+    ],
+    [
+      "Beds & Furniture",
+      "PetKo Tore ng Pusa Cat Tree 3-Level 90cm",
+      "₱2,499.00",
+      "Multi-level cat tree with scratching posts, platforms, and a cubby where cats can climb, scratch, and rest.",
+      "https://lh3.googleusercontent.com/d/1jLROqkxJutp8pW7CBXiESYmkIN5mnTuI",
+      "Petko Tore ng Pusa - 3-Level 90cm.png"
+    ],
+    [
+      "Beds & Furniture",
+      "PetKo Tore ng Pusa Cat Tree 5-Level 150cm",
+      "₱4,999.00",
+      "Multi-level cat tree with scratching posts, platforms, and a cubby where cats can climb, scratch, and rest.",
+      "https://lh3.googleusercontent.com/d/1WZLgJW7YJivv-9xjVJDIy8o6PdVkl1r5",
+      "Petko Tore ng Pusa - 5-Level 150cm.png"
+    ],
+    [
+      "Clothing & Accessories",
+      "PetKo Kamisetang Presko Pet Shirt Blue",
+      "₱199.00",
+      "Soft and breathable cotton shirt for pets, comfortable for everyday wear.",
+      "https://lh3.googleusercontent.com/d/1ykOJwkvmwsXmL09QeVjw8OILpKj33UxE",
+      "Petko Kamisetang Presko - Blue.png"
+    ],
+    [
+      "Clothing & Accessories",
+      "PetKo Kamisetang Presko Pet Shirt Yellow",
+      "₱199.00",
+      "Soft and breathable cotton shirt for pets, comfortable for everyday wear.",
+      "https://lh3.googleusercontent.com/d/10IGP2SUFh1CkfUIO4y402TK79WC41X96",
+      "Petko Kamisetang Presko - Yellow.png"
+    ],
+    [
+      "Clothing & Accessories",
+      "PetKo Kapoteng Panangga Pet Raincoat Yellow",
+      "₱399.00",
+      "Hooded waterproof raincoat with reflective strips that keeps pets dry during rainy-day walks.",
+      "https://lh3.googleusercontent.com/d/1KK0HRBDo-YcnM04eUyP_8nS3SkAGYMez",
+      "Petko Kapoteng Panangga - Yellow.png"
+    ],
+    [
+      "Clothing & Accessories",
+      "PetKo Kapoteng Panangga Pet Raincoat Blue",
+      "₱399.00",
+      "Hooded waterproof raincoat with reflective strips that keeps pets dry during rainy-day walks.",
+      "https://lh3.googleusercontent.com/d/1NMVn4GZzzlMD5XZSLwKhDX69hspKlFrY",
+      "Petko Kapoteng Panangga - Blue.png"
+    ],
+    [
+      "Clothing & Accessories",
+      "PetKo Panyong Pasyal Pet Bandana Red",
+      "₱129.00",
+      "Stylish triangle bandana for pets, easy to tie around the neck for walks and photos.",
+      "https://lh3.googleusercontent.com/d/1vkeTOS0cCwBx4-i_xh-QBzkrowAG2clm",
+      "Petko Panyong Pasyal - Red.png"
+    ],
+    [
+      "Clothing & Accessories",
+      "PetKo Panyong Pasyal Pet Bandana Blue",
+      "₱129.00",
+      "Stylish triangle bandana for pets, easy to tie around the neck for walks and photos.",
+      "https://lh3.googleusercontent.com/d/1KbFwxigPiu11jAbAziRK7FnPEa9V514t",
+      "Petko Panyong Pasyal - Blue.png"
+    ],
+    [
+      "Training & Cleaning",
+      "PetKo Sapin Sanayan Pet Training Pads 30 pcs",
+      "₱349.00",
+      "Absorbent pet training pads that help with potty training and keep floors clean.",
+      "https://lh3.googleusercontent.com/d/15_58zBZqb8u4tE-wpa8Q8fp98hkrPcBG",
+      "Petko Sapin Sanayan - 30 pcs.png"
+    ],
+    [
+      "Training & Cleaning",
+      "PetKo Sapin Sanayan Pet Training Pads 50 pcs",
+      "₱549.00",
+      "Absorbent pet training pads that help with potty training and keep floors clean.",
+      "https://lh3.googleusercontent.com/d/1-FrpZrRnruveWl14W1Qp9EhhB-jb09bP",
+      "Petko Sapin Sanayan - 50 pcs.png"
+    ],
+    [
+      "Training & Cleaning",
+      "PetKo Supot Linis Pet Waste Bags 4 rolls",
+      "₱99.00",
+      "Pet waste bags on easy-tear rolls for quick and clean pick-up during walks.",
+      "https://lh3.googleusercontent.com/d/1hVU4lJgySokQI9qsDpXNR0wE7ha0qry_",
+      "Petko Supot Linis - 4 rolls.png"
+    ],
+    [
+      "Training & Cleaning",
+      "PetKo Supot Linis Pet Waste Bags 8 rolls",
+      "₱179.00",
+      "Pet waste bags on easy-tear rolls for quick and clean pick-up during walks.",
+      "https://lh3.googleusercontent.com/d/1UtEHF8ZsUJBTrq-pdXjDZ1o30snB5VPR",
+      "Petko Supot Linis - 8 rolls.png"
+    ],
+    [
+      "Training & Cleaning",
+      "PetKo Pawi Amoy Pet Odor Eliminator Spray 500ml",
+      "₱299.00",
+      "Pet odor eliminator spray for removing pet smells from floors, beds, and fabrics.",
+      "https://lh3.googleusercontent.com/d/1YFHdaMZ4pYTDo5Vv1nCuV5m642KgSbBu",
+      "Petko Pawi Amoy - Spray 500ml.png"
+    ],
+    [
+      "Training & Cleaning",
+      "PetKo Pawi Amoy Pet Odor Eliminator Refill 1L",
+      "₱449.00",
+      "Pet odor eliminator spray for removing pet smells from floors, beds, and fabrics.",
+      "https://lh3.googleusercontent.com/d/1LofYcvOUTHImcRlyHBOHgWsP9ttgJ8tj",
+      "Petko Pawi Amoy - Refill 1L.png"
+    ],
+    [
+      "Travel & Outdoor",
+      "PetKo Bitbit Biyahe Pet Carrier Small",
+      "₱999.00",
+      "Soft-sided pet carrier with mesh windows and a shoulder strap for comfortable trips with your pet.",
+      "https://lh3.googleusercontent.com/d/18t1Q7lRq_C78uAIkarIcM4XupWk5REDJ",
+      "Petko Bitbit Biyahe - Small.png"
+    ],
+    [
+      "Travel & Outdoor",
+      "PetKo Bitbit Biyahe Pet Carrier Large",
+      "₱1,499.00",
+      "Soft-sided pet carrier with mesh windows and a shoulder strap for comfortable trips with your pet.",
+      "https://lh3.googleusercontent.com/d/1QLS7iOI7KXmNafGK4FzKaYg_md855n8G",
+      "Petko Bitbit Biyahe - Large.png"
+    ],
+    [
+      "Travel & Outdoor",
+      "PetKo Inuming Lakbay Pet Water Bottle 350ml",
+      "₱299.00",
+      "Portable pet water bottle with a flip-out drinking tray for walks and travel.",
+      "https://lh3.googleusercontent.com/d/1-s6TVYJARvM9nmgQE3Mtq4pfXhdoeCBp",
+      "Petko Inuming Lakbay - 350ml.png"
+    ],
+    [
+      "Travel & Outdoor",
+      "PetKo Inuming Lakbay Pet Water Bottle 550ml",
+      "₱399.00",
+      "Portable pet water bottle with a flip-out drinking tray for walks and travel.",
+      "https://lh3.googleusercontent.com/d/1IZ1zhPJimgpQ8pT1lWP8x7CelFAC_DzO",
+      "Petko Inuming Lakbay - 550ml.png"
+    ]
+  ]
+}

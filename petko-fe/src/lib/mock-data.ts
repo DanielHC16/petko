@@ -24,8 +24,19 @@ export const mockProfile: UserProfile = {
 
 // ─── Products ────────────────────────────────────────────────────────────────
 
+export const MOCK_PRODUCT_CONTENT = {
+  sku: null,
+  parent_product_name: '',
+  variant_attributes: {},
+  ingredients_materials: '',
+  guaranteed_analysis: '',
+  usage_instructions: '',
+  safety_warnings: '',
+} satisfies Pick<Product, 'sku' | 'parent_product_name' | 'variant_attributes' | 'ingredients_materials' | 'guaranteed_analysis' | 'usage_instructions' | 'safety_warnings'>
+
 export const mockProducts: Product[] = [
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-001',
     name: 'PetKo Salmon & Rice Adult Dog Food 2kg',
     description:
@@ -40,6 +51,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-01T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-002',
     name: 'Whiskas Tuna Cat Food 1.2kg',
     description:
@@ -54,6 +66,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-05T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-003',
     name: 'PetKo Squeaky Rubber Bone Toy',
     description:
@@ -68,6 +81,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-10T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-004',
     name: 'Cat Teaser Wand with Feathers',
     description:
@@ -82,6 +96,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-12T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-005',
     name: 'PetKo Oatmeal Dog Shampoo 500ml',
     description:
@@ -96,6 +111,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-14T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-006',
     name: 'PetKo Dental Treats for Cats 120g',
     description:
@@ -110,6 +126,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-16T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-007',
     name: 'Premium Clumping Cat Litter 10kg',
     description:
@@ -124,6 +141,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-18T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-008',
     name: 'Orthopedic Pet Bed Medium',
     description:
@@ -138,6 +156,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-20T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-009',
     name: 'PetKo Reflective Dog Collar Medium',
     description:
@@ -152,6 +171,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-22T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-010',
     name: 'PetKo Multivitamin Supplement 60 tablets',
     description:
@@ -166,6 +186,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-24T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-011',
     name: 'PetKo Travel Water Bottle 500ml',
     description:
@@ -180,6 +201,7 @@ export const mockProducts: Product[] = [
     created_at: '2025-10-26T08:00:00Z',
   },
   {
+    ...MOCK_PRODUCT_CONTENT,
     id: 'prod-012',
     name: 'PetKo Dog Raincoat Large',
     description:

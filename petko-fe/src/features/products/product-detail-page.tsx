@@ -11,7 +11,8 @@ import {
   Plus
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { fetchProductById, fetchProducts, type Product } from './products-api'
+import { fetchProductById, fetchProducts, fetchProductVariants, type Product } from './products-api'
+import { PRODUCT_CATEGORIES, PRODUCT_DETAIL_FIELDS, VARIANT_FIELDS, groupProductFamilies, productFamilyKey, variantLabel, type ProductFamily } from '@/lib/product-catalog'
 import { useCartStore } from '@/store/cart.store'
 import { getApiErrorMessage } from '@/lib/api-error'
 import PageBanner from '@/components/layout/PageBanner'
@@ -20,7 +21,8 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [product, setProduct] = useState<Product | null>(null)
-  const [suggestions, setSuggestions] = useState<Product[]>([])
+  const [suggestions, setSuggestions] = useState<ProductFamily[]>([])
+  const [variants, setVariants] = useState<Product[]>([])
   const [loadedId, setLoadedId] = useState<string | null>(null)
 
   // Cart & Quantity States
@@ -39,8 +41,11 @@ export default function ProductDetailPage() {
     async function load(): Promise<void> {
       try {
         const data = await fetchProductById(productId)
+        const familyVariants = await fetchProductVariants(data)
         if (isMounted) {
           setProduct(data)
+          setVariants(familyVariants)
+          setIsAdded(false)
           setQuantity(1)
           setSuggestions([])
           setLoadedId(productId)
@@ -49,8 +54,8 @@ export default function ProductDetailPage() {
               category: data.category,
               pet_type: data.pet_type
             })
-            // Filter out the current product and take up to 4 items
-            const related = relatedData.filter((p) => p.id !== data.id).slice(0, 4)
+            // Suggest other families rather than another option of this product.
+            const related = groupProductFamilies(relatedData.filter((p) => productFamilyKey(p) !== productFamilyKey(data))).slice(0, 4)
             if (isMounted) setSuggestions(related)
           } catch (suggestionErr) {
             console.error('Failed to load suggestions', suggestionErr)
@@ -150,28 +155,14 @@ export default function ProductDetailPage() {
   const itemInCart = cartItems.find((i) => i.product_id === product.id)
   const currentCartQty = itemInCart ? itemInCart.quantity : 0
   const remainingStock = product.stock - currentCartQty
-  const CATEGORIES = [
-  { id: 'all',         label: 'All Items' },
-  { id: 'food',        label: 'Pet Food' },
-  { id: 'treats',      label: 'Treats' },
-  { id: 'toys',        label: 'Toys' },
-  { id: 'grooming',    label: 'Grooming' },
-  { id: 'wellness',    label: 'Health & Wellness' },
-  { id: 'litter',      label: 'Litter & Toilet' },
-  { id: 'bedding',     label: 'Beds & Furniture' },
-  { id: 'apparel',     label: 'Clothing' },
-  { id: 'cleaning',    label: 'Training & Cleaning' },
-  { id: 'travel',      label: 'Travel & Outdoor' },
-  { id: 'accessories', label: 'Collars & Leashes' },
-]
 
   return (
-<div className="min-h-screen bg-[#fbe8c1] p-4 font-sans md:p-8">
+<div className="min-h-screen bg-[#fbe8c1] p-6 font-sans lg:p-10">
         <div className="mx-auto max-w-7xl space-y-6">
 
         {/* Page banner */}
         <PageBanner
-          title={product.name}
+          title={product.parent_product_name || product.name}
           subtitle={`${product.pet_type === 'cat' ? '🐱 Cat' : product.pet_type === 'dog' ? '🐶 Dog' : '🐾 All Pets'} · ${product.category.charAt(0).toUpperCase() + product.category.slice(1)}`}
         />
 
@@ -193,7 +184,7 @@ export default function ProductDetailPage() {
             to={`/?pet=${product.pet_type}&cat=${product.category}`}
             className="transition hover:text-[#0B3B8C]"
           >
-            {CATEGORIES.find(c => c.id === product.category)?.label || product.category}
+            {PRODUCT_CATEGORIES.find(c => c.id === product.category)?.label || product.category}
           </Link>
 
           <ChevronRight size={14} className="text-gray-400" />
@@ -216,8 +207,9 @@ export default function ProductDetailPage() {
           <div className="flex flex-col space-y-5 py-2">
             <div>
               <h1 className="text-3xl font-extrabold text-[#0B3B8C] sm:text-4xl">
-                {product.name}
+                {product.parent_product_name || product.name}
               </h1>
+              {product.sku && <p className="mt-2 text-xs text-gray-500">SKU: {product.sku}</p>}
             </div>
 
             <div className="text-3xl font-extrabold text-[#D32F2F]">
@@ -226,6 +218,23 @@ export default function ProductDetailPage() {
                 maximumFractionDigits: 2,
               })}
             </div>
+
+            {product.parent_product_name && (
+              <fieldset className="space-y-3 rounded-2xl border border-orange-200 bg-white p-4">
+                <legend className="px-1 text-sm font-bold text-petko-blue">Choose a variation</legend>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((variant) => (
+                    <button key={variant.id} type="button"
+                      aria-pressed={variant.id === product.id}
+                      onClick={() => { if (variant.id !== product.id) navigate(`/products/${variant.id}`, { replace: true }) }}
+                      className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue ${variant.id === product.id ? 'border-petko-blue bg-blue-50 font-bold text-petko-blue' : 'border-gray-200 text-gray-700 hover:border-orange-400'}`}>
+                      {variantLabel(variant)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">Price, photo, and stock are for the selected variation.</p>
+              </fieldset>
+            )}
 
             {/* "For" Target */}
             <div className="space-y-2 pt-2">
@@ -248,17 +257,17 @@ export default function ProductDetailPage() {
                   <span className="font-bold text-gray-800">({product.stock} available)</span>
                 </div>
                 <div className="flex flex-col px-2">
-                  <span className="font-bold text-[#0B3B8C]">Made in</span>
-                  <span className="font-bold text-gray-800">Philippines</span>
+                  <span className="font-bold text-[#0B3B8C]">SKU</span>
+                  <span className="break-all font-bold text-gray-800">{product.sku || 'Not assigned'}</span>
                 </div>
               </div>
 
             {/* Add to Cart / Quantity Actions */}
             <div className="space-y-1">
               <span className="text-xs font-semibold text-gray-500">Quantity</span>
-              <div className="flex items-stretch gap-3">
+              <div className="grid grid-cols-2 items-stretch gap-3 sm:flex">
                 {/* Quantity Selector */}
-                <div className="flex items-center overflow-hidden rounded-xl border-2 border-[#0B3B8C] bg-white">
+                <div className="col-span-2 flex items-center justify-center overflow-hidden rounded-xl border-2 border-[#0B3B8C] bg-white">
                   <button
                     type="button"
                     aria-label="Decrease quantity"
@@ -340,6 +349,19 @@ export default function ProductDetailPage() {
             </h2>
             <div className="py-2 text-sm leading-relaxed text-gray-600">
               <p>{product.description}</p>
+              {VARIANT_FIELDS.some(({ key }) => product.variant_attributes?.[key]) && (
+                <dl className="mt-5 grid grid-cols-1 gap-3 rounded-xl bg-white p-4 sm:grid-cols-2">
+                  {VARIANT_FIELDS.map(({ key, label }) => product.variant_attributes?.[key] ? (
+                    <div key={key}><dt className="text-xs font-bold text-petko-blue">{label}</dt><dd>{product.variant_attributes[key]}</dd></div>
+                  ) : null)}
+                </dl>
+              )}
+              {PRODUCT_DETAIL_FIELDS.map(({ key, label }) => product[key] ? (
+                <section key={key} className="mt-5 border-t border-gray-200 pt-4">
+                  <h3 className="mb-2 font-bold text-petko-blue">{label}</h3>
+                  <p className="whitespace-pre-line">{product[key]}</p>
+                </section>
+              ) : null)}
             </div>
           </div>
 
@@ -351,13 +373,13 @@ export default function ProductDetailPage() {
               {suggestions.length > 0 ? (
                 suggestions.map((suggestion) => (
                   <Link
-                    key={suggestion.id}
-                    to={`/products/${suggestion.id}`}
+                    key={suggestion.product.id}
+                    to={`/products/${suggestion.product.id}`}
                     className="group flex flex-col justify-between rounded-xl border border-white bg-white p-3 text-center shadow-sm transition hover:shadow-md"
                   >
                     <div className="mb-3 flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-gray-50 p-2">
                       <img
-                        src={suggestion.image_url}
+                        src={suggestion.product.image_url}
                         alt={suggestion.name}
                         className="max-h-full max-w-full object-contain transition duration-300 group-hover:scale-105"
                       />
@@ -367,7 +389,7 @@ export default function ProductDetailPage() {
                         {suggestion.name}
                       </h4>
                       <div className="mt-1 text-sm font-extrabold text-[#D32F2F]">
-                        ₱ {Number(suggestion.price).toLocaleString('en-PH', {
+                        {suggestion.minPrice !== suggestion.maxPrice && 'From '}₱ {Number(suggestion.minPrice).toLocaleString('en-PH', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
