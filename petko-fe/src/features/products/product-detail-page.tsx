@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { toastStyle, toastIconTheme } from '@/lib/toast-style'
 import {
   ChevronRight,
   Check,
@@ -63,7 +64,7 @@ export default function ProductDetailPage() {
       } catch (err: unknown) {
         if (isMounted) {
           setProduct(null)
-          toast.error(getApiErrorMessage(err, 'Product not found'))
+          toast.error(getApiErrorMessage(err, 'Product not found'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
         }
       } finally {
         if (isMounted) setLoadedId(productId)
@@ -81,7 +82,7 @@ export default function ProductDetailPage() {
     const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
     const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
     if (quantityToAdd <= 0) {
-      toast.error('You already have all available stock in your cart.', { icon: '⚠️' })
+      toast.error('You already have all available stock in your cart.', { icon: '⚠️', style: toastStyle('error'), iconTheme: toastIconTheme('error') })
       return
     }
 
@@ -99,6 +100,8 @@ export default function ProductDetailPage() {
 
     toast.success(`Added ${quantityToAdd} item(s) to your cart!`, {
       icon: '🐾',
+      style: toastStyle('success'),
+      iconTheme: toastIconTheme('success'),
     })
 
     setQuantity(1)

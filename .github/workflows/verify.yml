@@ -28,6 +28,7 @@ jobs:
       - run: npm run install:all
       - run: npm run lint
       - run: npm test -- --runInBand
+      - run: node --test petko-be/scripts/catalog.test.mjs
       - run: npm run test:e2e --prefix petko-be -- --runInBand
       - run: npm run build
         env:

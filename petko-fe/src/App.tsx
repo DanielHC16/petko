@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import AppLayout from '@/components/layout/AppLayout'
-import AnalyticsTracker from '@/features/analytics/analytics-tracker'
 
 // Auth
 import AuthPage from '@/features/auth/auth-page'
@@ -15,16 +14,14 @@ import CartPage from '@/features/cart/cart-page'
 import CheckoutPage from '@/features/checkout/checkout-page'
 import OrdersPage from '@/features/orders/orders-page'
 
-// Dev previews (lazy loaded)
+// Dev preview (lazy loaded)
 const LoadingPreview = lazy(() => import('@/features/auth/loading-preview'))
-const TosPreview = lazy(() => import('@/features/auth/tos-preview'))
 
 // Admin pages (lazy-loaded so they do not bloat the storefront bundle)
 const AdminDashboardPage = lazy(() => import('@/features/admin/admin-dashboard-page'))
 const AdminProductsPage  = lazy(() => import('@/features/admin/admin-products-page'))
 const AdminOrdersPage    = lazy(() => import('@/features/admin/admin-orders-page'))
 const AdminUsersPage     = lazy(() => import('@/features/admin/admin-users-page'))
-const AdminAnalyticsPage = lazy(() => import('@/features/analytics/admin-analytics-page'))
 
 function PageFallback() {
   return (
@@ -37,16 +34,14 @@ function PageFallback() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AnalyticsTracker />
       <Suspense fallback={<PageFallback />}>
         <Routes>
           {/* Public / Auth */}
           <Route path="/login"         element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-          {/* Dev previews */}
+          {/* Dev preview */}
           <Route path="/loading-preview" element={<LoadingPreview />} />
-          <Route path="/tos-preview"     element={<TosPreview />} />
 
           {/* Authenticated customer routes */}
           <Route element={<ProtectedRoute />}>
@@ -66,7 +61,6 @@ export default function App() {
               <Route path="/admin/products" element={<AdminProductsPage />} />
               <Route path="/admin/orders"   element={<AdminOrdersPage />} />
               <Route path="/admin/users"    element={<AdminUsersPage />} />
-              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
             </Route>
           </Route>
 

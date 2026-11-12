@@ -1,4 +1,6 @@
-// import '@/lib/mock-setup' // local mock — removed, real backend in use
+// Local-dev mock (VITE_MOCK=true) — no backend required.
+// Must be the very first import so patches land before onAuthStateChange fires.
+import '@/lib/mock-setup'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

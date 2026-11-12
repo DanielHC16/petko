@@ -3,6 +3,8 @@ import { KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getApiErrorMessage } from '@/lib/api-error'
 import { useAuthStore } from '@/store/auth.store'
+import { toastStyle, toastIconTheme } from '@/lib/toast-style'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   addAccessEmail,
   fetchAccessEmails,
@@ -17,11 +19,6 @@ interface AdminAccessSectionProps {
   onChange: () => void
 }
 
-/**
- * Admin-only editor for public.admin_access_emails. Listed (confirmed) emails
- * are treated as admins by the backend and can switch between the customer
- * and admin views. The server enforces every rule shown here.
- */
 export default function AdminAccessSection({ onChange }: AdminAccessSectionProps) {
   const profile = useAuthStore((s) => s.profile)
   const [emails, setEmails] = useState<AdminAccessEmail[]>([])
@@ -29,6 +26,9 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
   const [emailInput, setEmailInput] = useState('')
   const [isAdding, setIsAdding] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; row: AdminAccessEmail | null
+  }>({ open: false, row: null })
 
   const ownEmail = profile?.email.trim().toLowerCase() ?? ''
 
@@ -36,7 +36,7 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
     try {
       setEmails(await fetchAccessEmails())
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to load the admin access list'))
+      toast.error(getApiErrorMessage(err, 'Failed to load the admin access list'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     } finally {
       setIsLoading(false)
     }
@@ -45,65 +45,58 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
   useEffect(() => {
     let isMounted = true
     fetchAccessEmails()
-      .then((rows) => {
-        if (isMounted) setEmails(rows)
-      })
+      .then((rows) => { if (isMounted) setEmails(rows) })
       .catch((err: unknown) => {
         if (isMounted) {
-          toast.error(getApiErrorMessage(err, 'Failed to load the admin access list'))
+          toast.error(getApiErrorMessage(err, 'Failed to load the admin access list'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
         }
       })
-      .finally(() => {
-        if (isMounted) setIsLoading(false)
-      })
-    return () => {
-      isMounted = false
-    }
+      .finally(() => { if (isMounted) setIsLoading(false) })
+    return () => { isMounted = false }
   }, [])
 
   async function handleAdd(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault()
     const email = emailInput.trim().toLowerCase()
     if (!EMAIL_PATTERN.test(email)) {
-      toast.error('Please enter a valid email address')
+      toast.error('Please enter a valid email address', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
       return
     }
     if (emails.some((row) => row.email === email)) {
-      toast.error('That email already has admin access')
+      toast.error('That email already has admin access', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
       return
     }
 
     setIsAdding(true)
     try {
       await addAccessEmail(email)
-      toast.success(`${email} now has admin access`)
+      toast.success(`${email} now has admin access`, { style: toastStyle('success'), iconTheme: toastIconTheme('success') })
       setEmailInput('')
       await loadEmails()
       onChange()
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to add the email'))
+      toast.error(getApiErrorMessage(err, 'Failed to add the email'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     } finally {
       setIsAdding(false)
     }
   }
 
-  async function handleRemove(row: AdminAccessEmail): Promise<void> {
-    if (
-      !window.confirm(
-        `Remove ${row.email} from the admin access list?\n\nThey lose list-granted admin access on their next request.`,
-      )
-    ) {
-      return
-    }
+  function handleRemove(row: AdminAccessEmail): void {
+    setConfirmDialog({ open: true, row })
+  }
 
+  async function confirmRemove(): Promise<void> {
+    const row = confirmDialog.row
+    if (!row) return
+    setConfirmDialog({ open: false, row: null })
     setRemovingId(row.id)
     try {
       await removeAccessEmail(row.id)
-      toast.success(`Removed ${row.email} from the admin access list`)
+      toast.success(`Removed ${row.email} from the admin access list`, { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
       await loadEmails()
       onChange()
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to remove the email'))
+      toast.error(getApiErrorMessage(err, 'Failed to remove the email'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     } finally {
       setRemovingId(null)
     }
@@ -227,6 +220,16 @@ export default function AdminAccessSection({ onChange }: AdminAccessSectionProps
           })}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="Remove from access list"
+        message={`Remove ${confirmDialog.row?.email ?? ''} from the admin access list?\n\nThey lose list-granted admin access on their next request.`}
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmDialog({ open: false, row: null })}
+      />
     </section>
   )
 }

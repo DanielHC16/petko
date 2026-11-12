@@ -50,4 +50,4 @@ For an application rollback, retain migration 007's columns/indexes. For a catal
 - Catalog replacement/rollback verified in a separate isolated database containing an old order and cart: backup completeness, old-product reference retention, cart cleanup, RLS, inventory preservation on rerun, and catalog rollback pass.
 - Python Playwright uses mocked auth/data/mutations against a placeholder-configured Vite server. It covers grouping/search/sort, actual SKU selection, image/price/stock changes, quantity reset, separate cart lines, Buy Now, keyboard use, admin edits/canonical names, old-cart migration and reload persistence, error/retry, empty states, and mobile overflow. Desktop/mobile screenshots were inspected under ignored `.tmp/variation-qa`.
 
-The Vite build retains its existing large-bundle advisory; no new dependency is added.
+No new dependency is added. The integrated branch passes lint, 193 unit tests, 63 HTTP e2e tests, five catalog integrity tests, the production build, and browser verification.

@@ -342,7 +342,7 @@ export default function ProductsPage() {
                 <div key={product.id}
                   className="group flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm transition hover:shadow-md isolate">
                   <Link to={`/products/${product.id}`}
-                    className="relative aspect-square w-full flex items-center justify-center overflow-hidden bg-gray-50">
+                    className="relative aspect-square w-full flex items-center justify-center overflow-hidden bg-white-50">
                     <span className="absolute top-4 left-4 z-20 flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">
                       {product.pet_type === 'dog' ? '🐶' : product.pet_type === 'cat' ? '🐱' : '🐾'}
                       {product.pet_type === 'dog' ? 'DOG' : product.pet_type === 'cat' ? 'CAT' : 'ALL'}

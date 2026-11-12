@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { toastStyle, toastIconTheme } from '@/lib/toast-style'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   Package,
   Plus,
@@ -80,6 +82,9 @@ export default function AdminProductsPage() {
   const [formData, setFormData] = useState<ProductFormData>(emptyFormData)
   const [isSaving, setIsSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; title: string; message: string; confirmLabel: string; onConfirm: () => void
+  }>({ open: false, title: '', message: '', confirmLabel: 'Delete', onConfirm: () => {} })
 
   useEffect(() => { loadProducts() }, [])
 
@@ -88,7 +93,7 @@ export default function AdminProductsPage() {
     try {
       setProducts(await fetchAdminProducts())
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to fetch products'))
+      toast.error(getApiErrorMessage(err, 'Failed to fetch products'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     } finally {
       setIsLoading(false)
     }
@@ -126,8 +131,8 @@ export default function AdminProductsPage() {
     e.preventDefault()
     const priceNum = parseFloat(formData.price)
     const stockNum = Number(formData.stock)
-    if (isNaN(priceNum) || priceNum < 0) { toast.error('Please enter a valid price'); return }
-    if (!Number.isInteger(stockNum) || stockNum < 0) { toast.error('Please enter a valid stock quantity'); return }
+    if (isNaN(priceNum) || priceNum < 0) { toast.error('Please enter a valid price', { style: toastStyle('error'), iconTheme: toastIconTheme('error') }); return }
+    if (!Number.isInteger(stockNum) || stockNum < 0) { toast.error('Please enter a valid stock quantity', { style: toastStyle('error'), iconTheme: toastIconTheme('error') }); return }
 
     setIsSaving(true)
     try {
@@ -154,15 +159,15 @@ export default function AdminProductsPage() {
       }
       if (editingProduct) {
         await saveAdminProduct(payload, editingProduct.id)
-        toast.success(`Updated "${payload.name}" successfully!`)
+        toast.success(`Updated "${payload.name}" successfully!`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
       } else {
         await saveAdminProduct(payload)
-        toast.success(`Created "${payload.name}" successfully!`)
+        toast.success(`Created "${payload.name}" successfully!`, { style: toastStyle('success'), iconTheme: toastIconTheme('success') })
       }
       setIsModalOpen(false)
       loadProducts()
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to save product'))
+      toast.error(getApiErrorMessage(err, 'Failed to save product'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     } finally {
       setIsSaving(false)
     }
@@ -170,31 +175,39 @@ export default function AdminProductsPage() {
 
   async function handleToggleActive(product: Product) {
     if (!product.is_active && product.stock <= 0) {
-      toast.error('Cannot activate an out-of-stock product. Update stock first.', { icon: '⚠️' })
+      toast.error('Cannot activate an out-of-stock product. Update stock first.', { icon: '⚠️', style: toastStyle('error'), iconTheme: toastIconTheme('error') })
       return
     }
     const nextState = !product.is_active
     try {
       await setAdminProductActive(product.id, nextState)
       setProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, is_active: nextState } : p))
-      toast.success(`Product marked as ${nextState ? 'ACTIVE' : 'INACTIVE'}`)
+      toast.success(`Product marked as ${nextState ? 'ACTIVE' : 'INACTIVE'}`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to update status'))
+      toast.error(getApiErrorMessage(err, 'Failed to update status'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     }
   }
 
   async function handleDeleteProduct(product: Product) {
-    if (!window.confirm(`Are you sure you want to permanently delete "${product.name}"?`)) return
-    setDeletingId(product.id)
-    try {
-      await deleteAdminProduct(product.id)
-      toast.success(`Deleted "${product.name}"`, { icon: '🗑️' })
-      setProducts((prev) => prev.filter((p) => p.id !== product.id))
-    } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to delete product'))
-    } finally {
-      setDeletingId(null)
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Delete product',
+      message: `Permanently delete "${product.name}"?`,
+      confirmLabel: 'Delete Product',
+      onConfirm: async () => {
+        setConfirmDialog((d) => ({ ...d, open: false }))
+        setDeletingId(product.id)
+        try {
+          await deleteAdminProduct(product.id)
+          toast.success(`Deleted "${product.name}"`, { icon: '🗑️', style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+          setProducts((prev) => prev.filter((p) => p.id !== product.id))
+        } catch (err: unknown) {
+          toast.error(getApiErrorMessage(err, 'Failed to delete product'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+        } finally {
+          setDeletingId(null)
+        }
+      },
+    })
   }
 
   const filteredProducts = useMemo(() => {
@@ -228,23 +241,32 @@ export default function AdminProductsPage() {
           subtitle="Create, edit, update inventory, toggle active status, and delete items from your live database."
         >
           {/* Back button + action buttons in the banner's children slot */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-6 py-2 sm:px-8">
-            <Link to="/admin"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95">
+          <div className="flex items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-3 py-2 sm:px-8">
+            <Link
+              to="/admin"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+            >
               <ArrowLeft size={13} />
-              Back to Admin Portal
+              <span>Back<span className="hidden sm:inline"> to Admin Portal</span></span>
             </Link>
-            <div className="flex items-center gap-2">
-              <button onClick={loadProducts} disabled={isLoading}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-[#fef8e8] disabled:opacity-50"
-                title="Refresh list">
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={loadProducts}
+                disabled={isLoading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-[#fef8e8] disabled:opacity-50 sm:px-3"
+                title="Refresh list"
+              >
                 <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </button>
-              <button onClick={handleOpenCreateModal}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-orange-600">
+
+              <button
+                onClick={handleOpenCreateModal}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-orange-600 sm:px-3"
+              >
                 <Plus size={13} />
-                Add New Product
+                <span>Add<span className="hidden sm:inline"> New</span> Product</span>
               </button>
             </div>
           </div>
@@ -271,7 +293,7 @@ export default function AdminProductsPage() {
         </div>
 
         {/* ── Filter toolbar ────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm sm:flex-row sm:items-center sm:gap-2">
+        <div className="flex flex-col gap-2 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm sm:flex-row sm:items-center">
           {/* Search — grows to fill space */}
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
@@ -279,30 +301,75 @@ export default function AdminProductsPage() {
               placeholder="Search by name, SKU, or description..."
               className="w-full rounded-lg border border-[#e1cba5] bg-white py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
           </div>
-          {/* Dropdowns — fixed width, stay on same row */}
-          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-              className="shrink-0 rounded-lg border border-[#e1cba5] bg-white px-2 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none">
-              <option value="all">All Categories</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{PRODUCT_CATEGORIES.find((category) => category.id === c)?.label || c}</option>)}
-            </select>
-            <select value={petTypeFilter} onChange={(e) => setPetTypeFilter(e.target.value)}
-              className="shrink-0 rounded-lg border border-[#e1cba5] bg-white px-2 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none">
-              <option value="all">All Pets</option>
-              <option value="dog">🐶 Dogs</option>
-              <option value="cat">🐱 Cats</option>
-              <option value="both">🐾 Both</option>
-            </select>
-            <select value={stockFilter} onChange={(e) => { if (isStockFilter(e.target.value)) setStockFilter(e.target.value) }}
-              className="shrink-0 rounded-lg border border-[#e1cba5] bg-white px-2 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none">
-              <option value="all">All Stock</option>
-              <option value="in_stock">In Stock</option>
-              <option value="low_stock">Low Stock</option>
-              <option value="out_of_stock">Out of Stock</option>
-            </select>
+          {/* Dropdowns — always one row, never wrap */}
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:items-center">
+            {/* Category */}
+            <div className="flex min-w-0 flex-col gap-1">
+              <label
+                htmlFor="filter-category"
+                className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+              >
+                Category
+              </label>
+              <select
+                id="filter-category"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+              >
+                <option value="all">All Categories</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {PRODUCT_CATEGORIES.find((category) => category.id === c)?.label || c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Pet Type */}
+            <div className="flex min-w-0 flex-col gap-1">
+              <label
+                htmlFor="filter-pet-type"
+                className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+              >
+                Pet Type
+              </label>
+              <select
+                id="filter-pet-type"
+                value={petTypeFilter}
+                onChange={(e) => setPetTypeFilter(e.target.value)}
+                className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+              >
+                <option value="all">🐾 All Pets</option>
+                <option value="dog">🐶 Dogs</option>
+                <option value="cat">🐱 Cats</option>
+              </select>
+            </div>
+
+            {/* Stock Status */}
+            <div className="flex min-w-0 flex-col gap-1">
+              <label
+                htmlFor="filter-stock"
+                className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+              >
+                Stock
+              </label>
+              <select
+                id="filter-stock"
+                value={stockFilter}
+                onChange={(e) => {
+                  if (isStockFilter(e.target.value)) setStockFilter(e.target.value)
+                }}
+                className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+              >
+                <option value="all">All Stock</option>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock</option>
+                <option value="out_of_stock">Out of Stock</option>
+              </select>
+            </div>
           </div>
         </div>
-
         {/* ── Products table ────────────────────────────────────────── */}
         <div className="rounded-2xl border border-[#e1cba5] bg-white shadow-sm overflow-hidden">
           <div className="flex flex-col gap-2 border-b border-[#e1cba5] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -325,15 +392,15 @@ export default function AdminProductsPage() {
                 className="mt-3 text-xs font-bold text-orange-600 underline">Reset Filters</button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto md:overflow-x-auto">
+              <table className="w-full text-left text-sm"
+                style={{ tableLayout: 'fixed' }}>
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
-                    {/* Mobile: Product · Status · Actions  |  Desktop: all columns */}
-                    <th className="px-4 py-3">Product</th>
-                    <th className="hidden px-4 py-3 md:table-cell">Category</th>
-                    <th className="hidden px-4 py-3 md:table-cell">Pet Type</th>
-                    <th className="hidden px-4 py-3 md:table-cell">Price</th>
+                    <th className="px-4 py-3 w-[32%]">Product</th>
+                    <th className="hidden px-4 py-3 w-[12%] md:table-cell">Category</th>
+                    <th className="hidden px-4 py-3 w-[10%] md:table-cell">Pet Type</th>
+                    <th className="hidden px-4 py-3 w-[11%] md:table-cell">Price</th>
                     <th className="hidden px-4 py-3 md:table-cell">Stock</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
@@ -349,24 +416,23 @@ export default function AdminProductsPage() {
                         {/* ── Main row ─────────────────────────────── */}
                         <tr
                           key={product.id}
-                          className="hover:bg-[#fef8e8] transition"
+                          className={`hover:bg-[#fef8e8] transition ${isExpanded ? 'hidden' : ''}`}
                         >
                           {/* Product — always visible */}
-                          <td className="px-4 py-3 max-w-[160px] sm:max-w-xs">
+                          <td className="px-4 py-3 w-0 min-w-0">
                             <div className="flex items-center gap-2">
-                              {/* Expand toggle — mobile only */}
+                              {/* Expand toggle */}
                               <button
                                 onClick={() => setExpandedId(isExpanded ? null : product.id)}
-                                className="md:hidden flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#10298E] hover:bg-blue-50 transition"
+                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#10298E] hover:bg-blue-50 transition"
                                 aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
                                 aria-expanded={isExpanded}
                               >
                                 {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
 
-                              {/* Thumbnail with logo+paw fallback (same pattern as shop cards) */}
+                              {/* Thumbnail */}
                               <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#e1cba5]">
-                                {/* Fallback layer: cream bg + paw watermark + logo */}
                                 <div className="absolute inset-0 flex items-center justify-center bg-petko-cream">
                                   <img src={pawYellowImg} alt="" aria-hidden="true"
                                     className="absolute inset-0 m-auto h-4/5 w-4/5 object-contain opacity-40 pointer-events-none" />
@@ -387,33 +453,29 @@ export default function AdminProductsPage() {
                                 )}
                               </div>
 
-                              <div className="min-w-0">
-                                <p className="font-bold text-[#10298E] line-clamp-1 text-xs sm:text-sm" title={product.name}>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-bold text-[#10298E] text-xs sm:text-sm" title={product.name}>
                                   {product.name}
                                 </p>
                                 {product.sku && <p className="mt-0.5 break-all text-[10px] font-semibold text-gray-600">{product.sku}</p>}
                                 {product.parent_product_name && <p className="text-[10px] text-orange-700 line-clamp-1" title={product.parent_product_name}>Family: {product.parent_product_name}</p>}
-                                {/* Sub-line: description on desktop, hint on mobile */}
-                                <p className="text-[10px] text-gray-400 line-clamp-1 md:hidden">
-                                  tap <ChevronDown size={9} className="inline" /> for details
-                                </p>
-                                <p className="hidden text-[11px] text-gray-400 line-clamp-1 md:block">
+                                <p className="hidden truncate text-[11px] text-gray-400 md:block">
                                   {product.description || 'No description'}
                                 </p>
                               </div>
                             </div>
                           </td>
 
-                          {/* Desktop-only columns */}
+                          {/* Desktop-only columns — hidden when row is expanded */}
                           <td className="hidden px-4 py-3 md:table-cell">
                             <span className="rounded bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase text-orange-700">
                               {product.category}
                             </span>
                           </td>
-                          <td className="hidden px-4 py-3 md:table-cell font-medium text-gray-700 text-xs">
+                          <td className="hidden px-4 py-3 font-medium text-gray-700 text-xs md:table-cell">
                             {product.pet_type === 'dog' ? '🐶 Dog' : product.pet_type === 'cat' ? '🐱 Cat' : '🐾 Both'}
                           </td>
-                          <td className="hidden px-4 py-3 md:table-cell font-bold text-[#10298E] text-sm">
+                          <td className="hidden px-4 py-3 font-bold text-[#10298E] text-sm md:table-cell">
                             ₱{Number(product.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="hidden px-4 py-3 md:table-cell">
@@ -441,7 +503,7 @@ export default function AdminProductsPage() {
                                   : 'Click to toggle visibility in store'
                               }
                             >
-                              {product.stock <= 0 ? '○ Inactive' : product.is_active ? '● Active' : '○ Inactive'}
+                              {product.stock <= 0 ? 'Inactive' : product.is_active ? 'Active' : 'Inactive'}
                             </button>
                           </td>
 
@@ -469,47 +531,106 @@ export default function AdminProductsPage() {
                           </td>
                         </tr>
 
-                        {/* ── Expandable detail row (mobile only) ──── */}
+                        {/* ── Expandable detail row (all breakpoints) ── */}
                         {isExpanded && (
-                          <tr key={`${product.id}-expanded`} className="md:hidden bg-[#fefaf2]">
-                            <td colSpan={3} className="px-4 pb-4 pt-2">
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-3 pl-10 text-xs">
-                                {/* Price */}
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Price</p>
-                                  <p className="mt-0.5 font-bold text-[#10298E]">
-                                    ₱{Number(product.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </p>
+                          <tr key={`${product.id}-expanded`} className="bg-[#fefaf2]">
+
+                            {/* ── MOBILE: colSpan=3, stacked layout ── */}
+                            <td colSpan={3} className="px-3 pb-3 pt-2 md:hidden">
+                              {/* Top: chevron + name + status pill */}
+                              <div className="flex items-start gap-2 mb-3">
+                                <button onClick={() => setExpandedId(null)}
+                                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[#10298E] hover:bg-blue-50 transition"
+                                  aria-label="Collapse details">
+                                  <ChevronUp size={13} />
+                                </button>
+                                {/* Image */}
+                                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#e1cba5] bg-petko-cream">
+                                  <img src={pawYellowImg} alt="" aria-hidden="true" className="absolute inset-0 m-auto h-4/5 w-4/5 object-contain opacity-40 pointer-events-none" />
+                                  <img src={logoImg} alt="PetKo" className="relative w-3/5 object-contain" />
+                                  {product.image_url && (
+                                    <img src={product.image_url} alt={product.name} className="absolute inset-0 m-auto max-h-full max-w-full object-contain" style={{ zIndex: 1 }}
+                                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                                      onLoad={(e) => { const el = e.currentTarget as HTMLImageElement; const fb = el.previousElementSibling as HTMLElement | null; if (fb) fb.style.display = 'none' }} />
+                                  )}
                                 </div>
-                                {/* Stock */}
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Stock</p>
-                                  <p className={`mt-0.5 inline-flex items-center gap-1 font-semibold ${product.stock <= 0 ? 'text-red-500' : product.stock <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                    {product.stock <= 5 && <AlertTriangle size={11} />}
-                                    {product.stock} units
-                                  </p>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-black text-[#10298E] leading-snug mb-1">{product.name}</p>
+                                  <button onClick={() => handleToggleActive(product)} disabled={product.stock <= 0}
+                                    className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider transition whitespace-nowrap ${product.stock <= 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : product.is_active ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                    {product.stock <= 0 ? 'Inactive' : product.is_active ? 'Active' : 'Inactive'}
+                                  </button>
                                 </div>
-                                {/* Category */}
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Category</p>
-                                  <span className="mt-0.5 inline-block rounded bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase text-orange-700">
-                                    {product.category}
-                                  </span>
-                                </div>
-                                {/* Pet Type */}
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Pet Type</p>
-                                  <p className="mt-0.5 font-medium text-gray-700">
-                                    {product.pet_type === 'dog' ? '🐶 Dog' : product.pet_type === 'cat' ? '🐱 Cat' : '🐾 Both'}
-                                  </p>
-                                </div>
-                                {/* Description */}
+                              </div>
+                              {/* Details grid */}
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 pl-7 text-[10px] mb-3">
+                                <div><p className="font-semibold uppercase tracking-wider text-gray-400">Category</p><span className="inline-block rounded bg-orange-50 px-1.5 py-0.5 font-bold uppercase text-orange-700">{product.category}</span></div>
+                                <div><p className="font-semibold uppercase tracking-wider text-gray-400">Stock</p><p className={`inline-flex items-center gap-0.5 font-semibold ${product.stock <= 0 ? 'text-red-500' : product.stock <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>{product.stock <= 5 && <AlertTriangle size={10} />}{product.stock} units</p></div>
+                                <div><p className="font-semibold uppercase tracking-wider text-gray-400">Price</p><p className="font-bold text-[#10298E]">₱{Number(product.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
+                                <div><p className="font-semibold uppercase tracking-wider text-gray-400">Pet Type</p><p className="font-medium text-gray-700">{product.pet_type === 'dog' ? '🐶 Dog' : product.pet_type === 'cat' ? '🐱 Cat' : '🐾 Both'}</p></div>
                                 {product.description && (
-                                  <div className="col-span-2">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Description</p>
-                                    <p className="mt-0.5 text-gray-600 line-clamp-2">{product.description}</p>
-                                  </div>
+                                  <div className="col-span-2"><p className="font-semibold uppercase tracking-wider text-gray-400">Description</p><p className="mt-0.5 text-gray-600 line-clamp-3">{product.description}</p></div>
                                 )}
+                              </div>
+                              {/* Bottom: edit + delete buttons */}
+                              <div className="flex gap-2 pl-7">
+                                <button onClick={() => handleOpenEditModal(product)}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
+                                  aria-label={`Edit ${product.name}`}>
+                                  <Edit2 size={15} /> Edit
+                                </button>
+                                <button onClick={() => handleDeleteProduct(product)} disabled={isDeleting}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                                  aria-label={`Delete ${product.name}`}>
+                                  <Trash2 size={15} className={isDeleting ? 'animate-pulse' : ''} /> Delete
+                                </button>
+                              </div>
+                            </td>
+
+                            {/* ── DESKTOP: colSpan=5 + Status + Actions cells ── */}
+                            <td colSpan={5} className="hidden px-6 pb-5 pt-3 md:table-cell">
+                              <div className="flex gap-5">
+                                <button onClick={() => setExpandedId(null)}
+                                  className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#10298E] hover:bg-blue-50 transition self-start"
+                                  aria-label="Collapse details">
+                                  <ChevronUp size={14} />
+                                </button>
+                                <div className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#e1cba5] bg-petko-cream">
+                                  <img src={pawYellowImg} alt="" aria-hidden="true" className="absolute inset-0 m-auto h-4/5 w-4/5 object-contain opacity-40 pointer-events-none" />
+                                  <img src={logoImg} alt="PetKo" className="relative w-3/5 object-contain" />
+                                  {product.image_url && (
+                                    <img src={product.image_url} alt={product.name} className="absolute inset-0 m-auto max-h-full max-w-full object-contain" style={{ zIndex: 1 }}
+                                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                                      onLoad={(e) => { const el = e.currentTarget as HTMLImageElement; const fb = el.previousElementSibling as HTMLElement | null; if (fb) fb.style.display = 'none' }} />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-3">
+                                  <p className="text-base font-black text-[#10298E] leading-snug">{product.name}</p>
+                                  <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+                                    <div><p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Category</p><span className="mt-0.5 inline-block rounded bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase text-orange-700">{product.category}</span></div>
+                                    <div><p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Stock</p><p className={`mt-0.5 inline-flex items-center gap-1 font-semibold ${product.stock <= 0 ? 'text-red-500' : product.stock <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>{product.stock <= 5 && <AlertTriangle size={11} />}{product.stock} units</p></div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
+                                    <div><p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Price</p><p className="mt-0.5 font-bold text-[#10298E]">₱{Number(product.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
+                                    <div><p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Pet Type</p><p className="mt-0.5 font-medium text-gray-700">{product.pet_type === 'dog' ? '🐶 Dog' : product.pet_type === 'cat' ? '🐱 Cat' : '🐾 Both'}</p></div>
+                                  </div>
+                                  {product.description && (
+                                    <div><p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Description</p><p className="mt-0.5 text-xs text-gray-600">{product.description}</p></div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="hidden px-4 pb-5 pt-3 align-top md:table-cell">
+                              <button onClick={() => handleToggleActive(product)} disabled={product.stock <= 0}
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition whitespace-nowrap ${product.stock <= 0 ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-75' : product.is_active ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                title={product.stock <= 0 ? 'Out-of-stock items are automatically deemed inactive' : 'Click to toggle visibility in store'}>
+                                {product.stock <= 0 ? 'Inactive' : product.is_active ? 'Active' : 'Inactive'}
+                              </button>
+                            </td>
+                            <td className="hidden px-4 pb-5 pt-3 text-right align-top md:table-cell">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button onClick={() => handleOpenEditModal(product)} className="rounded-lg border border-[#e1cba5] p-1.5 text-gray-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600" title="Edit Product" aria-label={`Edit ${product.name}`}><Edit2 size={13} /></button>
+                                <button onClick={() => handleDeleteProduct(product)} disabled={isDeleting} className="rounded-lg border border-red-200 p-1.5 text-red-600 transition hover:bg-red-50 disabled:opacity-50" title="Delete Product" aria-label={`Delete ${product.name}`}><Trash2 size={13} className={isDeleting ? 'animate-pulse' : ''} /></button>
                               </div>
                             </td>
                           </tr>
@@ -525,8 +646,8 @@ export default function AdminProductsPage() {
 
         {/* ── Create / Edit Product Modal ────────────────────────────── */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-8 backdrop-blur-sm sm:items-center sm:pt-4">
-            <div role="dialog" aria-modal="true" aria-labelledby="product-dialog-title" className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
+            <div role="dialog" aria-modal="true" aria-labelledby="product-dialog-title" className="flex w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl overflow-hidden sm:rounded-2xl" style={{ maxHeight: '92dvh' }}>
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-[#e1cba5] bg-[#fdf2e1] px-5 py-4 sm:px-6">
                 <h2 id="product-dialog-title" className="text-base font-bold text-[#10298E]" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -684,6 +805,17 @@ export default function AdminProductsPage() {
         )}
 
       </div>
+
+      {/* ── Confirm Dialog ─────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        variant="danger"
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog((d) => ({ ...d, open: false }))}
+      />
     </div>
   )
 }
