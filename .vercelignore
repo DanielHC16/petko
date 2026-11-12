@@ -18,5 +18,6 @@ petko-fe/dist
 **/*.pem
 **/*.key
 petko-be/scripts
+petko-be/data
 petko-be/supabase
 petko-be/coverage

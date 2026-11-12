@@ -6,20 +6,9 @@ import pawYellowImg from '@/assets/paw_yellow.png'
 import TosModal from '@/features/auth/tos-modal'
 import { useTosStore } from '@/store/tos.store'
 import { useTosAcceptance } from '@/features/auth/use-tos-acceptance'
+import { PRODUCT_CATEGORIES } from '@/lib/product-catalog'
 
-const FOOTER_CATEGORIES = [
-  { to: '/?cat=all',         label: 'All Items' },
-  { to: '/?cat=food',        label: 'Pet Food' },
-  { to: '/?cat=treats',      label: 'Treats' },
-  { to: '/?cat=toys',        label: 'Toys' },
-  { to: '/?cat=wellness',    label: 'Health & Wellness' },
-  { to: '/?cat=litter',      label: 'Litter & Toilet' },
-  { to: '/?cat=bedding',     label: 'Beds & Furniture' },
-  { to: '/?cat=grooming',    label: 'Grooming' },
-  { to: '/?cat=cleaning',    label: 'Training & Cleaning' },
-  { to: '/?cat=travel',      label: 'Travel & Outdoor' },
-  { to: '/?cat=accessories', label: 'Collars & Leashes' },
-]
+const FOOTER_CATEGORIES = [{ to: '/?cat=all', label: 'All Items' }, ...PRODUCT_CATEGORIES.map(({ id, label }) => ({ to: `/?cat=${id}`, label }))]
 
 function Footer() {
   const openTos = useTosStore(s => s.open)
@@ -145,7 +134,7 @@ function Footer() {
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 sm:gap-x-6">
               {FOOTER_CATEGORIES.map(cat => (
                 <Link key={cat.to} to={cat.to}
-                  className="text-xs text-gray-500 hover:text-petko-blue transition whitespace-nowrap">
+                  className="text-xs text-gray-500 hover:text-petko-blue transition">
                   {cat.label}
                 </Link>
               ))}

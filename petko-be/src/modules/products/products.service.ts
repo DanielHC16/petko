@@ -2,12 +2,14 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common'
 import type { PostgrestError } from '@supabase/supabase-js'
 import { SupabaseService } from '@/supabase/supabase.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
+import type { VariantAttributesDto } from './dto/product-details.dto'
 
 export interface ProductEntity {
   id: string
@@ -20,6 +22,13 @@ export interface ProductEntity {
   image_url: string
   is_active: boolean
   created_at: string
+  sku: string | null
+  parent_product_name: string
+  variant_attributes: VariantAttributesDto
+  ingredients_materials: string
+  guaranteed_analysis: string
+  usage_instructions: string
+  safety_warnings: string
 }
 
 const PET_TYPES: readonly ProductEntity['pet_type'][] = ['cat', 'dog', 'both']
@@ -91,10 +100,13 @@ export class ProductsService {
 
   async create(dto: CreateProductDto): Promise<ProductEntity> {
     const isActive = dto.stock <= 0 ? false : (dto.is_active ?? true)
+    const parentName = dto.parent_product_name?.trim() || ''
     const { data, error } = await this.supabase.admin
       .from('products')
       .insert({
-        name: dto.name.trim(),
+        name: parentName
+          ? this.variantName(parentName, dto.variant_attributes ?? {})
+          : dto.name.trim(),
         description: dto.description?.trim() || '',
         price: dto.price,
         stock: dto.stock,
@@ -104,12 +116,20 @@ export class ProductsService {
           dto.image_url?.trim() ||
           'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop',
         is_active: isActive,
+        sku: dto.sku?.trim() || null,
+        parent_product_name: parentName,
+        variant_attributes: dto.variant_attributes ?? {},
+        ingredients_materials: dto.ingredients_materials?.trim() || '',
+        guaranteed_analysis: dto.guaranteed_analysis?.trim() || '',
+        usage_instructions: dto.usage_instructions?.trim() || '',
+        safety_warnings: dto.safety_warnings?.trim() || '',
       })
       .select('*')
       .single<ProductEntity>()
 
     if (error || !data) {
       this.logDbError('create', error)
+      this.throwIfDuplicateSku(error)
       throw new BadRequestException(
         'Could not create the product. Check the fields and try again.',
       )
@@ -120,8 +140,41 @@ export class ProductsService {
 
   async update(id: string, dto: UpdateProductDto): Promise<ProductEntity> {
     const updatePayload: Record<string, unknown> = {}
+    let current: ProductEntity | undefined
+
+    if (dto.sku !== undefined) updatePayload.sku = dto.sku?.trim() || null
+    if (dto.parent_product_name !== undefined)
+      updatePayload.parent_product_name = dto.parent_product_name.trim()
+    if (dto.variant_attributes !== undefined)
+      updatePayload.variant_attributes = dto.variant_attributes
+    if (dto.ingredients_materials !== undefined)
+      updatePayload.ingredients_materials = dto.ingredients_materials.trim()
+    if (dto.guaranteed_analysis !== undefined)
+      updatePayload.guaranteed_analysis = dto.guaranteed_analysis.trim()
+    if (dto.usage_instructions !== undefined)
+      updatePayload.usage_instructions = dto.usage_instructions.trim()
+    if (dto.safety_warnings !== undefined)
+      updatePayload.safety_warnings = dto.safety_warnings.trim()
 
     if (dto.name !== undefined) updatePayload.name = dto.name.trim()
+    if (
+      dto.name !== undefined ||
+      dto.parent_product_name !== undefined ||
+      dto.variant_attributes !== undefined
+    ) {
+      current = await this.findById(id)
+      const parentName = (
+        dto.parent_product_name ??
+        current.parent_product_name ??
+        ''
+      ).trim()
+      if (parentName) {
+        updatePayload.name = this.variantName(
+          parentName,
+          dto.variant_attributes ?? current.variant_attributes ?? {},
+        )
+      }
+    }
     if (dto.description !== undefined)
       updatePayload.description = dto.description.trim()
     if (dto.price !== undefined) updatePayload.price = dto.price
@@ -144,7 +197,7 @@ export class ProductsService {
           )
         }
         if (dto.stock === undefined) {
-          const current = await this.findById(id)
+          current ??= await this.findById(id)
           if (current.stock <= 0) {
             throw new BadRequestException(
               'Cannot activate a product that is out of stock.',
@@ -170,6 +223,7 @@ export class ProductsService {
     }
     if (error || !data) {
       this.logDbError('update', error)
+      this.throwIfDuplicateSku(error)
       throw new BadRequestException(
         'Could not update the product. Check the fields and try again.',
       )
@@ -199,6 +253,25 @@ export class ProductsService {
     this.logger.error(
       `products.${operation} failed: ${error?.code ?? 'no-code'} ${error?.message ?? 'no data returned'}`,
     )
+  }
+
+  private throwIfDuplicateSku(error: PostgrestError | null): void {
+    if (error?.code === '23505') {
+      throw new ConflictException('This SKU is already assigned to a product.')
+    }
+  }
+
+  /** Cart and order snapshots use this name, so it must identify the selected SKU. */
+  private variantName(
+    parentName: string,
+    attributes: VariantAttributesDto,
+  ): string {
+    const values = Object.values(attributes).filter(
+      (value): value is string =>
+        typeof value === 'string' && value.trim() !== '',
+    )
+    const label = [...new Set(values.map((value) => value.trim()))].join(' / ')
+    return label ? `${parentName} (${label})` : parentName
   }
 
   /** Catalog counts for the admin dashboard (all products and active ones). */
