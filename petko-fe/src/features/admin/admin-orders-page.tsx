@@ -61,36 +61,44 @@ export default function AdminOrdersPage() {
           title="Order Management"
           subtitle="Keep deliveries moving and review customer receipt reports."
         >
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-6 py-2 sm:px-8">
+        <div className="flex items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-3 py-2 sm:px-8">
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+          >
+            <ArrowLeft size={13} />
+            <span>
+              Back<span className="hidden sm:inline"> to Admin Portal</span>
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
-              to="/admin"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95"
+              to="/orders"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-orange-700 shadow-sm transition hover:bg-orange-50 active:scale-95 sm:px-3"
             >
-              <ArrowLeft size={13} />
-              Back to Admin Portal
+              <ExternalLink size={13} />
+              <span>
+                <span className="hidden sm:inline">View </span>Customer Orders
+                <span className="hidden sm:inline"> Page</span>
+              </span>
             </Link>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                to="/orders"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 shadow-sm transition hover:bg-orange-50 active:scale-95"
-              >
-                <ExternalLink size={13} />
-                View Customer Orders Page
-              </Link>
-              <button
-                type="button"
-                onClick={refreshOrders}
-                disabled={list.isLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
-              >
-                <RefreshCw
-                  size={14}
-                  className={list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''}
-                />
-                Refresh orders
-              </button>
-            </div>
+
+            <button
+              type="button"
+              onClick={refreshOrders}
+              disabled={list.isLoading}
+              title="Refresh orders"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 sm:px-3"
+            >
+              <RefreshCw
+                size={13}
+                className={list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''}
+              />
+              <span className="hidden sm:inline">Refresh orders</span>
+            </button>
           </div>
+        </div>
         </PageBanner>
 
         <section
