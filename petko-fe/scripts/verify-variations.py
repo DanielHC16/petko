@@ -54,6 +54,7 @@ with sync_playwright() as playwright:
     page.on('pageerror', lambda error: console_errors.append(str(error)))
     captured_writes = []
     state = {'fail': False}
+    request_counts = {'product_by_id': 0, 'variants': 0, 'recommendations': 0}
 
     def mock_request(route):
         request = route.request
@@ -78,6 +79,13 @@ with sync_playwright() as playwright:
             if state['fail']:
                 route.fulfill(status=400, json={'message': 'Catalog temporarily unavailable'})
                 return
+            if 'id' in query:
+                request_counts['product_by_id'] += 1
+            elif 'parent_product_name' in query:
+                request_counts['variants'] += 1
+            elif 'category' in query:
+                request_counts['recommendations'] += 1
+
             products = PRODUCTS[:]
             for field in ('id', 'category', 'parent_product_name'):
                 if field in query:
@@ -88,6 +96,9 @@ with sync_playwright() as playwright:
             order = query.get('order', [''])[0]
             if 'price.' in order:
                 products.sort(key=lambda product: product['price'], reverse='price.desc' in order)
+            if 'id' in query and not products:
+                route.fulfill(status=404, json={'message': 'Product not found', 'code': 'PGRST116'})
+                return
             route.fulfill(json=products[0] if 'id' in query else products)
             return
         if request.method == 'OPTIONS':
@@ -125,10 +136,51 @@ with sync_playwright() as playwright:
     page.get_by_role('link', name='Choose options', exact=True).click()
     expect(page.get_by_role('button', name=re.compile('80g'))).to_have_attribute('aria-pressed', 'true')
     expect(page.get_by_role('button', name=re.compile('250g'))).to_have_count(1)
-    page.get_by_role('button', name='Increase quantity', exact=True).click()
-    page.get_by_role('button', name='Add to Cart', exact=True).click()
+
+    # Attach MutationObserver to detect any SPA loading flash during variation switching
+    page.evaluate('''() => {
+      window.__loading_flashes = 0;
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          for (const node of m.addedNodes) {
+            const text = node.textContent || '';
+            if (text.includes('Loading product details...')) {
+              window.__loading_flashes++;
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }''')
+
     first_id = PRODUCTS[0]['id']
     second_id = PRODUCTS[1]['id']
+    base_counts = dict(request_counts)
+
+    # Seamless A -> B -> A switching
+    page.get_by_role('button', name=re.compile('250g')).click()
+    expect(page.get_by_role('button', name=re.compile('250g'))).to_have_attribute('aria-pressed', 'true')
+    expect(page).to_have_url(re.compile(second_id))
+
+    page.get_by_role('button', name=re.compile('80g')).click()
+    expect(page.get_by_role('button', name=re.compile('80g'))).to_have_attribute('aria-pressed', 'true')
+    expect(page).to_have_url(re.compile(first_id))
+
+    # Same-option click is a no-op
+    page.get_by_role('button', name=re.compile('80g')).click()
+    expect(page.get_by_role('button', name=re.compile('80g'))).to_have_attribute('aria-pressed', 'true')
+    expect(page).to_have_url(re.compile(first_id))
+
+    # Assert zero loading flashes occurred in the DOM
+    assert page.evaluate('window.__loading_flashes') == 0, 'Observed loading flash during variation switching'
+
+    # Assert zero additional network requests occurred during cached sibling switches
+    assert request_counts['product_by_id'] == base_counts['product_by_id'], f"Product fetched again: {request_counts} vs {base_counts}"
+    assert request_counts['variants'] == base_counts['variants'], f"Variants fetched again: {request_counts} vs {base_counts}"
+    assert request_counts['recommendations'] == base_counts['recommendations'], f"Recommendations fetched again: {request_counts} vs {base_counts}"
+
+    page.get_by_role('button', name='Increase quantity', exact=True).click()
+    page.get_by_role('button', name='Add to Cart', exact=True).click()
     page.get_by_role('button', name=re.compile('250g')).click()
     expect(page.get_by_role('button', name=re.compile('250g'))).to_have_attribute('aria-pressed', 'true')
     expect(page.get_by_text('(18 available)', exact=True)).to_be_visible()
@@ -151,10 +203,31 @@ with sync_playwright() as playwright:
 
     page.goto(BASE_URL + '/products/' + PRODUCTS[2]['id'])
     page.wait_for_load_state('networkidle')
-    page.get_by_role('button', name=re.compile('Blue')).focus()
+    blue_btn = page.get_by_role('button', name=re.compile('Blue'))
+    blue_btn.focus()
     page.keyboard.press('Space')
-    expect(page.get_by_role('button', name=re.compile('Blue'))).to_have_attribute('aria-pressed', 'true')
+    expect(blue_btn).to_have_attribute('aria-pressed', 'true')
     expect(page.get_by_role('img', name=PRODUCTS[3]['name'], exact=True)).to_have_attribute('src', PRODUCTS[3]['image_url'])
+    assert page.evaluate('document.activeElement.getAttribute("aria-pressed")') == 'true', 'Focus lost after Space selection'
+
+    red_btn = page.get_by_role('button', name=re.compile('Red'))
+    red_btn.focus()
+    page.keyboard.press('Enter')
+    expect(red_btn).to_have_attribute('aria-pressed', 'true')
+    assert page.evaluate('document.activeElement.getAttribute("aria-pressed")') == 'true', 'Focus lost after Enter selection'
+
+    # Cold unknown route error state and recovery
+    page.goto(BASE_URL + '/products/00000000-0000-0000-0000-000000000000')
+    page.wait_for_load_state('networkidle')
+    expect(page.get_by_role('heading', name='Product not found', exact=True)).to_be_visible()
+    expect(page.get_by_role('button', name='Add to Cart')).to_have_count(0)
+    expect(page.get_by_role('button', name=re.compile('Buy Now'))).to_have_count(0)
+    expect(page.get_by_role('button', name='Try again')).to_be_visible()
+    page.get_by_role('button', name='Try again').click()
+    expect(page.get_by_role('heading', name='Product not found', exact=True)).to_be_visible()
+    page.get_by_role('link', name='Back to Store').click()
+    page.wait_for_load_state('networkidle')
+    expect(page).to_have_url(BASE_URL + '/')
     page.set_viewport_size({'width': 390, 'height': 844})
     page.screenshot(path=str(ARTIFACTS / 'variation-mobile.png'), full_page=True)
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'), page.evaluate('[...document.querySelectorAll("body *")].filter(el => el.getBoundingClientRect().right > innerWidth + 1).map(el => ({tag:el.tagName, cls:el.className, right:el.getBoundingClientRect().right})).slice(0,20)')
