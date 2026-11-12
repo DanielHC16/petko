@@ -39,6 +39,7 @@ export default function AdminUsersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'customer' | 'admin'>('customer')
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
   // Access-list state
   const [accessEmails, setAccessEmails] = useState<AdminAccessEmail[]>([])
@@ -404,31 +405,26 @@ export default function AdminUsersPage() {
               No {activeTab === 'admin' ? 'admin' : 'customer'} accounts match your search.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
-                  {activeTab === 'customer' ? (
-                    <tr>
-                      <th className="px-4 py-3 sm:px-6">Customer</th>
-                      <th className="hidden px-6 py-3 md:table-cell">Email</th>
-                      <th className="hidden px-6 py-3 sm:table-cell">Joined</th>
-                      <th className="px-4 py-3 text-right sm:px-6">Actions</th>
-                    </tr>
-                  ) : (
-                    <tr>
-                      <th className="px-4 py-3 sm:px-6">Admin</th>
-                      <th className="hidden px-6 py-3 md:table-cell">Email</th>
-                      <th className="px-4 py-3 sm:px-6">Access</th>
-                      <th className="hidden px-6 py-3 sm:table-cell">Joined</th>
-                      <th className="px-4 py-3 text-right sm:px-6">Actions</th>
-                    </tr>
-                  )}
+                  <tr>
+                    <th className="px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="hidden px-6 py-3 md:table-cell">Email</th>
+                    <th className="hidden px-6 py-3 sm:table-cell">Joined</th>
+                    <th className="px-4 py-3 text-right sm:px-6">Actions</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e1cba5]/60">
                   {tabUsers.map((user) => {
                     const isCurrent = user.id === currentAdmin?.id
                     const isUpdating = updatingId === user.id
                     const isDeleting = deletingId === user.id
+                    const isExpanded = expandedUserId === user.id
+
+                    const formattedDate = user.created_at
+                      ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : 'Recent'
 
                     const avatar = user.avatar_url ? (
                       <img src={user.avatar_url} alt={user.full_name}
@@ -439,113 +435,133 @@ export default function AdminUsersPage() {
                       </div>
                     )
 
-                    if (activeTab === 'customer') {
-                      return (
-                        <tr key={user.id} className="hover:bg-[#fef8e8] transition">
+                    return (
+                      <>
+                        {/* ── Main row ── */}
+                        <tr
+                          key={user.id}
+                          onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
+                          className={`transition cursor-pointer ${isExpanded ? 'bg-[#fefaf2]' : 'hover:bg-[#fef8e8]'}`}
+                        >
                           <td className="px-4 py-3 sm:px-6">
                             <div className="flex items-center gap-3">
                               {avatar}
                               <div className="min-w-0">
-                                <p className="truncate font-bold text-[#10298E]">{user.full_name || 'No Name Set'}</p>
+                                <p className="truncate font-bold text-[#10298E]">
+                                  {user.full_name || 'No Name Set'}
+                                  {isCurrent && (
+                                    <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">You</span>
+                                  )}
+                                </p>
                                 <p className="truncate text-[11px] text-gray-400 md:hidden">{user.email}</p>
                                 <p className="hidden font-mono text-[10px] text-gray-400 md:block">ID: {user.id.slice(0, 8)}...</p>
                               </div>
                             </div>
                           </td>
                           <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">{user.email}</td>
-                          <td className="hidden px-6 py-3 text-gray-500 sm:table-cell">
-                            {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Recent'}
-                          </td>
-                          <td className="px-4 py-3 text-right sm:px-6">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleToggleRole(user)}
-                                disabled={isUpdating || isDeleting}
-                                className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50"
-                              >
-                                {isUpdating ? 'Updating...' : 'Promote to Admin'}
-                              </button>
-                              <button
-                                onClick={() => handleDeleteUser(user)}
-                                disabled={isUpdating || isDeleting}
-                                className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
-                                title="Delete User Account"
-                                aria-label={`Delete user ${user.email}`}
-                              >
-                                <Trash2 size={14} className={isDeleting ? 'animate-pulse' : ''} />
-                              </button>
-                            </div>
+                          <td className="hidden px-6 py-3 text-gray-500 sm:table-cell">{formattedDate}</td>
+                          <td className="px-4 py-3 text-right sm:px-6" onClick={(e) => e.stopPropagation()}>
+                            {isCurrent ? (
+                              <span className="text-[11px] font-medium text-gray-400">Current Session</span>
+                            ) : (
+                              <div className="flex items-center justify-end gap-2">
+                                {activeTab === 'customer' ? (
+                                  <button
+                                    onClick={() => handleToggleRole(user)}
+                                    disabled={isUpdating || isDeleting}
+                                    className="hidden rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50 sm:block"
+                                  >
+                                    {isUpdating ? 'Updating...' : 'Promote to Admin'}
+                                  </button>
+                                ) : user.admin_access_listed ? (
+                                  <button type="button" disabled
+                                    title="Remove their email from the admin access list to demote"
+                                    className="hidden cursor-not-allowed rounded-lg border border-[#e1cba5] bg-[#fefaf2] px-3 py-1.5 text-xs font-semibold text-gray-600 opacity-70 sm:block">
+                                    Demote
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleToggleRole(user)}
+                                    disabled={isUpdating || isDeleting}
+                                    className="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 sm:block"
+                                  >
+                                    {isUpdating ? 'Updating...' : 'Demote to Customer'}
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteUser(user)}
+                                  disabled={isUpdating || isDeleting}
+                                  className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                                  title="Delete User Account"
+                                  aria-label={`Delete user ${user.email}`}
+                                >
+                                  <Trash2 size={14} className={isDeleting ? 'animate-pulse' : ''} />
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
-                      )
-                    }
 
-                    // Admin row
-                    return (
-                      <tr key={user.id} className="hover:bg-[#fef8e8] transition">
-                        <td className="px-4 py-3 sm:px-6">
-                          <div className="flex items-center gap-3">
-                            {avatar}
-                            <div className="min-w-0">
-                              <p className="truncate font-bold text-[#10298E]">
-                                {user.full_name || 'No Name Set'}
-                                {isCurrent && (
-                                  <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">You</span>
+                        {/* ── Expanded row (mobile only) ── */}
+                        {isExpanded && (
+                          <tr key={`${user.id}-expanded`} className="md:hidden bg-[#fefaf2]">
+                            <td colSpan={4} className="px-4 pb-4 pt-2 pl-16">
+                              <div className="space-y-2.5 text-xs">
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Email</p>
+                                  <p className="font-medium text-gray-700 break-all">{user.email}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">User ID</p>
+                                  <p className="font-mono text-gray-500">{user.id.slice(0, 16)}...</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Joined</p>
+                                  <p className="font-medium text-gray-700">{formattedDate}</p>
+                                </div>
+                                {activeTab === 'admin' && (
+                                  <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Access</p>
+                                    {user.admin_access_listed ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+                                        <CheckCircle size={11} /> Access List
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                        <Shield size={11} /> Manual
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
-                              </p>
-                              <p className="truncate text-[11px] text-gray-400 md:hidden">{user.email}</p>
-                              <p className="hidden font-mono text-[10px] text-gray-400 md:block">ID: {user.id.slice(0, 8)}...</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">{user.email}</td>
-                        <td className="px-4 py-3 sm:px-6">
-                          {user.admin_access_listed ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
-                              <CheckCircle size={11} /> Access List
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                              <Shield size={11} /> Manual
-                            </span>
-                          )}
-                        </td>
-                        <td className="hidden px-6 py-3 text-gray-500 sm:table-cell">
-                          {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Recent'}
-                        </td>
-                        <td className="px-4 py-3 text-right sm:px-6">
-                          {isCurrent ? (
-                            <span className="text-[11px] font-medium text-gray-400">Current Session</span>
-                          ) : (
-                            <div className="flex items-center justify-end gap-2">
-                              {user.admin_access_listed ? (
-                                <button type="button" disabled
-                                  title="Remove their email from the admin access list to demote"
-                                  className="cursor-not-allowed rounded-lg border border-[#e1cba5] bg-[#fefaf2] px-3 py-1.5 text-xs font-semibold text-gray-600 opacity-70">
-                                  Demote
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleToggleRole(user)}
-                                  disabled={isUpdating || isDeleting}
-                                  className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-                                >
-                                  {isUpdating ? 'Updating...' : 'Demote to Customer'}
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeleteUser(user)}
-                                disabled={isUpdating || isDeleting}
-                                className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
-                                title="Delete User Account"
-                                aria-label={`Delete user ${user.email}`}
-                              >
-                                <Trash2 size={14} className={isDeleting ? 'animate-pulse' : ''} />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
+                                {!isCurrent && (
+                                  activeTab === 'customer' ? (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleToggleRole(user) }}
+                                      disabled={isUpdating || isDeleting}
+                                      className="w-full rounded-lg border border-orange-200 bg-orange-50 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50"
+                                    >
+                                      {isUpdating ? 'Updating...' : 'Promote to Admin'}
+                                    </button>
+                                  ) : user.admin_access_listed ? (
+                                    <button type="button" disabled
+                                      className="w-full cursor-not-allowed rounded-lg border border-[#e1cba5] bg-[#fefaf2] py-2 text-xs font-semibold text-gray-500 opacity-70">
+                                      Demote (remove from access list first)
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleToggleRole(user) }}
+                                      disabled={isUpdating || isDeleting}
+                                      className="w-full rounded-lg border border-amber-200 bg-amber-50 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                                    >
+                                      {isUpdating ? 'Updating...' : 'Demote to Customer'}
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     )
                   })}
                 </tbody>

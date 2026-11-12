@@ -373,15 +373,14 @@ export default function AdminProductsPage() {
                 className="mt-3 text-xs font-bold text-orange-600 underline">Reset Filters</button>
             </div>
           ) : (
-            <div className="overflow-x-auto md:overflow-x-auto">
-              <table className="w-full text-left text-sm"
-                style={{ tableLayout: 'fixed' }}>
+            <div>
+              <table className="w-full text-left text-sm">
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
-                    <th className="px-4 py-3 w-[32%]">Product</th>
-                    <th className="hidden px-4 py-3 w-[12%] md:table-cell">Category</th>
-                    <th className="hidden px-4 py-3 w-[10%] md:table-cell">Pet Type</th>
-                    <th className="hidden px-4 py-3 w-[11%] md:table-cell">Price</th>
+                    <th className="px-4 py-3">Product</th>
+                    <th className="hidden px-4 py-3 md:table-cell">Category</th>
+                    <th className="hidden px-4 py-3 md:table-cell">Pet Type</th>
+                    <th className="hidden px-4 py-3 md:table-cell">Price</th>
                     <th className="hidden px-4 py-3 md:table-cell">Stock</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Actions</th>
@@ -397,14 +396,15 @@ export default function AdminProductsPage() {
                         {/* ── Main row ─────────────────────────────── */}
                         <tr
                           key={product.id}
-                          className={`hover:bg-[#fef8e8] transition ${isExpanded ? 'hidden' : ''}`}
+                          onClick={() => setExpandedId(isExpanded ? null : product.id)}
+                          className={`hover:bg-[#fef8e8] transition cursor-pointer ${isExpanded ? 'hidden' : ''}`}
                         >
                           {/* Product — always visible */}
-                          <td className="px-4 py-3 w-0 min-w-0">
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               {/* Expand toggle */}
                               <button
-                                onClick={() => setExpandedId(isExpanded ? null : product.id)}
+                                onClick={(e) => { e.stopPropagation(); setExpandedId(isExpanded ? null : product.id) }}
                                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#10298E] hover:bg-blue-50 transition"
                                 aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
                                 aria-expanded={isExpanded}
@@ -465,7 +465,7 @@ export default function AdminProductsPage() {
                           </td>
 
                           {/* Status — always visible */}
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => handleToggleActive(product)}
                               disabled={product.stock <= 0}
@@ -487,7 +487,7 @@ export default function AdminProductsPage() {
                           </td>
 
                           {/* Actions — always visible */}
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => handleOpenEditModal(product)}
