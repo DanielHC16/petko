@@ -141,6 +141,10 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'petko-cart',
+      // The replacement catalog uses new SKU IDs. Retire only pre-reseed caches;
+      // version 1 carts survive reloads and merge with the current remote cart.
+      version: 1,
+      migrate: () => ({ items: [] }),
       partialize: (state) => ({ items: state.items }),
     },
   ),

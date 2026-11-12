@@ -72,6 +72,7 @@ describe('Orders HTTP contract', () => {
             full_name: 'Test',
             avatar_url: '',
             role: token === 'Bearer admin' ? 'admin' : 'customer',
+            tos_accepted: true,
           }
           return true
         },

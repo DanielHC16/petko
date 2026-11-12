@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
 import {
@@ -8,76 +8,71 @@ import {
   Truck,
   RefreshCw,
   Minus,
-  Plus
+  Plus,
+  Package,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { fetchProductById, fetchProducts, type Product } from './products-api'
+import { useProductDetail } from './use-product-detail'
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_DETAIL_FIELDS,
+  VARIANT_FIELDS,
+  variantLabel,
+} from '@/lib/product-catalog'
 import { useCartStore } from '@/store/cart.store'
-import { getApiErrorMessage } from '@/lib/api-error'
 import PageBanner from '@/components/layout/PageBanner'
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [product, setProduct] = useState<Product | null>(null)
-  const [suggestions, setSuggestions] = useState<Product[]>([])
-  const [loadedId, setLoadedId] = useState<string | null>(null)
 
-  // Cart & Quantity States
+  // Custom hook provides synchronous cached sibling selection & family-scoped data
+  const { product, variants, suggestions, status, error, retry } = useProductDetail(id)
+
+  // Selection-scoped cart & quantity states
+  const [selectedId, setSelectedId] = useState(id)
   const [quantity, setQuantity] = useState(1)
   const [isAdded, setIsAdded] = useState(false)
+  const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Local image cache tracking by URL
+  const [loadedImageUrls, setLoadedImageUrls] = useState<Record<string, boolean>>({})
+  const [failedImageUrls, setFailedImageUrls] = useState<Record<string, boolean>>({})
+
   const addItem = useCartStore((s) => s.addItem)
   const cartItems = useCartStore((s) => s.items)
 
-  const isLoading = Boolean(id) && loadedId !== id
+  const clearAddedTimer = useCallback(() => {
+    if (addedTimerRef.current !== null) {
+      clearTimeout(addedTimerRef.current)
+      addedTimerRef.current = null
+    }
+  }, [])
 
+  // Clear timer when selected route ID changes or component unmounts
   useEffect(() => {
-    if (!id) return
-    let isMounted = true
-    const productId = id
-
-    async function load(): Promise<void> {
-      try {
-        const data = await fetchProductById(productId)
-        if (isMounted) {
-          setProduct(data)
-          setQuantity(1)
-          setSuggestions([])
-          setLoadedId(productId)
-          try {
-            const relatedData = await fetchProducts({
-              category: data.category,
-              pet_type: data.pet_type
-            })
-            // Filter out the current product and take up to 4 items
-            const related = relatedData.filter((p) => p.id !== data.id).slice(0, 4)
-            if (isMounted) setSuggestions(related)
-          } catch (suggestionErr) {
-            console.error('Failed to load suggestions', suggestionErr)
-          }
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setProduct(null)
-          toast.error(getApiErrorMessage(err, 'Product not found'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
-        }
-      } finally {
-        if (isMounted) setLoadedId(productId)
-      }
-    }
-    load()
-
     return () => {
-      isMounted = false
+      clearAddedTimer()
     }
-  }, [id])
+  }, [id, clearAddedTimer])
 
-  function handleAddToCart() {
+  // Synchronously reset quantity and added state on actual route ID change
+  if (id !== selectedId) {
+    setSelectedId(id)
+    setQuantity(1)
+    setIsAdded(false)
+  }
+
+  function handleAddToCart(): void {
     if (!product) return
     const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
     const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
     if (quantityToAdd <= 0) {
-      toast.error('You already have all available stock in your cart.', { icon: '⚠️', style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error('You already have all available stock in your cart.', {
+        icon: '⚠️',
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
 
@@ -90,8 +85,12 @@ export default function ProductDetailPage() {
       stock: product.stock,
     })
 
+    clearAddedTimer()
     setIsAdded(true)
-    setTimeout(() => setIsAdded(false), 1500)
+    addedTimerRef.current = setTimeout(() => {
+      setIsAdded(false)
+      addedTimerRef.current = null
+    }, 1500)
 
     toast.success(`Added ${quantityToAdd} item(s) to your cart!`, {
       icon: '🐾',
@@ -102,7 +101,7 @@ export default function ProductDetailPage() {
     setQuantity(1)
   }
 
-  function handleBuyNow() {
+  function handleBuyNow(): void {
     if (!product || product.stock <= 0) return
 
     const buyQty = Math.max(1, Math.min(quantity, product.stock))
@@ -124,60 +123,65 @@ export default function ProductDetailPage() {
     navigate('/checkout?mode=direct')
   }
 
-  if (isLoading) {
+  if (status === 'loading') {
     return (
-      <div className="flex h-64 items-center justify-center bg-[#FFF9EA]">
+      <div className="flex h-64 items-center justify-center bg-[#FFF9EA]" role="status">
         <div className="text-sm font-medium text-gray-500">Loading product details...</div>
       </div>
     )
   }
 
-  if (!product) {
+  if (status === 'error' || !product) {
     return (
-      <div className="mx-auto mt-12 max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center">
+      <div className="mx-auto mt-12 max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center" role="alert">
         <h2 className="text-xl font-bold text-[#0B3B8C]">Product not found</h2>
-        <p className="mt-2 text-sm text-gray-500">The product you are looking for does not exist or has been removed.</p>
-        <Link
-          to="/"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0B3B8C] px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
-        >
-          Back to Store
-        </Link>
+        <p className="mt-2 text-sm text-gray-500">
+          {error || 'The product you are looking for does not exist or has been removed.'}
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {status === 'error' && (
+            <button
+              type="button"
+              onClick={retry}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0B3B8C] px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800"
+            >
+              <RefreshCw size={14} />
+              Try again
+            </button>
+          )}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
+          >
+            Back to Store
+          </Link>
+        </div>
       </div>
     )
   }
 
+  const currentImageUrl = product.image_url
+  const isImageLoaded = Boolean(loadedImageUrls[currentImageUrl])
+  const isImageFailed = Boolean(failedImageUrls[currentImageUrl])
+
   const itemInCart = cartItems.find((i) => i.product_id === product.id)
   const currentCartQty = itemInCart ? itemInCart.quantity : 0
   const remainingStock = product.stock - currentCartQty
-  const CATEGORIES = [
-  { id: 'all',         label: 'All Items' },
-  { id: 'food',        label: 'Pet Food' },
-  { id: 'treats',      label: 'Treats' },
-  { id: 'toys',        label: 'Toys' },
-  { id: 'grooming',    label: 'Grooming' },
-  { id: 'wellness',    label: 'Health & Wellness' },
-  { id: 'litter',      label: 'Litter & Toilet' },
-  { id: 'bedding',     label: 'Beds & Furniture' },
-  { id: 'apparel',     label: 'Clothing' },
-  { id: 'cleaning',    label: 'Training & Cleaning' },
-  { id: 'travel',      label: 'Travel & Outdoor' },
-  { id: 'accessories', label: 'Collars & Leashes' },
-]
 
   return (
-<div className="min-h-screen bg-[#fbe8c1] p-4 font-sans md:p-8">
-        <div className="mx-auto max-w-7xl space-y-6">
-
+    <div className="min-h-screen bg-[#fbe8c1] p-6 font-sans lg:p-10">
+      <div className="mx-auto max-w-7xl space-y-6">
         {/* Page banner */}
         <PageBanner
-          title={product.name}
+          title={product.parent_product_name || product.name}
           subtitle={`${product.pet_type === 'cat' ? '🐱 Cat' : product.pet_type === 'dog' ? '🐶 Dog' : '🐾 All Pets'} · ${product.category.charAt(0).toUpperCase() + product.category.slice(1)}`}
         />
 
         {/* Breadcrumb Navigation */}
         <nav className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-600">
-          <Link to="/" className="transition hover:text-[#0B3B8C]">Home</Link>
+          <Link to="/" className="transition hover:text-[#0B3B8C]">
+            Home
+          </Link>
           <ChevronRight size={14} className="text-gray-400" />
 
           <Link
@@ -193,7 +197,7 @@ export default function ProductDetailPage() {
             to={`/?pet=${product.pet_type}&cat=${product.category}`}
             className="transition hover:text-[#0B3B8C]"
           >
-            {CATEGORIES.find(c => c.id === product.category)?.label || product.category}
+            {PRODUCT_CATEGORIES.find((c) => c.id === product.category)?.label || product.category}
           </Link>
 
           <ChevronRight size={14} className="text-gray-400" />
@@ -202,36 +206,85 @@ export default function ProductDetailPage() {
 
         {/* Top Section: Images & Primary Details */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.1fr]">
-
-          {/* Left Column: Image Gallery */}
-          <div className="relative flex items-center justify-center rounded-[2rem] border border-gray-200 bg-white p-8 shadow-md">
-            <img
-              src={product.image_url}
-              alt={product.name}
-              className="max-h-[450px] max-w-full w-auto object-contain drop-shadow-xl"
-            />
+          {/* Left Column: Stable Image Frame */}
+          <div className="relative flex aspect-square sm:aspect-auto sm:h-[450px] w-full items-center justify-center rounded-[2rem] border border-gray-200 bg-white p-8 shadow-md overflow-hidden">
+            {isImageFailed ? (
+              <div
+                className="flex flex-col items-center justify-center gap-2 text-gray-400"
+                role="img"
+                aria-label={product.name}
+              >
+                <Package size={48} className="text-gray-300" />
+                <p className="text-xs font-medium">Image unavailable</p>
+              </div>
+            ) : (
+              <>
+                {!isImageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-50/40" aria-hidden="true">
+                    <div className="h-14 w-14 animate-pulse rounded-full bg-orange-100/60" />
+                  </div>
+                )}
+                <img
+                  src={currentImageUrl}
+                  alt={product.name}
+                  onLoad={() => setLoadedImageUrls((prev) => ({ ...prev, [currentImageUrl]: true }))}
+                  onError={() => setFailedImageUrls((prev) => ({ ...prev, [currentImageUrl]: true }))}
+                  className={`max-h-[450px] max-w-full w-auto object-contain drop-shadow-xl transition-opacity duration-150 ${
+                    isImageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              </>
+            )}
           </div>
 
           {/* Right Column: Product Details */}
           <div className="flex flex-col space-y-5 py-2">
             <div>
               <h1 className="text-3xl font-extrabold text-[#0B3B8C] sm:text-4xl">
-                {product.name}
+                {product.parent_product_name || product.name}
               </h1>
+              {product.sku && <p className="mt-2 text-xs text-gray-500">SKU: {product.sku}</p>}
             </div>
 
             <div className="text-3xl font-extrabold text-[#D32F2F]">
-              ₱ {Number(product.price).toLocaleString('en-PH', {
+              ₱{' '}
+              {Number(product.price).toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </div>
 
+            {product.parent_product_name && (
+              <fieldset className="space-y-3 rounded-2xl border border-orange-200 bg-white p-4">
+                <legend className="px-1 text-sm font-bold text-petko-blue">Choose a variation</legend>
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((variant) => (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      aria-pressed={variant.id === product.id}
+                      onClick={() => {
+                        if (variant.id !== product.id) {
+                          navigate(`/products/${variant.id}`, { replace: true })
+                        }
+                      }}
+                      className={`rounded-xl border-2 px-3 py-2 text-left text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue ${
+                        variant.id === product.id
+                          ? 'border-petko-blue bg-blue-50 font-bold text-petko-blue'
+                          : 'border-gray-200 text-gray-700 hover:border-orange-400'
+                      }`}
+                    >
+                      {variantLabel(variant)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">Price, photo, and stock are for the selected variation.</p>
+              </fieldset>
+            )}
+
             {/* "For" Target */}
             <div className="space-y-2 pt-2">
-              <span className="text-sm font-semibold text-gray-800">
-                For
-              </span>
+              <span className="text-sm font-semibold text-gray-800">For</span>
               <div>
                 <span className="inline-flex items-center gap-2 rounded-xl border border-[#D32F2F] bg-white px-5 py-2.5 text-sm font-bold text-[#D32F2F] shadow-sm">
                   {product.pet_type === 'cat' ? '🐱 Cats' : product.pet_type === 'dog' ? '🐶 Dogs' : '🐾 All Pets'}
@@ -239,26 +292,26 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-              {/* Meta Information Grid */}
-              <div className="grid grid-cols-2 divide-x divide-gray-800 py-4 text-center text-xs">
-                <div className="flex flex-col px-2">
-                  <span className={product.stock > 0 ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
-                    {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                  </span>
-                  <span className="font-bold text-gray-800">({product.stock} available)</span>
-                </div>
-                <div className="flex flex-col px-2">
-                  <span className="font-bold text-[#0B3B8C]">Made in</span>
-                  <span className="font-bold text-gray-800">Philippines</span>
-                </div>
+            {/* Meta Information Grid */}
+            <div className="grid grid-cols-2 divide-x divide-gray-800 py-4 text-center text-xs">
+              <div className="flex flex-col px-2">
+                <span className={product.stock > 0 ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
+                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                </span>
+                <span className="font-bold text-gray-800">({product.stock} available)</span>
               </div>
+              <div className="flex flex-col px-2">
+                <span className="font-bold text-[#0B3B8C]">SKU</span>
+                <span className="break-all font-bold text-gray-800">{product.sku || 'Not assigned'}</span>
+              </div>
+            </div>
 
             {/* Add to Cart / Quantity Actions */}
             <div className="space-y-1">
               <span className="text-xs font-semibold text-gray-500">Quantity</span>
-              <div className="flex items-stretch gap-3">
+              <div className="grid grid-cols-2 items-stretch gap-3 sm:flex">
                 {/* Quantity Selector */}
-                <div className="flex items-center overflow-hidden rounded-xl border-2 border-[#0B3B8C] bg-white">
+                <div className="col-span-2 flex items-center justify-center overflow-hidden rounded-xl border-2 border-[#0B3B8C] bg-white">
                   <button
                     type="button"
                     aria-label="Decrease quantity"
@@ -268,9 +321,7 @@ export default function ProductDetailPage() {
                   >
                     <Minus size={18} strokeWidth={3} />
                   </button>
-                  <span className="w-10 text-center font-bold text-[#0B3B8C]">
-                    {quantity}
-                  </span>
+                  <span className="w-10 text-center font-bold text-[#0B3B8C]">{quantity}</span>
                   <button
                     type="button"
                     aria-label="Increase quantity"
@@ -314,7 +365,8 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Trust Badges */}
-            <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[#fdf2e1] border border-gray-200 shadow-md p-4 text-center text-[11px] font-semibold text-gray-700 sm:text-xs">              <div className="flex flex-col items-center justify-center gap-1 sm:flex-row">
+            <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[#fdf2e1] border border-gray-200 shadow-md p-4 text-center text-[11px] font-semibold text-gray-700 sm:text-xs">
+              <div className="flex flex-col items-center justify-center gap-1 sm:flex-row">
                 <ShieldCheck size={18} className="text-gray-500" />
                 <span>Secure Checkout</span>
               </div>
@@ -327,37 +379,55 @@ export default function ProductDetailPage() {
                 <span>Fast Delivery</span>
               </div>
             </div>
-
           </div>
         </div>
 
         {/* Bottom Section: Description & Cross-Sell */}
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-
           {/* Description Container */}
-          <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-8 shadow-md lg:col-span-2">            <h2 className="mb-4 border-b border-gray-200 pb-4 text-lg font-bold text-[#0B3B8C]">
+          <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-8 shadow-md lg:col-span-2">
+            <h2 className="mb-4 border-b border-gray-200 pb-4 text-lg font-bold text-[#0B3B8C]">
               Description
             </h2>
             <div className="py-2 text-sm leading-relaxed text-gray-600">
               <p>{product.description}</p>
+              {VARIANT_FIELDS.some(({ key }) => product.variant_attributes?.[key]) && (
+                <dl className="mt-5 grid grid-cols-1 gap-3 rounded-xl bg-white p-4 sm:grid-cols-2">
+                  {VARIANT_FIELDS.map(({ key, label }) =>
+                    product.variant_attributes?.[key] ? (
+                      <div key={key}>
+                        <dt className="text-xs font-bold text-petko-blue">{label}</dt>
+                        <dd>{product.variant_attributes[key]}</dd>
+                      </div>
+                    ) : null,
+                  )}
+                </dl>
+              )}
+              {PRODUCT_DETAIL_FIELDS.map(({ key, label }) =>
+                product[key] ? (
+                  <section key={key} className="mt-5 border-t border-gray-200 pt-4">
+                    <h3 className="mb-2 font-bold text-petko-blue">{label}</h3>
+                    <p className="whitespace-pre-line">{product[key]}</p>
+                  </section>
+                ) : null,
+              )}
             </div>
           </div>
 
-          {/* Cross-Sell Container (Placeholder) */}
-          <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-6 shadow-md">            <h3 className="mb-4 font-extrabold text-[#0B3B8C]">
-              You May Also Like
-            </h3>
+          {/* Cross-Sell Container */}
+          <div className="rounded-3xl border border-gray-200 bg-[#fdf2e1] p-6 shadow-md">
+            <h3 className="mb-4 font-extrabold text-[#0B3B8C]">You May Also Like</h3>
             <div className="grid grid-cols-2 gap-4">
               {suggestions.length > 0 ? (
                 suggestions.map((suggestion) => (
                   <Link
-                    key={suggestion.id}
-                    to={`/products/${suggestion.id}`}
+                    key={suggestion.product.id}
+                    to={`/products/${suggestion.product.id}`}
                     className="group flex flex-col justify-between rounded-xl border border-white bg-white p-3 text-center shadow-sm transition hover:shadow-md"
                   >
                     <div className="mb-3 flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-gray-50 p-2">
                       <img
-                        src={suggestion.image_url}
+                        src={suggestion.product.image_url}
                         alt={suggestion.name}
                         className="max-h-full max-w-full object-contain transition duration-300 group-hover:scale-105"
                       />
@@ -367,7 +437,8 @@ export default function ProductDetailPage() {
                         {suggestion.name}
                       </h4>
                       <div className="mt-1 text-sm font-extrabold text-[#D32F2F]">
-                        ₱ {Number(suggestion.price).toLocaleString('en-PH', {
+                        {suggestion.minPrice !== suggestion.maxPrice && 'From '}₱{' '}
+                        {Number(suggestion.minPrice).toLocaleString('en-PH', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
@@ -382,7 +453,6 @@ export default function ProductDetailPage() {
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>

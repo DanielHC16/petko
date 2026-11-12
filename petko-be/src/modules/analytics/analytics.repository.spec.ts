@@ -51,6 +51,7 @@ describe('AnalyticsRepository', () => {
         email: 'admin@example.invalid',
         full_name: '',
         avatar_url: '',
+        tos_accepted: true,
       }),
     ).toBe(false)
     expect(rpc).toHaveBeenCalledWith(

@@ -1,17 +1,6 @@
 import { supabase } from '@/lib/supabase'
-
-export interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  stock: number
-  category: string
-  pet_type: 'cat' | 'dog' | 'both'
-  image_url: string
-  is_active: boolean
-  created_at: string
-}
+import { groupProductFamilies, type Product } from '@/lib/product-catalog'
+export type { Product } from '@/lib/product-catalog'
 
 export interface ProductFilterParams {
   category?: string
@@ -31,10 +20,6 @@ export async function fetchProducts(
   if (params.pet_type && params.pet_type !== 'all') {
     query = query.or(`pet_type.eq.${params.pet_type},pet_type.eq.both`)
   }
-  if (params.search && params.search.trim()) {
-    const term = params.search.trim()
-    query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%`)
-  }
   if (params.sortBy === 'price_asc') {
     query = query.order('price', { ascending: true })
   } else if (params.sortBy === 'price_desc') {
@@ -47,7 +32,18 @@ export async function fetchProducts(
 
   const { data, error } = await query
   if (error) throw new Error(error.message)
-  return (data as Product[]) || []
+  // Supabase returns the products row shape declared in the shared catalog type.
+  const products = (data as Product[]) || []
+  const term = params.search?.trim().toLowerCase()
+  if (!term) return products
+  // A match on a color/flavor retains the complete family and its price range.
+  return groupProductFamilies(products)
+    .filter((family) => family.variants.some((product) =>
+      [product.name, product.parent_product_name, product.description, product.sku,
+        ...Object.values(product.variant_attributes || {})]
+        .some((value) => value?.toLowerCase().includes(term)),
+    ))
+    .flatMap((family) => family.variants)
 }
 
 export async function fetchProductById(id: string): Promise<Product> {
@@ -58,5 +54,20 @@ export async function fetchProductById(id: string): Promise<Product> {
     .single()
 
   if (error || !data) throw new Error(error?.message || 'Product not found')
+  // The selected row contains the shared Product columns.
   return data as Product
+}
+
+export async function fetchProductVariants(product: Product): Promise<Product[]> {
+  if (!product.parent_product_name) return [product]
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .eq('parent_product_name', product.parent_product_name)
+    .order('price', { ascending: true })
+    .order('name', { ascending: true })
+  if (error) throw new Error(error.message)
+  // The bounded exact-parent query returns Product rows protected by product RLS.
+  return (data as Product[]) || []
 }

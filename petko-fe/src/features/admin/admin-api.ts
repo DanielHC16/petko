@@ -1,6 +1,27 @@
 import { api } from '@/lib/axios'
 import type { ApiResponse } from '@/lib/api-types'
 import type { UserProfile } from '@/store/auth.store'
+import type { Product } from '@/lib/product-catalog'
+
+export type ProductWritePayload = Omit<Product, 'id' | 'created_at'>
+
+export async function fetchAdminProducts(): Promise<Product[]> {
+  const response = await api.get<ApiResponse<Product[]>>('/products/admin/all')
+  return response.data.data || []
+}
+
+export async function saveAdminProduct(payload: ProductWritePayload, id?: string): Promise<void> {
+  if (id) await api.patch(`/products/${id}`, payload)
+  else await api.post('/products', payload)
+}
+
+export async function setAdminProductActive(id: string, isActive: boolean): Promise<void> {
+  await api.patch(`/products/${id}`, { is_active: isActive })
+}
+
+export async function deleteAdminProduct(id: string): Promise<void> {
+  await api.delete(`/products/${id}`)
+}
 
 /** Mirrors the backend `AdminStats` returned by GET /api/admin/stats. */
 export interface AdminStats {

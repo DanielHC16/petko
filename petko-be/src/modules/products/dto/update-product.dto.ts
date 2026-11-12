@@ -1,14 +1,16 @@
 import {
   IsString,
   IsNumber,
+  IsInt,
   IsIn,
   IsBoolean,
   Min,
   IsOptional,
 } from 'class-validator'
 import { Type } from 'class-transformer'
+import { ProductDetailsDto } from './product-details.dto'
 
-export class UpdateProductDto {
+export class UpdateProductDto extends ProductDetailsDto {
   @IsString()
   @IsOptional()
   name?: string
@@ -23,7 +25,7 @@ export class UpdateProductDto {
   @Type(() => Number)
   price?: number
 
-  @IsNumber()
+  @IsInt()
   @Min(0, { message: 'Stock must be greater than or equal to 0' })
   @IsOptional()
   @Type(() => Number)

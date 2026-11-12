@@ -1,5 +1,5 @@
 /**
- * Local-dev mock layer.  Activated only when VITE_MOCK=true.
+ * Local-dev mock layer.  Activated only in development when VITE_MOCK=true.
  *
  * What it does:
  *  1. Seeds the Zustand auth store with a mock admin profile so ProtectedRoute
@@ -18,10 +18,12 @@ import { api } from '@/lib/axios'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import type { Product } from '@/features/products/products-api'
+import { VARIANT_FIELDS } from '@/lib/product-catalog'
 import type { AdminUser, AdminAccessEmail } from '@/features/admin/admin-api'
 import {
   mockProfile,
   mockProducts,
+  MOCK_PRODUCT_CONTENT,
   mockUsers,
   mockAccessEmails,
   getMockStats,
@@ -29,7 +31,7 @@ import {
   mockOrders,
 } from '@/lib/mock-data'
 
-export const isMock = import.meta.env.VITE_MOCK === 'true'
+export const isMock = import.meta.env.DEV && import.meta.env.VITE_MOCK === 'true'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -60,20 +62,6 @@ function okVoid(config: InternalAxiosRequestConfig): AxiosResponse {
 
 // ─── Fake Supabase session ────────────────────────────────────────────────────
 
-const mockSession = {
-  access_token: 'mock-access-token',
-  refresh_token: 'mock-refresh-token',
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'bearer' as const,
-  user: {
-    id: mockProfile.id,
-    email: mockProfile.email,
-    app_metadata: {},
-    user_metadata: { full_name: mockProfile.full_name },
-    aud: 'authenticated',
-    created_at: '2025-09-01T08:00:00Z',
-  },
-}
 
 // ─── Supabase query builder mock (for products-api direct queries) ────────────
 
@@ -157,6 +145,22 @@ class MockQuery {
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 if (isMock) {
+
+  const mockSession = {
+    access_token: 'mock-access-token',
+    refresh_token: 'mock-refresh-token',
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    token_type: 'bearer' as const,
+    user: {
+      id: mockProfile.id,
+      email: mockProfile.email,
+      app_metadata: {},
+      user_metadata: { full_name: mockProfile.full_name },
+      aud: 'authenticated',
+      created_at: '2025-09-01T08:00:00Z',
+    },
+  }
+
   console.info('[mock] VITE_MOCK=true — running without a backend')
 
   // 1. Seed auth store immediately (no loading flash, ProtectedRoute passes)
@@ -282,7 +286,21 @@ if (isMock) {
     }
     if (path === '/products' && method === 'post') {
       const b = body(config)
+      const attributes = typeof b.variant_attributes === 'object' && b.variant_attributes !== null
+        ? b.variant_attributes : {}
       const product: Product = {
+        ...MOCK_PRODUCT_CONTENT,
+        sku: typeof b.sku === 'string' ? b.sku : null,
+        parent_product_name: String(b.parent_product_name ?? ''),
+        variant_attributes: Object.fromEntries(VARIANT_FIELDS.flatMap(({ key }) => {
+          if (!(key in attributes)) return []
+          const value: unknown = Reflect.get(attributes, key)
+          return typeof value === 'string' && value.trim() ? [[key, value.trim()]] : []
+        })),
+        ingredients_materials: String(b.ingredients_materials ?? ''),
+        guaranteed_analysis: String(b.guaranteed_analysis ?? ''),
+        usage_instructions: String(b.usage_instructions ?? ''),
+        safety_warnings: String(b.safety_warnings ?? ''),
         id: `prod-${Date.now()}`,
         name: String(b.name ?? ''),
         description: String(b.description ?? ''),

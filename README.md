@@ -128,6 +128,18 @@ The whole app deploys as one Vercel project from the repo root: the frontend is 
 3. `petko-be/supabase/migration-003-order-tracking.sql`
 4. `petko-be/supabase/migration-004-admin-analytics.sql`
 5. `petko-be/supabase/migration-005-tos-acceptance.sql`
+6. `petko-be/supabase/migration-006-auto-deactivate-out-of-stock.sql`
+7. `petko-be/supabase/migration-007-product-variations.sql`
+
+## Product catalog and variations
+
+Each variation is a separately priced and stocked product/SKU. Matching `parent_product_name` values group variations into one storefront listing. Product pages select actual available combinations of size, color, weight/volume, flavor/scent, and style. Admin product forms edit these fields and generate a purchase name containing the family and selected options. Existing checkout reserves the selected product ID and snapshots its price/name/image.
+
+The replacement catalog contains 100 variants in 50 families across 12 categories. Source snapshots, conflict decisions, live verification, and rollback instructions are documented in [the catalog plan](docs/plans/2026-11-12-catalog-variations.md).
+
+`node petko-be/scripts/seed.js` only audits the source data. `node petko-be/scripts/prepare-catalog.mjs` validates/downloads the source images to ignored `.tmp/catalog-images`, then generates the catalog JSON, SQL seed, and rollback. Neither command reads environment files or writes to a database. Apply the generated seed only for an intentionally authorized catalog replacement; it discards old remote carts and deletes unreferenced old products, preserving order references. Re-running an applied seed does not reset live inventory.
+
+Run `node --test petko-be/scripts/catalog.test.mjs` for source integrity checks. Run `petko-be/supabase/verify-product-variations.sql` only in an isolated database after applying migration 007. The browser fixture at `petko-fe/scripts/verify-variations.py` verifies storefront/admin behavior against an isolated Vite server with placeholder credentials.
 
 ## Admin access
 

@@ -1,4 +1,9 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import { SupabaseService } from '@/supabase/supabase.service'
 import { ProductsService } from './products.service'
@@ -118,7 +123,7 @@ describe('ProductsService', () => {
             pet_type: 'cat',
           }),
       ],
-      ['update', (s: ProductsService) => s.update('id', { name: 'x' })],
+      ['update', (s: ProductsService) => s.update('id', { price: 1 })],
       ['delete', (s: ProductsService) => s.delete('id')],
     ] as const)(
       '%s never leaks the Supabase error message',
@@ -135,7 +140,7 @@ describe('ProductsService', () => {
         data: null,
         error: { message: 'JSON object requested', code: 'PGRST116' },
       }
-      await expect(service.update('id', { name: 'x' })).rejects.toThrow(
+      await expect(service.update('id', { price: 1 })).rejects.toThrow(
         new NotFoundException('Product not found'),
       )
     })
@@ -214,5 +219,158 @@ describe('ProductsService', () => {
       })
       expect(builder.eq).toHaveBeenCalledWith('is_active', true)
     })
+  })
+
+  describe('product variations', () => {
+    beforeEach(() => {
+      builder.result = { data: { id: 'blue-collar' }, error: null }
+    })
+
+    it('persists a sellable variant with its own price, stock, grouping and details', async () => {
+      await service.create({
+        name: 'PetKo Collar (Blue)',
+        price: 249,
+        stock: 12,
+        category: 'accessories',
+        pet_type: 'both',
+        sku: ' PK-COL-BLU ',
+        parent_product_name: ' PetKo Collar ',
+        variant_attributes: { color: 'Blue' },
+        ingredients_materials: ' Nylon ',
+        usage_instructions: 'Adjust before use.',
+        safety_warnings: 'Inspect for wear.',
+      })
+      expect(builder.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sku: 'PK-COL-BLU',
+          parent_product_name: 'PetKo Collar',
+          variant_attributes: { color: 'Blue' },
+          ingredients_materials: 'Nylon',
+          guaranteed_analysis: '',
+          price: 249,
+          stock: 12,
+        }),
+      )
+    })
+
+    it('patches only supplied fields without overwriting variant metadata', async () => {
+      await service.update('blue-collar', { stock: 9 })
+      expect(builder.update).toHaveBeenCalledWith({ stock: 9 })
+      expect(builder.eq).toHaveBeenCalledWith('id', 'blue-collar')
+      expect(builder.single).toHaveBeenCalledTimes(1)
+    })
+
+    it('derives a grouped product name on create instead of retaining a stale label', async () => {
+      await service.create({
+        name: 'PetKo Collar (Red)',
+        price: 249,
+        stock: 12,
+        category: 'accessories',
+        pet_type: 'both',
+        parent_product_name: 'PetKo Collar',
+        variant_attributes: { color: 'Blue', size: 'Small', style: 'Small' },
+      })
+      expect(builder.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'PetKo Collar (Blue / Small)' }),
+      )
+    })
+
+    it.each([
+      [{ variant_attributes: { color: 'Blue' } }, 'PetKo Collar (Blue)'],
+      [{ parent_product_name: 'PetKo New Collar' }, 'PetKo New Collar (Red)'],
+      [{ name: 'Misleading unrelated name' }, 'PetKo Collar (Red)'],
+      [{ variant_attributes: {} }, 'PetKo Collar'],
+    ])(
+      'recomputes grouped names from merged identity fields on patch %p',
+      async (patch, name) => {
+        builder.result = {
+          data: {
+            id: 'red-collar',
+            name: 'PetKo Collar (Red)',
+            parent_product_name: 'PetKo Collar',
+            variant_attributes: { color: 'Red' },
+          },
+          error: null,
+        }
+        await service.update('red-collar', patch)
+        expect(builder.update).toHaveBeenCalledWith(
+          expect.objectContaining({ ...patch, name }),
+        )
+      },
+    )
+
+    it('retains the user-provided name for a standalone product', async () => {
+      builder.result = {
+        data: {
+          id: 'standalone',
+          name: 'Old name',
+          parent_product_name: '',
+          variant_attributes: {},
+        },
+        error: null,
+      }
+      await service.update('standalone', { name: ' Updated standalone ' })
+      expect(builder.update).toHaveBeenCalledWith({
+        name: 'Updated standalone',
+      })
+    })
+
+    it('uses the parent name when a grouped product has no attributes on create', async () => {
+      await service.create({
+        name: 'Unrelated name',
+        price: 249,
+        stock: 12,
+        category: 'accessories',
+        pet_type: 'both',
+        parent_product_name: 'PetKo Collar',
+      })
+      expect(builder.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'PetKo Collar' }),
+      )
+    })
+
+    it('supports explicitly clearing a SKU, grouping and attributes', async () => {
+      await service.update('blue-collar', {
+        sku: '',
+        parent_product_name: '',
+        variant_attributes: {},
+      })
+      expect(builder.update).toHaveBeenCalledWith({
+        sku: null,
+        parent_product_name: '',
+        variant_attributes: {},
+      })
+    })
+
+    it.each(['create', 'update'] as const)(
+      'returns a safe conflict for a duplicate SKU on %s',
+      async (operation) => {
+        jest
+          .spyOn(Logger.prototype, 'error')
+          .mockImplementation(() => undefined)
+        builder.result = {
+          data: null,
+          error: { code: '23505', message: 'private duplicate detail' },
+        }
+        try {
+          const result =
+            operation === 'create'
+              ? service.create({
+                  name: 'Collar',
+                  price: 249,
+                  stock: 12,
+                  category: 'accessories',
+                  pet_type: 'both',
+                  sku: 'PK-COL-BLU',
+                })
+              : service.update('blue-collar', { sku: 'PK-COL-BLU' })
+          await expect(result).rejects.toThrow(
+            new ConflictException('This SKU is already assigned to a product.'),
+          )
+        } finally {
+          jest.restoreAllMocks()
+        }
+      },
+    )
   })
 })

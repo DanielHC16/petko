@@ -18,7 +18,10 @@ import {
   ChevronUp,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api } from '@/lib/axios'
+import { fetchAdminProducts, saveAdminProduct, setAdminProductActive, deleteAdminProduct } from './admin-api'
+import AdminProductFields from './admin-product-fields'
+import { EMPTY_PRODUCT_CONTENT, type ProductContentForm } from './admin-product-form'
+import { PRODUCT_CATEGORIES, VARIANT_FIELDS, variantProductName } from '@/lib/product-catalog'
 import { getApiErrorMessage } from '@/lib/api-error'
 import type { Product } from '@/features/products/products-api'
 import pawYellowImg from '@/assets/paw_yellow.png'
@@ -39,12 +42,9 @@ function isPetType(value: string): value is PetType {
   return (PET_TYPES as readonly string[]).includes(value)
 }
 
-const CATEGORIES = [
-  'food', 'treats', 'toys', 'grooming', 'wellness', 'litter',
-  'bedding', 'apparel', 'cleaning', 'travel', 'accessories',
-]
+const CATEGORIES = PRODUCT_CATEGORIES.map(({ id }) => id)
 
-interface ProductFormData {
+interface ProductFormData extends ProductContentForm {
   name: string
   description: string
   price: string
@@ -56,6 +56,7 @@ interface ProductFormData {
 }
 
 const emptyFormData: ProductFormData = {
+  ...EMPTY_PRODUCT_CONTENT,
   name: '',
   description: '',
   price: '',
@@ -90,8 +91,7 @@ export default function AdminProductsPage() {
   async function loadProducts() {
     setIsLoading(true)
     try {
-      const res = await api.get<{ success: boolean; data: Product[] }>('/products/admin/all')
-      setProducts(res.data.data || [])
+      setProducts(await fetchAdminProducts())
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Failed to fetch products'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
     } finally {
@@ -108,6 +108,13 @@ export default function AdminProductsPage() {
   function handleOpenEditModal(product: Product) {
     setEditingProduct(product)
     setFormData({
+      sku: product.sku || '',
+      parent_product_name: product.parent_product_name || '',
+      variant_attributes: product.variant_attributes || {},
+      ingredients_materials: product.ingredients_materials || '',
+      guaranteed_analysis: product.guaranteed_analysis || '',
+      usage_instructions: product.usage_instructions || '',
+      safety_warnings: product.safety_warnings || '',
       name: product.name,
       description: product.description || '',
       price: product.price.toString(),
@@ -123,15 +130,25 @@ export default function AdminProductsPage() {
   async function handleSubmitProduct(e: React.FormEvent) {
     e.preventDefault()
     const priceNum = parseFloat(formData.price)
-    const stockNum = parseInt(formData.stock, 10)
+    const stockNum = Number(formData.stock)
     if (isNaN(priceNum) || priceNum < 0) { toast.error('Please enter a valid price', { style: toastStyle('error'), iconTheme: toastIconTheme('error') }); return }
-    if (isNaN(stockNum) || stockNum < 0) { toast.error('Please enter a valid stock quantity', { style: toastStyle('error'), iconTheme: toastIconTheme('error') }); return }
+    if (!Number.isInteger(stockNum) || stockNum < 0) { toast.error('Please enter a valid stock quantity', { style: toastStyle('error'), iconTheme: toastIconTheme('error') }); return }
 
     setIsSaving(true)
     try {
       const isOutOfStock = stockNum <= 0
       const payload = {
-        name: formData.name.trim(),
+        sku: formData.sku.trim() || null,
+        parent_product_name: formData.parent_product_name.trim(),
+        variant_attributes: Object.fromEntries(VARIANT_FIELDS.flatMap(({ key }) => {
+          const value = formData.variant_attributes[key]?.trim()
+          return value ? [[key, value]] : []
+        })),
+        ingredients_materials: formData.ingredients_materials.trim(),
+        guaranteed_analysis: formData.guaranteed_analysis.trim(),
+        usage_instructions: formData.usage_instructions.trim(),
+        safety_warnings: formData.safety_warnings.trim(),
+        name: variantProductName(formData.parent_product_name, formData.variant_attributes, formData.name),
         description: formData.description.trim(),
         price: priceNum,
         stock: stockNum,
@@ -141,10 +158,10 @@ export default function AdminProductsPage() {
         is_active: isOutOfStock ? false : formData.is_active,
       }
       if (editingProduct) {
-        await api.patch(`/products/${editingProduct.id}`, payload)
+        await saveAdminProduct(payload, editingProduct.id)
         toast.success(`Updated "${payload.name}" successfully!`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
       } else {
-        await api.post('/products', payload)
+        await saveAdminProduct(payload)
         toast.success(`Created "${payload.name}" successfully!`, { style: toastStyle('success'), iconTheme: toastIconTheme('success') })
       }
       setIsModalOpen(false)
@@ -163,7 +180,7 @@ export default function AdminProductsPage() {
     }
     const nextState = !product.is_active
     try {
-      await api.patch(`/products/${product.id}`, { is_active: nextState })
+      await setAdminProductActive(product.id, nextState)
       setProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, is_active: nextState } : p))
       toast.success(`Product marked as ${nextState ? 'ACTIVE' : 'INACTIVE'}`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
     } catch (err: unknown) {
@@ -181,7 +198,7 @@ export default function AdminProductsPage() {
         setConfirmDialog((d) => ({ ...d, open: false }))
         setDeletingId(product.id)
         try {
-          await api.delete(`/products/${product.id}`)
+          await deleteAdminProduct(product.id)
           toast.success(`Deleted "${product.name}"`, { icon: '🗑️', style: toastStyle('error'), iconTheme: toastIconTheme('error') })
           setProducts((prev) => prev.filter((p) => p.id !== product.id))
         } catch (err: unknown) {
@@ -197,7 +214,9 @@ export default function AdminProductsPage() {
     return products.filter((p) => {
       const matchesSearch = search.trim() === '' ||
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.description?.toLowerCase().includes(search.toLowerCase())
+        p.description?.toLowerCase().includes(search.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(search.toLowerCase()) ||
+        p.parent_product_name?.toLowerCase().includes(search.toLowerCase())
       const matchesCat = categoryFilter === 'all' || p.category === categoryFilter
       const matchesPet = petTypeFilter === 'all' || p.pet_type === petTypeFilter
       let matchesStock = true
@@ -269,7 +288,7 @@ export default function AdminProductsPage() {
           </div>
           <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 shadow-sm">
             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Categories</span>
-            <p className="mt-1 text-xl font-black text-blue-950">{CATEGORIES.length}</p>
+            <p className="mt-1 text-xl font-black text-blue-950">{PRODUCT_CATEGORIES.length}</p>
           </div>
         </div>
 
@@ -279,7 +298,7 @@ export default function AdminProductsPage() {
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or description..."
+              placeholder="Search by name, SKU, or description..."
               className="w-full rounded-lg border border-[#e1cba5] bg-white py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
           </div>
           {/* Dropdowns — always one row, never wrap */}
@@ -301,7 +320,7 @@ export default function AdminProductsPage() {
                 <option value="all">All Categories</option>
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                    {PRODUCT_CATEGORIES.find((category) => category.id === c)?.label || c}
                   </option>
                 ))}
               </select>
@@ -438,6 +457,8 @@ export default function AdminProductsPage() {
                                 <p className="truncate font-bold text-[#10298E] text-xs sm:text-sm" title={product.name}>
                                   {product.name}
                                 </p>
+                                {product.sku && <p className="mt-0.5 break-all text-[10px] font-semibold text-gray-600">{product.sku}</p>}
+                                {product.parent_product_name && <p className="text-[10px] text-orange-700 line-clamp-1" title={product.parent_product_name}>Family: {product.parent_product_name}</p>}
                                 <p className="hidden truncate text-[11px] text-gray-400 md:block">
                                   {product.description || 'No description'}
                                 </p>
@@ -626,13 +647,13 @@ export default function AdminProductsPage() {
         {/* ── Create / Edit Product Modal ────────────────────────────── */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
-            <div className="flex w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl overflow-hidden sm:rounded-2xl" style={{ maxHeight: '92dvh' }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="product-dialog-title" className="flex w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl overflow-hidden sm:rounded-2xl" style={{ maxHeight: '92dvh' }}>
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-[#e1cba5] bg-[#fdf2e1] px-5 py-4 sm:px-6">
-                <h2 className="text-base font-bold text-[#10298E]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                <h2 id="product-dialog-title" className="text-base font-bold text-[#10298E]" style={{ fontFamily: "'Nunito', sans-serif" }}>
                   {editingProduct ? 'Edit Product' : 'Add New Product'}
                 </h2>
-                <button onClick={() => setIsModalOpen(false)}
+                <button type="button" aria-label="Close product editor" onClick={() => setIsModalOpen(false)}
                   className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                   <X size={18} />
                 </button>
@@ -642,31 +663,31 @@ export default function AdminProductsPage() {
               <form onSubmit={handleSubmitProduct} className="flex-1 overflow-y-auto p-5 space-y-4 sm:p-6">
                 {/* Name */}
                 <div>
-                  <label className="block text-xs font-bold text-[#10298E]">
+                  <label htmlFor="modal-product-name" className="block text-xs font-bold text-[#10298E]">
                     Product Name <span className="text-red-500">*</span>
                   </label>
-                  <input type="text" required value={formData.name}
+                  <input id="modal-product-name" type="text" required readOnly={Boolean(formData.parent_product_name.trim())} value={variantProductName(formData.parent_product_name, formData.variant_attributes, formData.name)}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. PetKo Salmon & Rice Adult Dog Food 2kg"
+                    placeholder="Include the variation, e.g. PetKo Pet Collar (Blue)"
                     className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
                 </div>
 
                 {/* Price + Stock */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-bold text-[#10298E]">
+                    <label htmlFor="modal-product-price" className="block text-xs font-bold text-[#10298E]">
                       Price (₱ PHP) <span className="text-red-500">*</span>
                     </label>
-                    <input type="number" step="0.01" min="0" required value={formData.price}
+                    <input id="modal-product-price" type="number" step="0.01" min="0" required value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                       placeholder="e.g. 850.00"
                       className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#10298E]">
+                    <label htmlFor="modal-product-stock" className="block text-xs font-bold text-[#10298E]">
                       Stock Quantity <span className="text-red-500">*</span>
                     </label>
-                    <input type="number" min="0" required value={formData.stock}
+                    <input id="modal-product-stock" type="number" step="1" min="0" required value={formData.stock}
                       onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                       placeholder="e.g. 30"
                       className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none" />
@@ -676,21 +697,21 @@ export default function AdminProductsPage() {
                 {/* Category + Pet Type */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-bold text-[#10298E]">
+                    <label htmlFor="modal-product-category" className="block text-xs font-bold text-[#10298E]">
                       Category <span className="text-red-500">*</span>
                     </label>
-                    <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    <select id="modal-product-category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none">
                       {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                        <option key={cat} value={cat}>{PRODUCT_CATEGORIES.find((category) => category.id === cat)?.label || cat}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#10298E]">
+                    <label htmlFor="modal-product-pet_type" className="block text-xs font-bold text-[#10298E]">
                       Target Pet Type <span className="text-red-500">*</span>
                     </label>
-                    <select value={formData.pet_type} onChange={(e) => { if (isPetType(e.target.value)) setFormData({ ...formData, pet_type: e.target.value }) }}
+                    <select id="modal-product-pet_type" value={formData.pet_type} onChange={(e) => { if (isPetType(e.target.value)) setFormData({ ...formData, pet_type: e.target.value }) }}
                       className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none">
                       <option value="both">🐾 For All Pets (Both)</option>
                       <option value="dog">🐶 Dogs</option>
@@ -701,11 +722,11 @@ export default function AdminProductsPage() {
 
                 {/* Image URL */}
                 <div>
-                  <label className="block text-xs font-bold text-[#10298E]">
+                  <label htmlFor="modal-product-image_url" className="block text-xs font-bold text-[#10298E]">
                     Image URL (Direct image link)
                   </label>
                   <div className="mt-1 flex gap-3">
-                    <input type="url" value={formData.image_url}
+                    <input id="modal-product-image_url" type="url" value={formData.image_url}
                       onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                       placeholder="https://cdn.shopify.com/s/files/... or Unsplash image"
                       className="flex-1 rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
@@ -755,14 +776,16 @@ export default function AdminProductsPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-xs font-bold text-[#10298E]">
+                  <label htmlFor="modal-product-description" className="block text-xs font-bold text-[#10298E]">
                     Product Description
                   </label>
-                  <textarea rows={3} value={formData.description}
+                  <textarea id="modal-product-description" rows={3} value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Details, ingredients, usage directions, size specifications..."
                     className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
                 </div>
+
+                <AdminProductFields value={formData} onChange={(patch) => setFormData((current) => ({ ...current, ...patch }))} />
 
                 {/* Modal Footer */}
                 <div className="flex items-center justify-end gap-3 border-t border-[#e1cba5] pt-4">
