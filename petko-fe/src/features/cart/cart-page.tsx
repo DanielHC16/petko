@@ -4,26 +4,8 @@ import { Trash2, ArrowLeft, Ticket, Truck, RefreshCcw, Check } from 'lucide-reac
 import toast from 'react-hot-toast'
 import { useCartStore } from '@/store/cart.store'
 import PageBanner from '@/components/layout/PageBanner'
-
-export const CHECKOUT_SELECTED_ITEMS_KEY = 'petko_selected_checkout_items'
-
-export function removeCheckedItemsAfterOrder(removeItemFn: (id: string) => void) {
-  try {
-    const raw = sessionStorage.getItem(CHECKOUT_SELECTED_ITEMS_KEY)
-    if (!raw) return
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      parsed.forEach((item) => {
-        if (item?.product_id !== undefined) {
-          removeItemFn(String(item.product_id))
-        }
-      })
-    }
-    sessionStorage.removeItem(CHECKOUT_SELECTED_ITEMS_KEY)
-  } catch (err) {
-    console.error('Failed to clear checked items after order:', err)
-  }
-}
+import { useAuthStore } from '@/store/auth.store'
+import { saveCheckoutSelection } from '@/lib/checkout-selection'
 
 export default function CartPage() {
   const navigate       = useNavigate()
@@ -31,35 +13,20 @@ export default function CartPage() {
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const removeItem     = useCartStore((s) => s.removeItem)
 
-  const [isLoading, setIsLoading]                 = useState(true)
+  const isLoading = useCartStore((s) => s.isLoading)
+  const cartError = useCartStore((s) => s.error)
+  const isCheckingOut = useCartStore((s) => s.isCheckingOut)
+  const profile = useAuthStore((s) => s.profile)
   const [isProcessingOrder, setIsProcessingOrder] = useState(false)
-  const [selectedIds, setSelectedIds]             = useState<string[]>([])
+  const [selection, setSelectedIds] = useState<string[] | null>(null)
+  const selectedIds = useMemo(() => items.filter(item => item.stock > 0 && (selection === null || selection.includes(item.product_id))).map(item => item.product_id), [items, selection])
 
   useEffect(() => {
-    const orderPlacedFlag = sessionStorage.getItem('petko_order_completed')
-    if (orderPlacedFlag === 'true') {
-      removeCheckedItemsAfterOrder(removeItem)
-      sessionStorage.removeItem('petko_order_completed')
-    }
-
-    const timer = setTimeout(() => setIsLoading(false), 600)
-    return () => clearTimeout(timer)
-  }, [removeItem])
-
-  useEffect(() => {
-    setSelectedIds((prev) => {
-      const currentIds = items.filter((i) => i.stock > 0).map((i) => String(i.product_id))
-      if (prev.length === 0 && currentIds.length > 0) {
-        return currentIds
-      }
-      return prev.filter((id) => currentIds.includes(String(id)))
-    })
-  }, [items])
+    if (profile?.id) void useCartStore.getState().syncWithRemote(profile.id)
+  }, [profile?.id])
 
   const toggleSelectItem = (productId: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    )
+    setSelectedIds(selectedIds.includes(productId) ? selectedIds.filter(id => id !== productId) : [...selectedIds, productId])
   }
 
   const inStockItems = useMemo(() => items.filter((i) => i.stock > 0), [items])
@@ -75,7 +42,7 @@ export default function CartPage() {
   }
 
   const handleRemoveSelected = () => {
-    if (selectedIds.length === 0) return
+    if (isCheckingOut || selectedIds.length === 0) return
     selectedIds.forEach((id) => removeItem(id))
     setSelectedIds([])
     toast.success('Selected items removed from cart')
@@ -100,13 +67,15 @@ export default function CartPage() {
   const shippingEstimate = selectedItems.length === 0 ? 0 : isFreeShipping ? 0 : 99
 
   const handleProceedToCheckout = () => {
+    if (cartError || isLoading || isCheckingOut) return
     if (selectedItems.length === 0) {
       toast.error('Please select at least one item to proceed to checkout.')
       return
     }
 
     setIsProcessingOrder(true)
-    sessionStorage.setItem(CHECKOUT_SELECTED_ITEMS_KEY, JSON.stringify(selectedItems))
+    if (!profile) return
+    saveCheckoutSelection(profile.id, selectedItems.map(item => item.product_id))
 
     setTimeout(() => {
       navigate('/checkout', {
@@ -139,6 +108,12 @@ export default function CartPage() {
 
       {/* ── Main Body Container ───────────────────────────────────────────── */}
       <div className="mx-auto mt-6 sm:mt-8 max-w-6xl px-4 sm:px-6 lg:px-8">
+        {isCheckingOut && <p role="status" className="mb-4 rounded-xl bg-blue-50 p-4 text-sm text-petko-blue">Your order is being confirmed. Cart changes will be available shortly.</p>}
+        <fieldset disabled={isCheckingOut} className="min-w-0">
+        {cartError && <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {cartError}
+          <button type="button" className="ml-3 font-bold underline" onClick={() => { if (profile) void useCartStore.getState().syncWithRemote(profile.id) }}>Try again</button>
+        </div>}
         {isLoading || isProcessingOrder ? (
           /* ── Skeleton Loading Screen (Initial Load & Proceeding to Checkout) ── */
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start animate-pulse">
@@ -531,6 +506,7 @@ export default function CartPage() {
 
           </div>
         )}
+        </fieldset>
       </div>
     </div>
   )

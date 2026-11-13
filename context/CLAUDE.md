@@ -11,7 +11,7 @@ It is a full-stack web application with a React/Vite frontend and a NestJS REST 
 - **RBAC**: Two roles — `admin` and `customer` — enforced on both frontend (route guards) and backend (NestJS guards). See "Admin access" below for how a user becomes an admin.
 - **Product Catalog**: Dynamic product galleries with category filtering, search, price range, and pet-type filters
 - **Cart**: Persistent shopping cart stored in Supabase, synced on login
-- **Checkout**: Real Cash on Delivery checkout with server-priced totals, atomic stock reservation, and retry-safe order placement. Online payments remain unavailable until integrated.
+- **Checkout**: Real Cash on Delivery checkout with server-priced totals, atomic stock reservation, and retry-safe order placement. GCash, Maya, and card checkout use a confirmation flow without moving money; the server marks these payments as simulated.
 - **Order Tracking**: Admin-controlled fulfillment with timestamped history, customer-only receipt confirmation, and nonreceipt reports for admin review.
 - **Admin Panel**: Product, order, and user management for admins, plus the editable admin access list
 - **Admin Analytics**: Placed order value and customer-confirmed sales, buyers, browser sessions/page views, daily trends, and top products at `/admin/analytics`
@@ -27,7 +27,7 @@ A signed-in user is an admin when **either** is true:
 - **When it resolves**: at sign-in (the FE loads `/users/me`) or on any authenticated API call. A listed email that has never signed in has no `public.users` row until its first Google login; it becomes an admin right after that login. Removing an email revokes list-granted access on the user's next request (the FE picks it up on the next profile load).
 - The lookup fails closed: if the list query errors, the stored role is used. Unconfirmed emails never match.
 - **Adding emails**: `/admin/users` → "Admin access list" → "Add email" (no redeploy). Or SQL: `insert into public.admin_access_emails (email) values ('someone@example.com') on conflict (email) do nothing;` (lowercase).
-- **Lockout rules** (server-enforced): you can't remove your own email (400) or the last remaining email (409); you can't delete or demote yourself (400), demote a user whose access comes from the list (409, remove their email first), or delete/demote the last effective admin (409).
+- **Lockout rules** (server-enforced): you can't remove your own email (400) or the last remaining email (409); admin user-management routes cannot delete or demote the acting admin (400); self-service deletion is available at `/users/me` with active-order and last-admin protection, demote a user whose access comes from the list (409, remove their email first), or delete/demote the last effective admin (409).
 - Live list (2026-10-08): `danielcamacho0416@gmail.com`, `ilaurenaubrey@gmail.com`, `sancheztriciap@gmail.com`. Stored-role admins: those three plus `marcgerona19@gmail.com`.
 
 ---
@@ -40,7 +40,7 @@ A signed-in user is an admin when **either** is true:
 | Backend | NestJS + TypeScript (strict) |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth — Google SSO |
-| Payments | Cash on Delivery; online payment gateway not integrated |
+| Payments | Cash on Delivery; simulated GCash, Maya, and card confirmation (no gateway or funds transfer) |
 | Hosting | Vercel — one project: static FE + NestJS serverless function under `/api` |
 
 ---
@@ -165,6 +165,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
    - `migration-005-tos-acceptance.sql` (adds `users.tos_accepted`, default false, preserving existing profile/role permissions). Apply before deploying terms persistence. Run `verify-tos-acceptance.sql` only in an isolated database; retain the column/agreements when rolling back app code.
    - `migration-006-auto-deactivate-out-of-stock.sql` (adds `trg_product_stock_status` trigger to automatically set `is_active = false` when stock <= 0, and updates existing out-of-stock rows). Apply before deploying out-of-stock auto-deactivation. Validate with `verify-auto-deactivate-out-of-stock.sql` in an isolated database only.
    - `migration-007-product-variations.sql` (SKU, product family, bounded variation attributes, and content fields; applied to production 2026-11-12). Keep each variation as a separate product ID, preserving existing checkout/cart/stock contracts. Run `verify-product-variations.sql` only in an isolated database. Retain additive columns on application rollback. The separate catalog seed is destructive and is not a routine deployment migration.
+   - `migration-008-profile-cart-cashless.sql` (nullable anonymized order ownership, atomic self-deletion, protected last-admin mutations, cashless simulation flags and transactional cart consumption). Apply before deploying account/cart/cashless changes. Run `verify-profile-cart-cashless.sql` only in an isolated database. Retain privacy protections and simulated-payment fields on app rollback.
 2. `vercel link` at the repo root (Framework Preset: Other, root directory `./`), or import the GitHub repo in the Vercel dashboard with the same settings.
 3. Add the five env vars above for Production (and Preview if wanted). Mark `SUPABASE_SERVICE_ROLE_KEY` Sensitive.
 4. `vercel deploy --prod`, or push to `main` with the Git integration.
@@ -186,13 +187,16 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 | `GET /products`, `GET /products/:id` | public |
 | `GET /products/admin/all`, `POST /products`, `PATCH /products/:id`, `DELETE /products/:id` | admin |
 | `GET /users/me` | any signed-in user (returns the effective role) |
+| `PATCH /users/me` | authenticated owner; trimmed `full_name` (1?120), no role/id/email changes |
+| `PATCH /users/me/shipping` | authenticated owner; validated `saved_shipping` object or null, saved in Auth metadata |
+| `DELETE /users/me` | authenticated owner; blocks active/unconfirmed/unresolved orders and last effective admin; atomically anonymizes history and deletes identity/profile/cart |
 | `POST /users/me/tos-acceptance` | any signed-in user; body `{ "tos_accepted": true }`, updates only the authenticated user's acceptance |
 | `GET /users`, `PATCH /users/:id/role`, `POST /users/promote`, `DELETE /users/:id` | admin |
 | `GET /admin-access-emails`, `POST /admin-access-emails`, `DELETE /admin-access-emails/:id` | admin |
 | `GET /admin/stats` | admin (dashboard counts) |
 | `GET /admin/analytics?start=YYYY-MM-DD&end=YYYY-MM-DD` | admin (aggregate sales and traffic; inclusive Manila dates, maximum 366 days) |
 | `POST /analytics/events` | optional authentication; guests can record login views only, identity/role derived by the server |
-| `GET /orders`, `GET /orders/:id`, `POST /orders` | signed-in owner (COD placement) |
+| `GET /orders`, `GET /orders/:id`, `POST /orders` | signed-in owner (COD or simulated cashless placement) |
 | `POST /orders/:id/confirm-receipt`, `POST /orders/:id/delivery-issue` | signed-in owner |
 | `GET /orders/admin/all`, `GET /orders/admin/:id` | admin |
 | `PATCH /orders/:id/fulfillment`, `POST /orders/:id/resolve-delivery-issue` | admin |
@@ -203,13 +207,13 @@ The `orders` Nest module follows controller → service → repository layering.
 
 `fulfillment_status` progresses `placed` → `processing` → `shipped` → `out_for_delivery` → `delivered`. Delivery stays awaiting confirmation until the order owner confirms receipt; completion is derived from `delivery_confirmed_at`, not another fulfillment status. Admins never confirm another customer's receipt. There is no automatic completion. Nonreceipt reports flag admin review; admin responses clear the flag but never confirm receipt. Admin cancellation is allowed only before shipment and restores reserved stock once. `orders.status` retains its legacy values, with cancellation setting it to `cancelled`.
 
-`POST /orders` accepts a per-checkout UUID, product IDs/quantities, shipping snapshot, delivery method, and `payment_method: 'cod'`. The transaction validates products, locks stock in stable order, snapshots prices/names/images, calculates shipping, and deduplicates retries. Standard shipping costs PHP 99 (free at subtotal >= PHP 999); express costs PHP 199. Browser prices and totals are never trusted. Checkout clears the cart only after persistence succeeds. Legacy orders receive an imported tracking baseline with no invented milestone dates or delivery address.
+`POST /orders` accepts a per-checkout UUID, product IDs/quantities, shipping snapshot, delivery method, and `payment_method: 'cod' | 'gcash' | 'maya' | 'card'`. New clients send `checkout_source: 'cart' | 'direct'` (legacy default: direct). Cashless confirmation creates normal fulfillable orders with a server-derived `payment_simulated` flag and no actual payment processing. The transaction validates products, locks stock in stable order, snapshots prices/names/images, calculates shipping, and deduplicates retries. Standard shipping costs PHP 99 (free at subtotal >= PHP 999); express costs PHP 199. Browser prices and totals are never trusted. Cart checkout consumes only purchased quantities inside the order transaction; direct checkout leaves the cart unchanged. Retries cannot consume quantities twice. The browser reloads the owner cart after success and never merges an unowned local cache into another account. Legacy orders receive an imported tracking baseline with no invented milestone dates or delivery address.
 
 See `docs/plans/2026-11-10-order-tracking.md` for the API contract, interview decisions, and rollout/rollback details.
 
 ### Admin analytics
 
-Reports default to the last 30 calendar days in `Asia/Manila`; dates are inclusive and use server-side database aggregates, avoiding PostgREST row-limit truncation. Placed merchandise value uses order creation dates; completed sales use customer receipt-confirmation dates, independently of order creation. Cancelled orders are excluded. Shipping is excluded for new orders; imported legacy subtotals retain migration 003's historical fallback and may include shipping. Confirmation is not evidence of COD collection. Buyer cohorts use first-ever noncancelled order dates; top products use purchase-time quantity/price snapshots.
+Reports default to the last 30 calendar days in `Asia/Manila`; dates are inclusive and use server-side database aggregates, avoiding PostgREST row-limit truncation. Placed merchandise value uses order creation dates; completed sales use customer receipt-confirmation dates, independently of order creation. Cancelled orders are excluded. Simulated payments remain in order counts and placed value, but are excluded from summary/daily completed sales. Shipping is excluded for new orders; imported legacy subtotals retain migration 003's historical fallback and may include shipping. Confirmation is not evidence of COD collection. Buyer cohorts use first-ever noncancelled order dates; top products use purchase-time quantity/price snapshots.
 
 Traffic counts browser sessions and page views, not unique people. Guests record login-page views while the catalog remains protected. Authenticated admins exclude their entire current session, including earlier anonymous views; anonymous admins cannot be identified until sign-in. Capture accepts finite page categories and UUIDs only, with server timestamps and no raw URLs, IP addresses, or email fields. Collection errors never block checkout or navigation. Reports expose aggregate data only and display collection coverage rather than inventing historical visits.
 
@@ -290,7 +294,8 @@ Remaining: Tailwind 3 build-time audit findings (see Accepted Risks); no rate li
 | `delivery_confirmed_at` | `timestamptz` | Nullable; set only by the order owner |
 | `subtotal_amount`, `shipping_fee` | `numeric` | Server-priced amounts |
 | `shipping` | `jsonb` | Address/contact snapshot; absent on legacy orders |
-| `payment_method`, `delivery_method` | `text` | COD and standard/express; nullable for legacy records |
+| `payment_method`, `delivery_method` | `text` | cod/gcash/maya/card and standard/express; nullable for legacy records |
+| `payment_simulated` | `boolean` | Server-derived; cashless orders are excluded from collected/completed sales |
 | `courier_name`, `tracking_number` | `text` | Optional admin-provided tracking details |
 | `delivery_issue` | `jsonb` | Current nonreceipt report and admin response; history remains in events |
 | `checkout_request_id`, `checkout_payload` | `uuid`, `jsonb` | Backend-only retry deduplication |

@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { api } from '@/lib/axios'
 import type { ApiResponse } from '@/lib/api-types'
 import { useAuthStore, type UserProfile } from '@/store/auth.store'
+import { useCartStore } from '@/store/cart.store'
 
 /**
  * Loads the signed-in user's profile from the API. `role` is the effective
@@ -37,5 +38,6 @@ export async function signInWithGoogle(): Promise<void> {
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut()
   useAuthStore.getState().clearSession()
+  useCartStore.getState().setOwner(null)
   if (error) throw new Error(error.message)
 }

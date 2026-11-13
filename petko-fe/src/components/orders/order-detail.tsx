@@ -1,3 +1,4 @@
+import { PAYMENT_LABELS } from '@/lib/payment-methods'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertCircle, CheckCircle2, ExternalLink, MapPin, Package, Truck } from 'lucide-react'
@@ -194,7 +195,7 @@ export default function OrderDetailCard({
               <div className="pt-1 text-xs text-gray-600">
                 {order.payment_method === 'cod'
                   ? 'Cash on Delivery — pay when you receive your order.'
-                  : 'Payment details unavailable for this existing order.'}
+                  : order.payment_method ? PAYMENT_LABELS[order.payment_method] : 'Payment details unavailable for this existing order.'}
               </div>
             </dl>
           </section>

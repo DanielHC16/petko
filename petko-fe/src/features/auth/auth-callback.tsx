@@ -10,6 +10,7 @@ export default function AuthCallbackPage() {
   const { setSession, setProfile, setLoading } = useAuthStore()
 
   useEffect(() => {
+    let active = true
     async function handleCallback() {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -17,7 +18,8 @@ export default function AuthCallbackPage() {
 
         setSession(session)
         const profile = await fetchCurrentProfile()
-        if (profile) setProfile(profile)
+        if (!active || useAuthStore.getState().session?.user.id !== session.user.id) return
+        if (profile?.id === session.user.id) setProfile(profile)
         setLoading(false)
 
         // The layout derives the terms prompt from the persisted user profile.
@@ -26,7 +28,8 @@ export default function AuthCallbackPage() {
         navigate('/login', { replace: true })
       }
     }
-    handleCallback()
+    void handleCallback()
+    return () => { active = false }
   }, [navigate, setSession, setProfile, setLoading])
 
   return (

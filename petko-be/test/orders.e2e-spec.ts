@@ -161,7 +161,9 @@ describe('Orders HTTP contract', () => {
     { ...validPayload, shipping: [] },
     { ...validPayload, shipping: [validPayload.shipping] },
     { ...validPayload, items: [validPayload.items[0], []] },
-    { ...validPayload, payment_method: 'gcash' },
+    { ...validPayload, payment_method: 'unsupported' },
+    { ...validPayload, payment_simulated: false },
+    { ...validPayload, checkout_source: 'someone-elses-cart' },
     { ...validPayload, total_amount: 1 },
     { ...validPayload, user_id: otherId },
     { ...validPayload, items: [{ ...validPayload.items[0], quantity: 0 }] },
@@ -189,6 +191,28 @@ describe('Orders HTTP contract', () => {
       expect.objectContaining({ payment_method: 'cod' }),
     )
   })
+
+  it.each(['gcash', 'maya', 'card'])(
+    'accepts %s checkout through the same owned order contract',
+    async (method) => {
+      const response = await request(app.getHttpServer())
+        .post('/api/orders')
+        .set('Authorization', 'Bearer owner')
+        .send({
+          ...validPayload,
+          payment_method: method,
+          checkout_source: 'cart',
+        })
+      expect(response.status).toBe(201)
+      expect(repository.create).toHaveBeenCalledWith(
+        ownerId,
+        expect.objectContaining({
+          payment_method: method,
+          checkout_source: 'cart',
+        }),
+      )
+    },
+  )
 
   it.each([
     { status: 'completed', expected_version: 0 },

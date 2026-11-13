@@ -15,22 +15,34 @@ import { fetchCurrentProfile } from '@/lib/auth'
 // Global auth state listener — runs once at app startup.
 // Keeps the Zustand store in sync with Supabase session changes
 // (e.g., token refresh, sign out from another tab).
-supabase.auth.onAuthStateChange(async (_event, session) => {
+let authGeneration = 0
+supabase.auth.onAuthStateChange((_event, session) => {
+  const currentGeneration = ++authGeneration
+  const previousUserId = useAuthStore.getState().session?.user.id
   const { setSession, setProfile, setLoading } = useAuthStore.getState()
-
   setSession(session)
-
-  if (session) {
-    const profile = await fetchCurrentProfile()
-    setProfile(profile)
-    if (profile?.id) {
-      void useCartStore.getState().syncWithRemote(profile.id)
-    }
-  } else {
+  useCartStore.getState().setOwner(session?.user.id ?? null)
+  if (previousUserId !== session?.user.id) {
     setProfile(null)
+    setLoading(Boolean(session))
   }
-
-  setLoading(false)
+  if (!session) {
+    setProfile(null)
+    setLoading(false)
+    return
+  }
+  // Keep auth callbacks quick; discard slow responses from an earlier account.
+  setTimeout(() => {
+    void (async () => {
+      const profile = await fetchCurrentProfile()
+      if (authGeneration !== currentGeneration) return
+      setProfile(profile)
+      setLoading(false)
+      if (profile?.id && (_event === 'INITIAL_SESSION' || _event === 'SIGNED_IN')) {
+        await useCartStore.getState().syncWithRemote(profile.id)
+      }
+    })()
+  }, 0)
 })
 
 createRoot(document.getElementById('root')!).render(

@@ -141,7 +141,7 @@ create policy "Users can manage their own cart"
 -- ────────────────────────────────────────────────────────────
 create table if not exists public.orders (
   id                uuid primary key default gen_random_uuid(),
-  user_id           uuid not null references public.users(id) on delete restrict,
+  user_id           uuid references public.users(id) on delete restrict,
   status            text not null default 'pending'
                       check (status in ('pending', 'paid', 'shipped', 'cancelled')),
   total_amount      numeric(10,2) not null check (total_amount >= 0),
@@ -225,7 +225,8 @@ alter table public.orders
   add column if not exists tracking_version integer not null default 0 check (tracking_version >= 0),
   add column if not exists subtotal_amount numeric(10,2),
   add column if not exists shipping_fee numeric(10,2) not null default 0 check (shipping_fee >= 0),
-  add column if not exists payment_method text check (payment_method = 'cod'),
+  add column if not exists payment_method text check (payment_method in ('cod','gcash','maya','card')),
+  add column if not exists payment_simulated boolean not null default false,
   add column if not exists delivery_method text check (delivery_method in ('standard', 'express')),
   add column if not exists shipping jsonb,
   add column if not exists courier_name text,
@@ -292,8 +293,20 @@ grant all on public.orders, public.order_items to service_role;
 
 create or replace function public.petko_protect_order_event() returns trigger
 language plpgsql set search_path = '' as $$
+declare
+  v_user text := current_setting('petko.deleting_user', true);
 begin
-  raise exception using errcode = 'P4091', message = 'Order tracking history is immutable';
+  if tg_op='UPDATE' and v_user is not null and v_user<>''
+    and (old.actor_id::text=v_user or exists (
+      select 1 from public.orders where id=old.order_id and user_id::text=v_user
+    ))
+    and (to_jsonb(new)-'actor_id'-'note')=(to_jsonb(old)-'actor_id'-'note')
+    and (new.actor_id is not distinct from old.actor_id
+      or (old.actor_id::text=v_user and new.actor_id is null))
+    and new.note is null then
+    return new;
+  end if;
+  raise exception using errcode='P4091', message='Order tracking history is immutable';
 end;
 $$;
 drop trigger if exists protect_order_tracking_history on public.order_tracking_events;
@@ -318,10 +331,14 @@ declare
   v_shipping numeric(10,2);
   v_count integer := 0;
 begin
-  if p_user_id is null or not exists (select 1 from public.users where id=p_user_id) then
+  -- Coordinate checkout with account deletion before taking any product/cart locks.
+  perform 1 from public.users where id=p_user_id for key share;
+  if p_user_id is null or not found then
     raise exception using errcode='P4040', message='User not found';
   end if;
-  if p_payload->>'payment_method' is distinct from 'cod'
+  if coalesce(p_payload->>'payment_method','') not in ('cod','gcash','maya','card')
+     or coalesce(p_payload->>'checkout_source','direct') not in ('cart','direct')
+     or p_payload ? 'payment_simulated'
      or coalesce(p_payload->>'delivery_method','') not in ('standard','express')
      or jsonb_typeof(p_payload->'items') is distinct from 'array'
      or jsonb_typeof(p_payload->'shipping') is distinct from 'object' then
@@ -361,14 +378,27 @@ begin
     raise exception using errcode='P4092', message='Product not found';
   end if;
   v_shipping := case when p_payload->>'delivery_method'='express' then 199 when v_subtotal >=999 then 0 else 99 end;
-  insert into public.orders(user_id,status,fulfillment_status,total_amount,subtotal_amount,shipping_fee,payment_method,delivery_method,shipping,checkout_request_id,checkout_payload,stock_reserved)
-  values(p_user_id,'pending','placed',v_subtotal+v_shipping,v_subtotal,v_shipping,'cod',p_payload->>'delivery_method',p_payload->'shipping',v_request,p_payload,true)
+  insert into public.orders(user_id,status,fulfillment_status,total_amount,subtotal_amount,shipping_fee,payment_method,payment_simulated,delivery_method,shipping,checkout_request_id,checkout_payload,stock_reserved)
+  values(p_user_id,case when p_payload->>'payment_method'='cod' then 'pending' else 'paid' end,'placed',v_subtotal+v_shipping,v_subtotal,v_shipping,p_payload->>'payment_method',p_payload->>'payment_method'<>'cod',p_payload->>'delivery_method',p_payload->'shipping',v_request,p_payload,true)
   returning id into v_id;
   for v_item in select value from jsonb_array_elements(p_payload->'items') loop
     update public.products set stock=stock-(v_item->>'quantity')::integer where id=(v_item->>'product_id')::uuid;
     insert into public.order_items(order_id,product_id,quantity,unit_price,product_name,image_url)
     select v_id,id,(v_item->>'quantity')::integer,price,name,image_url from public.products where id=(v_item->>'product_id')::uuid;
   end loop;
+  -- Consumption belongs to the initial transaction only: idempotent retries return above.
+  if coalesce(p_payload->>'checkout_source','direct')='cart' then
+    perform 1 from public.cart_items where user_id=p_user_id
+      and product_id in (select (value->>'product_id')::uuid from jsonb_array_elements(p_payload->'items'))
+      order by product_id for update;
+    for v_item in select value from jsonb_array_elements(p_payload->'items') loop
+      delete from public.cart_items where user_id=p_user_id
+        and product_id=(v_item->>'product_id')::uuid
+        and quantity <= (v_item->>'quantity')::integer;
+      update public.cart_items set quantity=quantity-(v_item->>'quantity')::integer
+        where user_id=p_user_id and product_id=(v_item->>'product_id')::uuid;
+    end loop;
+  end if;
   insert into public.order_tracking_events(order_id,version,event_type,to_status,actor_id,actor_role)
   values(v_id,0,'order_placed','placed',p_user_id,'customer');
   return v_id;
@@ -567,7 +597,7 @@ begin
   v_end := (p_end+1)::timestamp at time zone 'Asia/Manila';
 
   with qualifying as materialized (
-    select id,user_id,subtotal_amount,created_at,delivery_confirmed_at
+    select id,user_id,subtotal_amount,created_at,delivery_confirmed_at,payment_simulated
     from public.orders
     where status <> 'cancelled' and fulfillment_status <> 'cancelled'
   ), placed as materialized (
@@ -602,7 +632,7 @@ begin
     from placed group by 1
   ), completed_daily as (
     select (delivery_confirmed_at at time zone 'Asia/Manila')::date as day,
-      count(*) as orders,sum(subtotal_amount) as value
+      count(*) as orders,sum(subtotal_amount) filter (where not payment_simulated) as value
     from completed group by 1
   ), traffic_daily as (
     select (created_at at time zone 'Asia/Manila')::date as day,
@@ -640,7 +670,7 @@ begin
       'placedOrders',(select count(*) from placed),
       'placedValue',(select coalesce(sum(subtotal_amount),0) from placed),
       'completedOrders',(select count(*) from completed),
-      'completedSales',(select coalesce(sum(subtotal_amount),0) from completed),
+      'completedSales',(select coalesce(sum(subtotal_amount) filter (where not payment_simulated),0) from completed),
       'buyers',(select count(*) from buyers),
       'newBuyers',(select count(*) from buyers where first_order >= v_start),
       'returningBuyers',(select count(*) from buyers where first_order < v_start),
@@ -748,3 +778,107 @@ comment on column public.products.variant_attributes is
 
 notify pgrst, 'reload schema';
 commit;
+
+
+-- Account deletion must redact retained orders before unlinking their owner.
+create or replace function public.petko_delete_own_account(p_user_id uuid) returns boolean
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user public.users%rowtype;
+  v_email text;
+  v_effective_admin boolean;
+  v_admin_count integer;
+begin
+  -- Serialize deletion and role/access mutations while deciding last-admin protection.
+  lock table public.users in share row exclusive mode;
+  lock table public.admin_access_emails in share row exclusive mode;
+  select * into v_user from public.users where id=p_user_id for update;
+  if not found then raise exception using errcode='P4040', message='Account not found'; end if;
+
+  select lower(btrim(coalesce(a.email,v_user.email))),
+    v_user.role='admin' or (a.email_confirmed_at is not null and exists (
+      select 1 from public.admin_access_emails ae where ae.email=lower(btrim(a.email))
+    ))
+    into v_email,v_effective_admin from auth.users a where a.id=p_user_id;
+  if not found then raise exception using errcode='P4040', message='Auth account not found'; end if;
+  if v_effective_admin then
+    select count(*) into v_admin_count from public.users u join auth.users a on a.id=u.id
+      where u.role='admin' or (a.email_confirmed_at is not null and exists (
+        select 1 from public.admin_access_emails ae where ae.email=lower(btrim(a.email))
+      ));
+    if v_admin_count<=1 then
+      raise exception using errcode='P4095', message='Last effective admin';
+    end if;
+  end if;
+
+  perform 1 from public.orders where user_id=p_user_id order by id for update;
+  if exists (select 1 from public.orders where user_id=p_user_id and (
+    (fulfillment_status<>'cancelled' and delivery_confirmed_at is null)
+    or (delivery_issue is not null and delivery_issue->>'resolved_at' is null)
+  )) then
+    raise exception using errcode='P4094', message='Active orders prevent deletion';
+  end if;
+
+  perform set_config('petko.deleting_user', p_user_id::text, true);
+  update public.order_tracking_events e set
+    actor_id=case when e.actor_id=p_user_id then null else e.actor_id end,
+    note=null
+    where e.actor_id=p_user_id or exists (
+      select 1 from public.orders o where o.id=e.order_id and o.user_id=p_user_id
+    );
+  update public.orders set user_id=null,shipping=null,checkout_payload=null,
+    checkout_request_id=null,delivery_issue=null,courier_name=null,tracking_number=null,
+    payment_reference=null where user_id=p_user_id;
+  perform set_config('petko.deleting_user','',true);
+  delete from public.admin_access_emails where email=v_email;
+  -- Auth sessions, identities, profile and cart cascade in the same transaction.
+  delete from auth.users where id=p_user_id;
+  if not found then raise exception using errcode='P4040', message='Auth account not found'; end if;
+  return true;
+end;
+$$;
+revoke all on function public.petko_delete_own_account(uuid) from public,anon,authenticated;
+grant execute on function public.petko_delete_own_account(uuid) to service_role;
+
+-- Recheck at the write boundary: an HTTP preflight may have counted an admin
+-- who deleted their account before the queued role/list mutation could commit.
+create or replace function public.petko_protect_last_admin() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_loses_access boolean := false;
+begin
+  if tg_table_name='users' then
+    if tg_op='UPDATE' then
+      v_loses_access := old.role='admin' and new.role<>'admin';
+    else
+      v_loses_access := old.role='admin' or exists (
+        select 1 from public.admin_access_emails where email=lower(btrim(old.email))
+      );
+    end if;
+  else
+    v_loses_access := exists (
+      select 1 from auth.users a join public.users u on u.id=a.id
+      where lower(btrim(a.email))=old.email and a.email_confirmed_at is not null
+    );
+  end if;
+  if v_loses_access then
+    perform pg_advisory_xact_lock(hashtextextended('petko-admin-membership',0));
+    if not exists (
+      select 1 from public.users u join auth.users a on a.id=u.id
+      where u.role='admin' or (a.email_confirmed_at is not null and exists (
+        select 1 from public.admin_access_emails ae where ae.email=lower(btrim(a.email))
+      ))
+    ) then
+      raise exception using errcode='P4095', message='Last effective admin';
+    end if;
+  end if;
+  return null;
+end;
+$$;
+revoke all on function public.petko_protect_last_admin() from public,anon,authenticated;
+drop trigger if exists protect_last_user_admin on public.users;
+create trigger protect_last_user_admin after update of role or delete on public.users
+  for each row execute function public.petko_protect_last_admin();
+drop trigger if exists protect_last_list_admin on public.admin_access_emails;
+create trigger protect_last_list_admin after update or delete on public.admin_access_emails
+  for each row execute function public.petko_protect_last_admin();

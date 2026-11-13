@@ -83,7 +83,10 @@ export default function ProductsPage() {
     else params.set('pet', pet)
     setSearchParams(params)
   }
+  const cartReady = useCartStore(state => Boolean(state.ownerId) && !state.isLoading && !state.error && !state.isCheckingOut)
+
   function handleAddToCart(product: Product) {
+    if (!cartReady) { toast.error('Your cart is not ready. Open your cart to refresh it.'); return }
     addItem({ product_id: product.id, name: product.name, price: Number(product.price), quantity: 1, image_url: product.image_url, stock: product.stock })
     toast.success(`Added ${product.name} to cart!`, {
       duration: 2000,
@@ -442,7 +445,7 @@ export default function ProductsPage() {
                         </span>
                         <button
                           onClick={() => handleAddToCart(product)}
-                          disabled={!canAddMore}
+                          disabled={!canAddMore || !cartReady}
                           className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label="Add one more"
                         >
@@ -452,7 +455,7 @@ export default function ProductsPage() {
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore}
+                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore || !cartReady}
                         className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-gray-50 py-2 text-xs font-semibold text-gray-700 transition
                           hover:border-orange-500 hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
                         <ShoppingCart size={12} /> Add to Cart

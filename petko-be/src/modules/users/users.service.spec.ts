@@ -38,7 +38,12 @@ describe('UsersService', () => {
     createUser: jest.Mock
   }
   let service: UsersService
-  const repository = { acceptTos: jest.fn() }
+  const repository = {
+    acceptTos: jest.fn(),
+    updateName: jest.fn(),
+    deleteOwnAccount: jest.fn(),
+    updateShipping: jest.fn(),
+  }
 
   beforeEach(() => {
     db = createSupabaseQueryMock()
@@ -66,6 +71,30 @@ describe('UsersService', () => {
 
   afterEach(() => {
     jest.restoreAllMocks()
+  })
+
+  it('preserves an access-list admin role after saving the canonical display name', async () => {
+    const me = user('listed', 'admin')
+    repository.updateName.mockResolvedValue({
+      ...me,
+      full_name: 'New Name',
+      role: 'customer',
+    })
+    await expect(service.updateOwnName(me, 'New Name')).resolves.toMatchObject({
+      id: me.id,
+      full_name: 'New Name',
+      role: 'admin',
+    })
+    expect(repository.updateName).toHaveBeenCalledWith(me.id, 'New Name')
+  })
+
+  it('does not confirm account deletion if the atomic transaction fails', async () => {
+    repository.deleteOwnAccount.mockRejectedValueOnce(
+      new ConflictException('Active orders'),
+    )
+    await expect(service.deleteOwnAccount('owner')).rejects.toThrow(
+      'Active orders',
+    )
   })
 
   it('saves TOS acceptance through the repository for the authenticated ID', async () => {

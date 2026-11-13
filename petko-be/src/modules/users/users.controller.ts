@@ -22,6 +22,9 @@ import {
 import { UpdateUserRoleDto } from './dto/update-user-role.dto'
 import { PromoteUserDto } from './dto/promote-user.dto'
 import { AcceptTosDto } from './dto/accept-tos.dto'
+import { UpdateOwnNameDto } from './dto/update-own-name.dto'
+import { UpdateShippingDto } from './dto/update-shipping.dto'
+import type { SavedShipping } from './users.types'
 import type { TosAcceptance } from './users.types'
 
 @Controller('users')
@@ -32,6 +35,32 @@ export class UsersController {
   @UseGuards(AuthGuard)
   getMe(@CurrentUser() user: UserProfile): UserProfile {
     return user
+  }
+
+  @Patch('me')
+  @UseGuards(AuthGuard)
+  async updateOwnName(
+    @Body() dto: UpdateOwnNameDto,
+    @CurrentUser() user: UserProfile,
+  ): Promise<UserProfile> {
+    return this.usersService.updateOwnName(user, dto.full_name)
+  }
+
+  @Delete('me')
+  @UseGuards(AuthGuard)
+  async deleteOwnAccount(
+    @CurrentUser() user: UserProfile,
+  ): Promise<{ message: string }> {
+    return this.usersService.deleteOwnAccount(user.id)
+  }
+
+  @Patch('me/shipping')
+  @UseGuards(AuthGuard)
+  async updateOwnShipping(
+    @Body() dto: UpdateShippingDto,
+    @CurrentUser() user: UserProfile,
+  ): Promise<SavedShipping> {
+    return this.usersService.updateOwnShipping(user.id, dto.saved_shipping)
   }
 
   @Post('me/tos-acceptance')

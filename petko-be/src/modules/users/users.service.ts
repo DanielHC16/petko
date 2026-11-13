@@ -12,7 +12,7 @@ import type { Role } from '@/common/decorators/roles.decorator'
 import { escapeLikePattern, normalizeEmail } from '@/common/utils/email.util'
 import { AdminAccessEmailsService } from '@/modules/admin-access-emails/admin-access-emails.service'
 import { UsersRepository } from './users.repository'
-import type { TosAcceptance } from './users.types'
+import type { SavedShipping, TosAcceptance } from './users.types'
 
 export interface UserRecord extends UserProfile {
   created_at: string
@@ -54,6 +54,24 @@ export class UsersService {
 
   async acceptTos(userId: string): Promise<TosAcceptance> {
     return this.repository.acceptTos(userId)
+  }
+
+  async updateOwnName(user: UserProfile, name: string): Promise<UserProfile> {
+    const updated = await this.repository.updateName(user.id, name)
+    // Preserve the effective admin role computed from the access list by AuthGuard.
+    return { ...updated, role: user.role }
+  }
+
+  async deleteOwnAccount(userId: string): Promise<{ message: string }> {
+    await this.repository.deleteOwnAccount(userId)
+    return { message: 'Your account has been permanently deleted.' }
+  }
+
+  async updateOwnShipping(
+    userId: string,
+    shipping: SavedShipping['saved_shipping'],
+  ): Promise<SavedShipping> {
+    return this.repository.updateShipping(userId, shipping)
   }
 
   async findById(id: string): Promise<UserRecord | null> {

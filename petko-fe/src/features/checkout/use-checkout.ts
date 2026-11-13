@@ -5,6 +5,7 @@ import type {
   OrderDetail,
   OrderShipping,
   PlaceOrderInput,
+  PaymentMethod,
 } from '@/lib/order-types'
 import { useCartStore } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
@@ -17,8 +18,11 @@ interface CheckoutState {
   submit: (
     shipping: OrderShipping,
     delivery: 'standard' | 'express',
-    directItems?: { product_id: string; quantity: number }[],
+    orderItems: { product_id: string; quantity: number }[],
+    payment: PaymentMethod,
+    source: 'cart' | 'direct',
   ) => Promise<OrderDetail | null>
+  validate: (shipping: OrderShipping) => boolean
 }
 
 // Retain request identity across route changes, including a lost HTTP response.
@@ -38,26 +42,25 @@ export function useCheckout(): CheckoutState {
     }
   }, [])
 
+  function validate(shipping: OrderShipping): boolean {
+    const fieldErrors = validateCheckoutShipping(shipping)
+    setErrors(fieldErrors)
+    setError(Object.keys(fieldErrors).length ? 'Please check your contact and shipping details.' : null)
+    return Object.keys(fieldErrors).length === 0
+  }
+
   async function submit(
     shipping: OrderShipping,
     delivery: 'standard' | 'express',
-    directItems?: { product_id: string; quantity: number }[],
+    orderItems: { product_id: string; quantity: number }[],
+    payment: PaymentMethod,
+    source: 'cart' | 'direct',
   ): Promise<OrderDetail | null> {
     if (busy.current) return null
-    const fieldErrors = validateCheckoutShipping(shipping)
-    setErrors(fieldErrors)
-    setError(null)
-    if (Object.keys(fieldErrors).length > 0) {
-      setError('Please check your contact and shipping details.')
-      return null
-    }
+    if (!validate(shipping)) return null
     const profile = useAuthStore.getState().profile
-    const cartItems = useCartStore.getState().items
-    const orderItems = directItems ?? cartItems.map((item) => ({
-      product_id: item.product_id,
-      quantity: item.quantity,
-    }))
-    if (!profile || orderItems.length === 0) {
+    const session = useAuthStore.getState().session
+    if (!profile || !session || session.user.id !== profile.id || orderItems.length === 0) {
       setError('Add items to your cart and sign in before placing an order.')
       return null
     }
@@ -73,7 +76,8 @@ export function useCheckout(): CheckoutState {
         postal_code: shipping.postal_code.trim(),
       },
       delivery_method: delivery,
-      payment_method: 'cod',
+      payment_method: payment,
+      checkout_source: source,
       items: orderItems,
     }
     const fingerprint = JSON.stringify({ user: profile.id, ...payload })
@@ -84,26 +88,26 @@ export function useCheckout(): CheckoutState {
     checkoutRequests.set(fingerprint, request)
     busy.current = true
     setIsPending(true)
+    let cartLock: number | null = null
     try {
+      if (source === 'cart') {
+        cartLock = useCartStore.getState().beginCheckout()
+        if (cartLock === null) throw new Error('Your cart is being updated. Please wait or refresh your cart.')
+        await useCartStore.getState().flushPending()
+      }
+      if (useAuthStore.getState().profile?.id !== profile.id) return null
       const order = await placeOrder({
         ...payload,
         checkout_request_id: request.id,
-      })
+      }, session.access_token)
       if (useAuthStore.getState().profile?.id !== profile.id) return null
-      if (!request.reconciled && !directItems) {
+      if (!request.reconciled && source === 'cart') {
         // A second component may be retrying the same request. Reconcile once,
         // preserving products or quantities added after the original submission.
         // Direct orders do not draw from or clear the persistent cart.
         request.reconciled = true
-        useCartStore.setState((state) => ({
-          items: state.items.flatMap((item) => {
-            const purchased =
-              payload.items.find((line) => line.product_id === item.product_id)
-                ?.quantity ?? 0
-            const remaining = item.quantity - purchased
-            return remaining > 0 ? [{ ...item, quantity: remaining }] : []
-          }),
-        }))
+        useCartStore.getState().consumePurchased(payload.items)
+        void useCartStore.getState().syncWithRemote(profile.id)
       }
       // A known successful order has been reconciled. A later, intentional
       // purchase with the same contents must receive a new request identity.
@@ -120,9 +124,10 @@ export function useCheckout(): CheckoutState {
         )
       return null
     } finally {
+      if (cartLock !== null) useCartStore.getState().endCheckout(cartLock)
       busy.current = false
       if (active.current) setIsPending(false)
     }
   }
-  return { isPending, error, errors, submit }
+  return { isPending, error, errors, submit, validate }
 }

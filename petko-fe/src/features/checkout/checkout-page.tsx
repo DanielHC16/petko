@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -11,27 +11,31 @@ import {
   RotateCcw,
   Heart,
 } from 'lucide-react'
-import { useCartStore, type CartItem } from '@/store/cart.store'
+import { useCartStore } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
-import { supabase } from '@/lib/supabase'
+import { fetchAccountDetails, saveShippingDetails } from '@/lib/account-api'
+import { readCheckoutSelection, readDirectCheckout, clearCheckoutSelection, clearDirectCheckout, selectCheckoutItems } from '@/lib/checkout-selection'
+import type { OrderDetail, OrderShipping, PaymentMethod } from '@/lib/order-types'
+import { PAYMENT_LABELS } from '@/lib/payment-methods'
+import PaymentDialog from './payment-dialog'
+import toast from 'react-hot-toast'
+import { getApiErrorMessage } from '@/lib/api-error'
 import PageBanner from '@/components/layout/PageBanner'
 import logoImg from '@/assets/logo.png'
 import gcashImg from '@/assets/GCash_logo.png'
 import { useCheckout } from './use-checkout'
-import { CHECKOUT_SELECTED_ITEMS_KEY, removeCheckedItemsAfterOrder } from '@/features/cart/cart-page'
 
-interface SavedShippingMetadata {
-  full_name?: string
-  email?: string
-  phone?: string
-  address_line1?: string
-  address_line2?: string
-  city?: string
-  province?: string
-  postal_code?: string
+interface CheckoutReview {
+  userId: string
+  shipping: OrderShipping
+  items: { product_id: string; quantity: number }[]
+  delivery: 'standard' | 'express'
+  payment: PaymentMethod
+  source: 'cart' | 'direct'
+  amount: number
+  saveDetails: boolean
 }
 
-// ─── Breadcrumb ───────────────────────────────────────────────────────────────
 function StepBreadcrumb() {
   return (
     <nav className="flex items-center gap-2 text-sm font-medium text-gray-500">
@@ -216,6 +220,7 @@ function PaymentCard({
       type="button"
       onClick={onSelect}
       disabled={disabled}
+      aria-pressed={selected}
       className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 transition w-full disabled:cursor-not-allowed disabled:opacity-50
         ${selected ? 'border-petko-blue bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
     >
@@ -235,36 +240,15 @@ export default function CheckoutPage() {
   const isDirect = searchParams.get('mode') === 'direct'
 
   const cartItems = useCartStore((s) => s.items)
-  const removeItem = useCartStore((s) => s.removeItem)
+  const cartLoading = useCartStore((s) => s.isLoading)
   const profile = useAuthStore((s) => s.profile)
+  const buyerId = profile?.id
 
-  // Load checked items saved from cart-page.tsx
-  const selectedCartItems = useMemo((): CartItem[] => {
-    try {
-      const raw = sessionStorage.getItem(CHECKOUT_SELECTED_ITEMS_KEY)
-      if (!raw) return []
-      return JSON.parse(raw) as CartItem[]
-    } catch {
-      return []
-    }
-  }, [])
-
-  const directItem = useMemo((): CartItem | null => {
-    if (!isDirect) return null
-    try {
-      const raw = sessionStorage.getItem('direct_checkout_item')
-      if (!raw) return null
-      return JSON.parse(raw) as CartItem
-    } catch {
-      return null
-    }
-  }, [isDirect])
-
+  const selectedIds = useMemo(() => buyerId ? readCheckoutSelection(buyerId) : [], [buyerId])
+  const directItem = useMemo(() => isDirect && buyerId ? readDirectCheckout(buyerId) : null, [isDirect, buyerId])
   const backTo = isDirect && directItem ? `/products/${directItem.product_id}` : '/cart'
   const backLabel = isDirect && directItem ? 'to Product Details' : 'to Cart'
-
-  // Determine items to display: Direct Buy vs Checked Cart Items vs Fallback to all cart items
-  const items = isDirect && directItem ? [directItem] : selectedCartItems.length > 0 ? selectedCartItems : cartItems
+  const items = isDirect ? (directItem ? [directItem] : []) : selectCheckoutItems(cartItems, selectedIds)
 
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
@@ -279,95 +263,82 @@ export default function CheckoutPage() {
   const [province, setProvince] = useState('')
   const [postalCode, setPostalCode] = useState('')
   const [delivery, setDelivery] = useState<'standard' | 'express'>('standard')
+  const [payment, setPayment] = useState<PaymentMethod>('cod')
+  const [review, setReview] = useState<CheckoutReview | null>(null)
+  const [completedOrder, setCompletedOrder] = useState<OrderDetail | null>(null)
+  const [isFinalizing, setIsFinalizing] = useState(false)
+  const [isLoadingShipping, setIsLoadingShipping] = useState(true)
+  const submissionBusy = useRef(false)
   const checkout = useCheckout()
   const errors = checkout.errors
 
-  // Load saved contact & shipping details from Supabase Auth user_metadata
   useEffect(() => {
     let active = true
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) return
-
-      const meta = data.user.user_metadata ?? {}
-      const saved = meta.saved_shipping as SavedShippingMetadata | undefined
-
-      if (saved) {
-        setFullName(saved.full_name || profile?.full_name || '')
-        setEmail(saved.email || profile?.email || '')
-        setContactNumber(saved.phone || '')
-        setAddressLine1(saved.address_line1 || '')
-        setAddressLine2(saved.address_line2 || '')
-        setCity(saved.city || '')
-        setProvince(saved.province || '')
-        setPostalCode(saved.postal_code || '')
-      } else if (profile) {
-        setFullName((prev) => prev || profile.full_name || '')
-        setEmail((prev) => prev || profile.email || '')
+    async function loadSavedDetails(): Promise<void> {
+      try {
+        const { shipping } = await fetchAccountDetails()
+        if (!active || !shipping) return
+        setFullName(previous => shipping.full_name || previous)
+        setEmail(previous => shipping.email || previous)
+        setContactNumber(shipping.phone)
+        setAddressLine1(shipping.address_line1)
+        setAddressLine2(shipping.address_line2)
+        setCity(shipping.city)
+        setProvince(shipping.province)
+        setPostalCode(shipping.postal_code)
+      } catch (err: unknown) {
+        if (active) toast.error(getApiErrorMessage(err, 'Could not load saved shipping details.'))
+      } finally {
+        if (active) setIsLoadingShipping(false)
       }
-    })
-
-    return () => {
-      active = false
     }
-  }, [profile])
+    void loadSavedDetails()
+    return () => { active = false }
+  }, [buyerId])
 
   const isFreeShipping = totalPrice >= 999
   const shippingFee = delivery === 'express' ? 199 : isFreeShipping ? 0 : 99
   const grandTotal = totalPrice + shippingFee
 
-  async function handlePlaceOrder(): Promise<void> {
-    const directOrderItems = isDirect && directItem
-      ? [{ product_id: directItem.product_id, quantity: directItem.quantity }]
-      : undefined
-
-    const order = await checkout.submit(
-      {
-        full_name: fullName,
-        email,
-        phone: contactNumber,
-        address_line1: addressLine1,
-        address_line2: addressLine2,
-        city,
-        province,
-        postal_code: postalCode,
-      },
-      delivery,
-      directOrderItems,
-    )
-
-    if (order) {
-      try {
-        await supabase.auth.updateUser({
-          data: {
-            saved_shipping: saveDetails
-              ? {
-                  full_name: fullName,
-                  email,
-                  phone: contactNumber,
-                  address_line1: addressLine1,
-                  address_line2: addressLine2,
-                  city,
-                  province,
-                  postal_code: postalCode,
-                }
-              : null,
-          },
-        })
-      } catch {
-        // Do not block order confirmation if metadata sync fails
-      }
-
-      if (isDirect) {
-        sessionStorage.removeItem('direct_checkout_item')
-      } else {
-        // Clear only the checked/purchased items from the global cart store
-        removeCheckedItemsAfterOrder((id) => removeItem(String(id)))
-        // Set completion flag for cart-page safety clear
-        sessionStorage.setItem('petko_order_completed', 'true')
-      }
-      navigate(`/orders?order=${order.id}`)
+  function finishCheckout(order: OrderDetail): void {
+    if (profile) {
+      if (isDirect) clearDirectCheckout(profile.id)
+      else clearCheckoutSelection(profile.id)
     }
+    navigate(`/orders?order=${order.id}`)
+  }
+
+  async function submitOrder(request: CheckoutReview): Promise<void> {
+    if (submissionBusy.current) return
+    submissionBusy.current = true
+    setIsFinalizing(true)
+    try {
+      const order = await checkout.submit(request.shipping, request.delivery, request.items, request.payment, request.source)
+      if (!order) return
+      try {
+        if (request.saveDetails) await saveShippingDetails(request.shipping, request.userId)
+      } catch (err: unknown) {
+        toast.error(getApiErrorMessage(err, 'Your order was placed, but shipping details could not be saved.'))
+      }
+      if (useAuthStore.getState().profile?.id !== request.userId) return
+      if (request.payment === 'cod') finishCheckout(order)
+      else setCompletedOrder(order)
+    } finally {
+      submissionBusy.current = false
+      setIsFinalizing(false)
+    }
+  }
+
+  async function handlePlaceOrder(): Promise<void> {
+    if (!profile) return
+    const shipping: OrderShipping = { full_name: fullName, email, phone: contactNumber,
+      address_line1: addressLine1, address_line2: addressLine2, city, province, postal_code: postalCode }
+    if (!checkout.validate(shipping)) return
+    const request: CheckoutReview = { userId: profile.id, shipping, delivery, payment,
+      items: items.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+      source: isDirect ? 'direct' : 'cart', amount: grandTotal, saveDetails }
+    if (payment === 'cod') await submitOrder(request)
+    else setReview(request)
   }
 
   return (
@@ -405,7 +376,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_380px] lg:items-stretch">
           {/* LEFT ── form sections */}
           <fieldset
-            disabled={checkout.isPending}
+            disabled={checkout.isPending || isFinalizing || isLoadingShipping || Boolean(review)}
             className="min-w-0 flex flex-col gap-4"
           >
             {/* 1 · Contact Details */}
@@ -546,11 +517,10 @@ export default function CheckoutPage() {
             <SectionCard number={4} title="Payment Method" grow>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <PaymentCard
-                  selected={false}
-                  disabled
-                  onSelect={() => undefined}
+                  selected={payment === 'gcash'}
+                  onSelect={() => setPayment('gcash')}
                   label="GCash"
-                  sub="Not available yet"
+                  sub="Pay with GCash"
                 >
                   <img
                     src={gcashImg}
@@ -559,11 +529,10 @@ export default function CheckoutPage() {
                   />
                 </PaymentCard>
                 <PaymentCard
-                  selected={false}
-                  disabled
-                  onSelect={() => undefined}
+                  selected={payment === 'maya'}
+                  onSelect={() => setPayment('maya')}
                   label="Maya"
-                  sub="Not available yet"
+                  sub="Pay with Maya"
                 >
                   <span
                     className="text-base font-black"
@@ -573,11 +542,10 @@ export default function CheckoutPage() {
                   </span>
                 </PaymentCard>
                 <PaymentCard
-                  selected={false}
-                  disabled
-                  onSelect={() => undefined}
+                  selected={payment === 'card'}
+                  onSelect={() => setPayment('card')}
                   label="Credit / Debit Card"
-                  sub="Not available yet"
+                  sub="Visa and Mastercard"
                 >
                   <div className="flex items-center gap-1">
                     <div className="h-5 w-7 rounded bg-red-500 flex items-center justify-center">
@@ -590,8 +558,8 @@ export default function CheckoutPage() {
                   </div>
                 </PaymentCard>
                 <PaymentCard
-                  selected
-                  onSelect={() => undefined}
+                  selected={payment === 'cod'}
+                  onSelect={() => setPayment('cod')}
                   label="Cash on Delivery"
                   sub="Pay when you receive"
                 >
@@ -704,8 +672,7 @@ export default function CheckoutPage() {
               </div>
 
               <p className="border-t border-gray-100 pt-3 text-xs text-gray-500">
-                Cash on Delivery is currently available. Online payments and
-                vouchers are not available yet.
+                {payment === 'cod' ? 'Pay the courier when your order arrives.' : `Review and confirm your ${PAYMENT_LABELS[payment]} payment before placing your order.`}
               </p>
 
               {/* grand total */}
@@ -746,11 +713,11 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={handlePlaceOrder}
-                disabled={items.length === 0 || checkout.isPending}
+                disabled={items.length === 0 || checkout.isPending || isFinalizing || isLoadingShipping || cartLoading || Boolean(review)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-petko-red py-3.5 text-sm font-bold text-white
                   hover:bg-red-700 active:scale-[0.98] transition disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {checkout.isPending ? 'Placing your order…' : 'Place Order'}
+                {checkout.isPending ? 'Placing your order…' : payment === 'cod' ? 'Place Order' : 'Continue to Payment'}
               </button>
 
               {/* secure checkout */}
@@ -798,6 +765,10 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      {review && <PaymentDialog method={review.payment} amount={completedOrder?.total_amount ?? review.amount}
+        pending={checkout.isPending || isFinalizing} orderId={completedOrder?.id ?? null} error={checkout.error}
+        onConfirm={() => { void submitOrder(review) }} onCancel={() => setReview(null)}
+        onContinue={() => { if (completedOrder) finishCheckout(completedOrder) }} />}
     </div>
   )
 }

@@ -18,24 +18,16 @@ import {
   X,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { supabase } from '@/lib/supabase'
+import { deleteCurrentAccount, updateDisplayName, fetchAccountDetails, saveShippingDetails } from '@/lib/account-api'
+import { validateCheckoutShipping } from '@/features/checkout/checkout-validation'
+import type { OrderShipping } from '@/lib/order-types'
+import { useCartStore } from '@/store/cart.store'
 import { signOut } from '@/lib/auth'
 import { getApiErrorMessage } from '@/lib/api-error'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
 import { useAuthStore } from '@/store/auth.store'
 import PageBanner from '@/components/layout/PageBanner'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-
-interface SavedShippingMetadata {
-  full_name?: string
-  email?: string
-  phone?: string
-  address_line1?: string
-  address_line2?: string
-  city?: string
-  province?: string
-  postal_code?: string
-}
 
 interface ShippingErrors {
   fullName?: string
@@ -147,7 +139,7 @@ export default function ProfilePage() {
   const [isSavingName, setIsSavingName] = useState(false)
   const [isLoadingMeta, setIsLoadingMeta] = useState(true)
   const [joinedDate, setJoinedDate] = useState<string>('')
-  const [savedShipping, setSavedShipping] = useState<SavedShippingMetadata | null>(null)
+  const [savedShipping, setSavedShipping] = useState<OrderShipping | null>(null)
 
   // Shipping edit form state
   const [isEditingShipping, setIsEditingShipping] = useState(false)
@@ -166,41 +158,23 @@ export default function ProfilePage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
 
   useEffect(() => {
-    if (profile?.full_name) {
-      setDisplayName((prev) => prev || profile.full_name)
-    }
-  }, [profile?.full_name])
-
-  useEffect(() => {
     let active = true
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) {
-        setIsLoadingMeta(false)
-        return
+    async function loadDetails(): Promise<void> {
+      try {
+        const details = await fetchAccountDetails()
+        if (!active) return
+        setSavedShipping(details.shipping)
+        setJoinedDate(new Date(details.createdAt).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric',
+        }))
+      } catch (err: unknown) {
+        if (active) toast.error(getApiErrorMessage(err, 'Could not load your saved details.'))
+      } finally {
+        if (active) setIsLoadingMeta(false)
       }
-
-      const meta = data.user.user_metadata ?? {}
-      const shipping = meta.saved_shipping as SavedShippingMetadata | undefined
-
-      setSavedShipping(shipping ?? null)
-
-      if (!displayName && typeof meta.full_name === 'string') {
-        setDisplayName(meta.full_name)
-      }
-
-      if (data.user.created_at) {
-        setJoinedDate(
-          new Date(data.user.created_at).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }),
-        )
-      }
-
-      setIsLoadingMeta(false)
-    })
+    }
+    void loadDetails()
 
     return () => {
       active = false
@@ -221,37 +195,11 @@ export default function ProfilePage() {
   }
 
   function validateShipping(): ShippingErrors {
-    const nextErrors: ShippingErrors = {}
-
-    if (!shipFullName.trim()) {
-      nextErrors.fullName = 'Full name is required.'
-    }
-    if (!shipEmail.trim()) {
-      nextErrors.email = 'Email address is required.'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shipEmail.trim())) {
-      nextErrors.email = 'Enter a valid email address.'
-    }
-    if (!shipPhone.trim()) {
-      nextErrors.contactNumber = 'Contact number is required.'
-    } else if (!/^09\d{9}$/.test(shipPhone.trim())) {
-      nextErrors.contactNumber = 'Enter a valid 11-digit mobile number (09xxxxxxxxx).'
-    }
-    if (!shipAddress1.trim()) {
-      nextErrors.addressLine1 = 'Address line 1 is required.'
-    }
-    if (!shipCity.trim()) {
-      nextErrors.city = 'City or municipality is required.'
-    }
-    if (!shipProvince.trim()) {
-      nextErrors.province = 'Province is required.'
-    }
-    if (!shipPostalCode.trim()) {
-      nextErrors.postalCode = 'Postal code is required.'
-    } else if (!/^\d{4}$/.test(shipPostalCode.trim())) {
-      nextErrors.postalCode = 'Postal code must be 4 digits.'
-    }
-
-    return nextErrors
+    return validateCheckoutShipping({
+      full_name: shipFullName, email: shipEmail, phone: shipPhone,
+      address_line1: shipAddress1, address_line2: shipAddress2, city: shipCity,
+      province: shipProvince, postal_code: shipPostalCode,
+    })
   }
 
   function clearFieldError(field: keyof ShippingErrors) {
@@ -267,7 +215,7 @@ export default function ProfilePage() {
       return
     }
 
-    const updatedShipping: SavedShippingMetadata = {
+    const updatedShipping: OrderShipping = {
       full_name: shipFullName.trim(),
       email: shipEmail.trim(),
       phone: shipPhone.trim(),
@@ -280,10 +228,8 @@ export default function ProfilePage() {
 
     setIsSavingShipping(true)
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { saved_shipping: updatedShipping },
-      })
-      if (error) throw error
+      if (!profile) return
+      await saveShippingDetails(updatedShipping, profile.id)
 
       setSavedShipping(updatedShipping)
       setShippingErrors({})
@@ -305,10 +251,8 @@ export default function ProfilePage() {
   async function handleClearShipping() {
     setIsSavingShipping(true)
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { saved_shipping: null },
-      })
-      if (error) throw error
+      if (!profile) return
+      await saveShippingDetails(null, profile.id)
 
       setSavedShipping(null)
       setShippingErrors({})
@@ -333,31 +277,18 @@ export default function ProfilePage() {
 
   async function handleSaveDisplayName(e: React.FormEvent) {
     e.preventDefault()
-    if (!trimmedName) {
-      setNameError('Display name is required.')
+    if (!trimmedName || trimmedName.length > 120) {
+      setNameError('Enter a display name, up to 120 characters.')
       return
     }
     setNameError(undefined)
 
     setIsSavingName(true)
     try {
-      const { error: authError } = await supabase.auth.updateUser({
-        data: { full_name: trimmedName },
-      })
-      if (authError) throw authError
-
-      if (profile?.id) {
-        const { error: dbError } = await supabase
-          .from('profiles')
-          .update({ full_name: trimmedName })
-          .eq('id', profile.id)
-
-        if (dbError) throw dbError
-
-        useAuthStore.setState((state) => ({
-          profile: state.profile ? { ...state.profile, full_name: trimmedName } : state.profile,
-        }))
-      }
+      const updated = await updateDisplayName(trimmedName)
+      if (useAuthStore.getState().profile?.id !== updated.id) return
+      useAuthStore.getState().setProfile(updated)
+      setDisplayName(updated.full_name)
 
       toast.success('Display name updated!', {
         style: toastStyle('success'),
@@ -374,31 +305,19 @@ export default function ProfilePage() {
   }
 
   async function handleDeleteAccount() {
+    const deletingUserId = profile?.id
+    if (!deletingUserId) return
     setConfirmDeleteOpen(false)
     setIsDeleting(true)
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      const apiBase = import.meta.env.VITE_API_URL ?? ''
-      const res = await fetch(`${apiBase}/api/users/me`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
-      })
-
-      if (!res.ok) {
-        const { error: rpcError } = await supabase.rpc('delete_own_account')
-        if (rpcError) {
-          throw new Error('Could not delete account. Please contact support.')
-        }
-      }
-
-      await signOut()
+      await deleteCurrentAccount()
+      if (useAuthStore.getState().session?.user.id !== deletingUserId) return
+      // The account is already gone; an expired sign-out token must not report
+      // that deletion failed or leave the old profile/cart visible.
+      try { await signOut() } catch { /* Deleted sessions can no longer be revoked. */ }
+      useAuthStore.getState().clearSession()
+      useCartStore.getState().setOwner(null)
       toast.success('Your account has been permanently deleted.', {
         style: toastStyle('success'),
         iconTheme: toastIconTheme('success'),
@@ -555,7 +474,8 @@ export default function ProfilePage() {
                     <input
                       id="profile-display-name"
                       type="text"
-                      maxLength={80}
+                      maxLength={120}
+                      disabled={isSavingName || isDeleting}
                       value={displayName}
                       onChange={(e) => {
                         setDisplayName(e.target.value)
@@ -846,7 +766,7 @@ export default function ProfilePage() {
                       Delete Account
                     </h3>
                     <p className="mt-0.5 text-xs text-red-700">
-                      Permanently delete your PetKo profile, saved shipping details, and authentication credentials. This action cannot be undone.
+                      Permanently delete your PetKo profile, saved shipping details, and sign-in account. Complete or cancel active orders first. Completed order history is anonymized.
                     </p>
                   </div>
                 </div>
