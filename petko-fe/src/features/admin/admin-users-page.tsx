@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -100,7 +100,6 @@ export default function AdminUsersPage() {
     setIsAddingAccess(true)
     try {
       await addAccessEmail(email)
-      // Also set DB role to admin so they appear in the Admins tab immediately
       await promoteUser(email, 'admin')
       toast.success(`${email} pre-approved as admin`, { icon: '🛡️', style: toastStyle('success'), iconTheme: toastIconTheme('success') })
       setAccessEmailInput('')
@@ -390,7 +389,7 @@ export default function AdminUsersPage() {
             </button>
           </form>
 
-          {/* Collapsible Allowlisted Emails List (4 rows max, vertical scroll, no horizontal scroll) */}
+          {/* Collapsible Allowlisted Emails List */}
           {isLoadingAccess ? (
             <div className="mt-5 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -429,13 +428,11 @@ export default function AdminUsersPage() {
 
               {showAccessList && (
                 <div className="mt-2.5 max-h-[188px] overflow-y-auto rounded-xl border border-orange-200 bg-white shadow-sm">
-                  {/* Sticky Header */}
                   <div className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-orange-50 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-[#10298E] sm:px-3.5 sm:py-2.5">
                     <span>Email Address</span>
                     <span className="shrink-0">Remove</span>
                   </div>
 
-                  {/* Rows */}
                   <div className="divide-y divide-orange-100/80">
                     {accessEmails.map((row) => {
                       const isOwn = row.email === ownEmail
@@ -529,7 +526,7 @@ export default function AdminUsersPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or email..."
+                placeholder="Search by display name or email..."
                 className="w-full rounded-lg border border-[#e1cba5] bg-[#fefaf2] py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
               />
             </div>
@@ -541,6 +538,7 @@ export default function AdminUsersPage() {
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
                     <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="hidden px-6 py-3 lg:table-cell whitespace-nowrap">Display Name</th>
                     <th className="hidden px-6 py-3 md:table-cell">Email</th>
                     <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
                     {activeTab === 'admin' && (
@@ -561,6 +559,9 @@ export default function AdminUsersPage() {
                             <div className="hidden h-2.5 w-24 animate-pulse rounded bg-gray-100 md:block" />
                           </div>
                         </div>
+                      </td>
+                      <td className="hidden px-6 py-3.5 lg:table-cell">
+                        <div className="h-3.5 w-28 animate-pulse rounded bg-gray-200" />
                       </td>
                       <td className="hidden px-6 py-3.5 md:table-cell">
                         <div className="h-3.5 w-44 animate-pulse rounded bg-gray-200" />
@@ -594,6 +595,7 @@ export default function AdminUsersPage() {
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
                     <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="hidden px-6 py-3 lg:table-cell whitespace-nowrap">Display Name</th>
                     <th className="hidden px-6 py-3 md:table-cell">Email</th>
                     <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
                     {activeTab === 'admin' && (
@@ -608,25 +610,25 @@ export default function AdminUsersPage() {
                     const isUpdating = updatingId === user.id
                     const isDeleting = deletingId === user.id
                     const isExpanded = expandedUserId === user.id
+                    const displayName = user.full_name?.trim()
 
                     const formattedDate = user.created_at
                       ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                       : 'Recent'
 
                     const avatar = user.avatar_url ? (
-                      <img src={user.avatar_url} alt={user.full_name}
+                      <img src={user.avatar_url} alt={displayName || user.email}
                         className="h-9 w-9 shrink-0 rounded-full border border-[#e1cba5] object-cover" />
                     ) : (
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
-                        {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                        {displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                       </div>
                     )
 
                     return (
-                      <>
+                      <Fragment key={user.id}>
                         {/* ── Main row ── */}
                         <tr
-                          key={user.id}
                           onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
                           className={`transition cursor-pointer ${isExpanded ? 'bg-[#fefaf2]' : 'hover:bg-[#fef8e8]'}`}
                         >
@@ -635,7 +637,7 @@ export default function AdminUsersPage() {
                               {avatar}
                               <div className="min-w-0 flex-1">
                                 <p className="truncate font-bold text-[#10298E]">
-                                  {user.full_name || 'No Name Set'}
+                                  {displayName || 'No Display Name'}
                                   {isCurrent && (
                                     <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">You</span>
                                   )}
@@ -646,6 +648,13 @@ export default function AdminUsersPage() {
                                 <p className="hidden break-all font-mono text-[10px] text-gray-400 md:block">ID: {user.id}</p>
                               </div>
                             </div>
+                          </td>
+                          <td className="hidden px-6 py-3 whitespace-nowrap lg:table-cell">
+                            {displayName ? (
+                              <span className="font-semibold text-gray-800">{displayName}</span>
+                            ) : (
+                              <span className="italic text-gray-400">Not set</span>
+                            )}
                           </td>
                           <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">{user.email}</td>
                           <td className="hidden px-6 py-3 text-gray-500 whitespace-nowrap sm:table-cell">{formattedDate}</td>
@@ -710,9 +719,13 @@ export default function AdminUsersPage() {
 
                         {/* ── Expanded row (mobile only) ── */}
                         {isExpanded && (
-                          <tr key={`${user.id}-expanded`} className="md:hidden bg-[#fefaf2]">
+                          <tr className="md:hidden bg-[#fefaf2]">
                             <td colSpan={2} className="px-4 pb-4 pt-2 pl-16">
                               <div className="space-y-2.5 text-xs">
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Display Name</p>
+                                  <p className="font-medium text-gray-700">{displayName || 'Not set'}</p>
+                                </div>
                                 <div>
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Email</p>
                                   <p className="font-medium text-gray-700 break-all">{user.email}</p>
@@ -770,7 +783,7 @@ export default function AdminUsersPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })}
                 </tbody>

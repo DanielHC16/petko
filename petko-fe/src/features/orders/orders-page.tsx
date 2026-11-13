@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Package, PawPrint, RefreshCw } from 'lucide-react'
+import { CheckCircle2, Package, RefreshCw } from 'lucide-react'
 import OrderDetailCard, { OrderStatusBadge } from '@/components/orders/order-detail'
 import OrderActionDialog from '@/components/orders/order-action-dialog'
 import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'

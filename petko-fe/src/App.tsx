@@ -13,6 +13,7 @@ import ProductDetailPage from '@/features/products/product-detail-page'
 import CartPage from '@/features/cart/cart-page'
 import CheckoutPage from '@/features/checkout/checkout-page'
 import OrdersPage from '@/features/orders/orders-page'
+import Profile from '@/features/customer/profile'
 
 // Dev preview (lazy loaded)
 const LoadingPreview = lazy(() => import('@/features/auth/loading-preview'))
@@ -43,8 +44,8 @@ export default function App() {
           {/* Dev preview */}
           <Route path="/loading-preview" element={<LoadingPreview />} />
 
-          {/* UI Testing — bypass auth (comment out when not needed) */}
-        <Route element={<AppLayout />}>
+        {/* UI Testing — bypass auth (comment out when not needed) */}
+         {/*<Route element={<AppLayout />}>
           <Route path="/"             element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/cart"         element={<CartPage />} />
@@ -54,7 +55,8 @@ export default function App() {
           <Route path="/admin/products" element={<AdminProductsPage />} />
           <Route path="/admin/orders"   element={<AdminOrdersPage />} />
           <Route path="/admin/users"    element={<AdminUsersPage />} />
-        </Route>
+          <Route path="/profile"       element={<Profile />} />
+        </Route>*/}
 
           {/* Authenticated customer routes */}
           <Route element={<ProtectedRoute />}>
@@ -64,6 +66,7 @@ export default function App() {
               <Route path="/cart"         element={<CartPage />} />
               <Route path="/checkout"     element={<CheckoutPage />} />
               <Route path="/orders"       element={<OrdersPage />} />
+              <Route path="/profile"       element={<Profile />} />
             </Route>
           </Route>
 
