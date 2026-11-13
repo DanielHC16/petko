@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -62,6 +62,35 @@ export default function AdminUsersPage() {
     onConfirm: () => void
   }>({ open: false, title: '', message: '', confirmLabel: 'Confirm', variant: 'danger', onConfirm: () => {} })
 
+  // Lock base page scroll when confirmation popup is open
+  useEffect(() => {
+    if (!confirmDialog.open) return
+
+    const scrollY = window.scrollY
+    const originalBodyStyle = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    }
+    const originalHtmlOverflow = document.documentElement.style.overflow
+
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow
+      document.body.style.overflow = originalBodyStyle.overflow
+      document.body.style.position = originalBodyStyle.position
+      document.body.style.top = originalBodyStyle.top
+      document.body.style.width = originalBodyStyle.width
+      window.scrollTo(0, scrollY)
+    }
+  }, [confirmDialog.open])
+
   useEffect(() => {
     loadUsers()
     loadAccessEmails()
@@ -100,7 +129,6 @@ export default function AdminUsersPage() {
     setIsAddingAccess(true)
     try {
       await addAccessEmail(email)
-      // Also set DB role to admin so they appear in the Admins tab immediately
       await promoteUser(email, 'admin')
       toast.success(`${email} pre-approved as admin`, { icon: '🛡️', style: toastStyle('success'), iconTheme: toastIconTheme('success') })
       setAccessEmailInput('')
@@ -367,7 +395,6 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          {/* Input row */}
           <form onSubmit={handleAddAccessEmail} className="flex flex-col gap-3 sm:flex-row">
             <label htmlFor="access-email-input" className="sr-only">Email to pre-approve</label>
             <input
@@ -378,7 +405,7 @@ export default function AdminUsersPage() {
               value={accessEmailInput}
               onChange={(e) => setAccessEmailInput(e.target.value)}
               placeholder="e.g. colleague@gmail.com"
-              className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-base text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 sm:text-sm"
             />
             <button
               type="submit"
@@ -390,7 +417,6 @@ export default function AdminUsersPage() {
             </button>
           </form>
 
-          {/* Collapsible Allowlisted Emails List (4 rows max, vertical scroll, no horizontal scroll) */}
           {isLoadingAccess ? (
             <div className="mt-5 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -429,13 +455,11 @@ export default function AdminUsersPage() {
 
               {showAccessList && (
                 <div className="mt-2.5 max-h-[188px] overflow-y-auto rounded-xl border border-orange-200 bg-white shadow-sm">
-                  {/* Sticky Header */}
                   <div className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-orange-50 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-[#10298E] sm:px-3.5 sm:py-2.5">
                     <span>Email Address</span>
                     <span className="shrink-0">Remove</span>
                   </div>
 
-                  {/* Rows */}
                   <div className="divide-y divide-orange-100/80">
                     {accessEmails.map((row) => {
                       const isOwn = row.email === ownEmail
@@ -484,63 +508,76 @@ export default function AdminUsersPage() {
           )}
         </div>
 
-        {/* ── Users Table ─────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-[#e1cba5] bg-white shadow-sm overflow-hidden">
-          {/* Table Toolbar */}
-          <div className="flex flex-col gap-3 border-b border-[#e1cba5] p-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Tab switcher */}
-            <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-1 sm:w-auto">
+        {/* ── Sticky Search & Inline Tab Switcher Bar (with top padding `top-2 sm:top-4`) ── */}
+        <div className="sticky top-5 z-30 -mx-4 border-b border-[#e1cba5]/80 bg-[#ecdab6]/95 px-4 py-2.5 backdrop-blur-sm sm:mx-0 sm:rounded-2xl sm:border sm:bg-[#fdf2e1]/95 sm:px-3.5 sm:py-3 sm:shadow-sm sm:top-4">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            {/* Segmented Tab Switcher (Always inline on mobile and desktop without collapsing) */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-[#e1cba5] bg-white p-1 sm:w-auto">
               <button
+                type="button"
                 onClick={() => setActiveTab('customer')}
-                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === 'customer'
-                    ? 'bg-white text-[#10298E] shadow-sm'
-                    : 'text-gray-500 hover:text-[#10298E]'
+                    ? 'bg-[#10298E] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-[#10298E]'
                 }`}
               >
-                <Users size={13} className="shrink-0" />
-                <span className="truncate">Customers</span>
-                {isLoading ? (
-                  <span className="inline-block h-4 w-6 shrink-0 animate-pulse rounded-full bg-blue-100" />
-                ) : (
-                  <span className="shrink-0 rounded-full bg-blue-100 px-1.5 text-blue-700">{customerCount}</span>
-                )}
+                <Users size={13} />
+                <span>Customers</span>
+                <span className={`rounded-full px-1.5 text-[10px] ${activeTab === 'customer' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                  {customerCount}
+                </span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('admin')}
-                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === 'admin'
-                    ? 'bg-white text-[#10298E] shadow-sm'
-                    : 'text-gray-500 hover:text-[#10298E]'
+                    ? 'bg-[#10298E] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-[#10298E]'
                 }`}
               >
-                <Shield size={13} className="shrink-0" />
-                <span className="truncate">Admins</span>
-                {isLoading ? (
-                  <span className="inline-block h-4 w-6 shrink-0 animate-pulse rounded-full bg-orange-100" />
-                ) : (
-                  <span className="shrink-0 rounded-full bg-orange-100 px-1.5 text-orange-700">{adminCount}</span>
-                )}
+                <Shield size={13} />
+                <span>Admins</span>
+                <span className={`rounded-full px-1.5 text-[10px] ${activeTab === 'admin' ? 'bg-white/20 text-white' : 'bg-orange-100 text-orange-700'}`}>
+                  {adminCount}
+                </span>
               </button>
             </div>
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+
+            {/* Pill Search Input */}
+            <div className="relative min-w-0 flex-1 sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or email..."
-                className="w-full rounded-lg border border-[#e1cba5] bg-[#fefaf2] py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+                placeholder={`Search ${activeTab === 'customer' ? 'customers' : 'admins'}...`}
+                className="h-10 w-full rounded-lg border border-[#e1cba5] bg-white pl-10 pr-8 text-base text-gray-800 placeholder-gray-400 shadow-sm focus:border-orange-500 focus:outline-none sm:h-9 sm:rounded-xl sm:text-sm"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
+        </div>
 
+        {/* ── Users Table Card ──────────────────────────────────────── */}
+        <div className="overflow-hidden rounded-2xl border border-[#e1cba5] bg-white shadow-sm">
           {isLoading ? (
             <div>
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
                     <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="hidden px-6 py-3 lg:table-cell whitespace-nowrap">Display Name</th>
                     <th className="hidden px-6 py-3 md:table-cell">Email</th>
                     <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
                     {activeTab === 'admin' && (
@@ -561,6 +598,9 @@ export default function AdminUsersPage() {
                             <div className="hidden h-2.5 w-24 animate-pulse rounded bg-gray-100 md:block" />
                           </div>
                         </div>
+                      </td>
+                      <td className="hidden px-6 py-3.5 lg:table-cell">
+                        <div className="h-3.5 w-28 animate-pulse rounded bg-gray-200" />
                       </td>
                       <td className="hidden px-6 py-3.5 md:table-cell">
                         <div className="h-3.5 w-44 animate-pulse rounded bg-gray-200" />
@@ -594,6 +634,7 @@ export default function AdminUsersPage() {
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
                     <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="hidden px-6 py-3 lg:table-cell whitespace-nowrap">Display Name</th>
                     <th className="hidden px-6 py-3 md:table-cell">Email</th>
                     <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
                     {activeTab === 'admin' && (
@@ -608,25 +649,25 @@ export default function AdminUsersPage() {
                     const isUpdating = updatingId === user.id
                     const isDeleting = deletingId === user.id
                     const isExpanded = expandedUserId === user.id
+                    const displayName = user.full_name?.trim()
 
                     const formattedDate = user.created_at
                       ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                       : 'Recent'
 
                     const avatar = user.avatar_url ? (
-                      <img src={user.avatar_url} alt={user.full_name}
+                      <img src={user.avatar_url} alt={displayName || user.email}
                         className="h-9 w-9 shrink-0 rounded-full border border-[#e1cba5] object-cover" />
                     ) : (
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
-                        {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                        {displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                       </div>
                     )
 
                     return (
-                      <>
+                      <Fragment key={user.id}>
                         {/* ── Main row ── */}
                         <tr
-                          key={user.id}
                           onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
                           className={`transition cursor-pointer ${isExpanded ? 'bg-[#fefaf2]' : 'hover:bg-[#fef8e8]'}`}
                         >
@@ -635,7 +676,7 @@ export default function AdminUsersPage() {
                               {avatar}
                               <div className="min-w-0 flex-1">
                                 <p className="truncate font-bold text-[#10298E]">
-                                  {user.full_name || 'No Name Set'}
+                                  {displayName || 'No Display Name'}
                                   {isCurrent && (
                                     <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">You</span>
                                   )}
@@ -646,6 +687,13 @@ export default function AdminUsersPage() {
                                 <p className="hidden break-all font-mono text-[10px] text-gray-400 md:block">ID: {user.id}</p>
                               </div>
                             </div>
+                          </td>
+                          <td className="hidden px-6 py-3 whitespace-nowrap lg:table-cell">
+                            {displayName ? (
+                              <span className="font-semibold text-gray-800">{displayName}</span>
+                            ) : (
+                              <span className="italic text-gray-400">Not set</span>
+                            )}
                           </td>
                           <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">{user.email}</td>
                           <td className="hidden px-6 py-3 text-gray-500 whitespace-nowrap sm:table-cell">{formattedDate}</td>
@@ -710,9 +758,13 @@ export default function AdminUsersPage() {
 
                         {/* ── Expanded row (mobile only) ── */}
                         {isExpanded && (
-                          <tr key={`${user.id}-expanded`} className="md:hidden bg-[#fefaf2]">
+                          <tr className="md:hidden bg-[#fefaf2]">
                             <td colSpan={2} className="px-4 pb-4 pt-2 pl-16">
                               <div className="space-y-2.5 text-xs">
+                                <div>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Display Name</p>
+                                  <p className="font-medium text-gray-700">{displayName || 'Not set'}</p>
+                                </div>
                                 <div>
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Email</p>
                                   <p className="font-medium text-gray-700 break-all">{user.email}</p>
@@ -770,7 +822,7 @@ export default function AdminUsersPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })}
                 </tbody>

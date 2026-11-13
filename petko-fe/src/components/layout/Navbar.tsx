@@ -80,34 +80,44 @@ export default function Navbar() {
 
         {/* Right Actions — always on same row */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <Link
-              to="/orders"
-              aria-label="Your orders"
-              aria-current={location.pathname === '/orders' ? 'page' : undefined}
-              title="Your orders"
-              className="flex h-9 min-w-[36px] sm:min-w-[88px] items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
-            >
-              <Package size={15} aria-hidden="true" />
-              <span className="hidden sm:inline">Orders</span>
-            </Link>
+          <Link
+            to="/orders"
+            aria-label="Your orders"
+            aria-current={location.pathname === '/orders' ? 'page' : undefined}
+            title="Your orders"
+            className="flex h-9 min-w-[36px] sm:min-w-[88px] items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
+          >
+            <Package size={15} aria-hidden="true" />
+            <span className="hidden sm:inline">Orders</span>
+          </Link>
 
-            <Link
-              to="/cart"
-              className="relative flex h-9 min-w-[36px] sm:min-w-[88px] items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
-              aria-label="Shopping Cart"
-            >
-              <ShoppingCart size={15} aria-hidden="true" />
-              <span className="hidden sm:inline">Cart</span>
-              {totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+          <Link
+            to="/cart"
+            className="relative flex h-9 min-w-[36px] sm:min-w-[88px] items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-petko-blue"
+            aria-label="Shopping Cart"
+          >
+            <ShoppingCart size={15} aria-hidden="true" />
+            <span className="hidden sm:inline">Cart</span>
+            {totalItems > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                {totalItems}
+              </span>
+            )}
+          </Link>
 
-          {/* User avatar only (no name on mobile to save space) */}
+          {/* User avatar + name + role badge (clickable to /profile) */}
           {profile && (
-            <div className="flex items-center gap-2 border-l border-gray-200 pl-2 sm:pl-3">
+            <Link
+              to="/profile"
+              aria-label="Profile and account settings"
+              aria-current={location.pathname === '/profile' ? 'page' : undefined}
+              title="Profile & Account Settings"
+              className={`flex items-center gap-2 border-l border-gray-200 pl-2 sm:pl-3 py-1 rounded-lg transition ${
+                location.pathname === '/profile'
+                  ? 'bg-orange-50/80 text-orange-600'
+                  : 'hover:opacity-80'
+              }`}
+            >
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -115,8 +125,8 @@ export default function Navbar() {
                   className="h-8 w-8 shrink-0 rounded-full border border-gray-200 object-cover"
                 />
               ) : (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-600">
-                  {profile.full_name?.charAt(0) || 'U'}
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-700 text-xs font-bold text-white">
+                  {profile.full_name?.substring(0, 2).toUpperCase() || 'CS'}
                 </div>
               )}
               <div className="hidden text-left sm:block">
@@ -133,7 +143,7 @@ export default function Navbar() {
                   {profile.role}
                 </span>
               </div>
-            </div>
+            </Link>
           )}
 
           {/* Sign Out */}
