@@ -141,4 +141,18 @@ describe('OrdersService', () => {
       { resolution: 'Courier contacted' },
     )
   })
+
+  it('allows owner to cancel order with expected version and optional reason', async () => {
+    await service.cancel('order', owner, {
+      expected_version: 0,
+      reason: 'No longer needed',
+    })
+    expect(repository.mutate).toHaveBeenCalledWith(
+      'order',
+      owner,
+      'cancel',
+      0,
+      { reason: 'No longer needed' },
+    )
+  })
 })

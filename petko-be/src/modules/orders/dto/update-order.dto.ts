@@ -58,3 +58,13 @@ export class ResolveDeliveryIssueDto extends OrderVersionDto {
   @MaxLength(1000)
   resolution!: string
 }
+
+export class CancelOrderDto extends OrderVersionDto {
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(500)
+  reason?: string
+}

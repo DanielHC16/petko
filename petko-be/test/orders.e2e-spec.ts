@@ -281,4 +281,28 @@ describe('Orders HTTP contract', () => {
       ).status,
     ).toBe(400)
   })
+
+  it('allows owner to cancel an order and returns 201 with updated detail', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/api/orders/${orderId}/cancel`)
+      .set('Authorization', 'Bearer owner')
+      .send({ expected_version: 0, reason: 'Changed mind' })
+    expect(response.status).toBe(201)
+    expect(repository.mutate).toHaveBeenCalledWith(
+      orderId,
+      expect.objectContaining({ id: ownerId }),
+      'cancel',
+      0,
+      { reason: 'Changed mind' },
+    )
+  })
+
+  it('rejects cancellation without expected_version', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/api/orders/${orderId}/cancel`)
+      .set('Authorization', 'Bearer owner')
+      .send({ reason: 'No version' })
+    expect(response.status).toBe(400)
+    expect(repository.mutate).not.toHaveBeenCalled()
+  })
 })

@@ -105,7 +105,9 @@ export class OrdersRepository {
     if (error) this.fail(error)
     return this.findDetail(
       id,
-      action === 'fulfillment' || action === 'resolve_issue'
+      action === 'fulfillment' ||
+        action === 'resolve_issue' ||
+        (action === 'cancel' && actor.role === 'admin')
         ? undefined
         : actor.id,
     )
