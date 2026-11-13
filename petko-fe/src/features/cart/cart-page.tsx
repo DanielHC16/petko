@@ -1,12 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingBag, Trash2, ArrowLeft, Ticket, Truck, RefreshCcw, Check } from 'lucide-react'
+import { Trash2, ArrowLeft, Ticket, Truck, RefreshCcw, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useCartStore } from '@/store/cart.store'
 import PageBanner from '@/components/layout/PageBanner'
-
-const pawYellowImg =
-  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 252 185' fill='none'><path d='M-24.2539 138.834C-41.5463 132.747 -48.9804 109.108 -40.8584 86.033C-32.7364 62.9584 -12.134 49.187 5.15839 55.2738C22.4508 61.3605 29.8849 85.0004 21.7629 108.075C13.6409 131.15 -6.96151 144.921 -24.2539 138.834Z' fill='%23f8a33d' fill-opacity='0.75'/><path d='M72.032 90.9879C54.7396 84.9011 47.3055 61.2612 55.4275 38.1867C63.5495 15.1121 84.1519 1.34074 101.444 7.42746C118.737 13.5142 126.171 37.1541 118.049 60.2286C109.927 83.3032 89.3244 97.0746 72.032 90.9879Z' fill='%23f8a33d' fill-opacity='0.75'/><path d='M155.386 128.052C138.093 121.965 130.659 98.325 138.781 75.2505C146.903 52.1759 167.506 38.4045 184.798 44.4912C202.09 50.578 209.525 74.2179 201.403 97.2924C193.281 120.367 172.678 134.138 155.386 128.052Z' fill='%23f8a33d' fill-opacity='0.75'/><path d='M187.035 229.817C169.742 223.73 162.308 200.09 170.43 177.016C178.552 153.941 199.155 140.17 216.447 146.257C233.739 152.343 241.173 175.983 233.051 199.058C224.929 222.132 204.327 235.904 187.035 229.817Z' fill='%23f8a33d' fill-opacity='0.75'/><path d='M102.209 118.177C79.9654 122.867 26.9913 155.913 -1.744 167.437C-25.3024 185.083 -32.8574 218.608 -14.6661 234.669C-5.38889 242.861 35.2218 245.005 55.8444 243.739C58.3211 252.059 71.6361 270.307 105.082 276.736C138.529 283.164 151.67 248.336 154.06 230.119C155.306 223.634 137.953 186.68 134.704 180.453C131.454 174.225 130.014 112.315 102.209 118.177Z' fill='%23f8a33d' fill-opacity='0.75'/></svg>"
 
 export const CHECKOUT_SELECTED_ITEMS_KEY = 'petko_selected_checkout_items'
 
@@ -129,22 +126,21 @@ export default function CartPage() {
       className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
-
       {/* Shared checkout-style banner */}
-        <PageBanner
-          title={
-            <>
-              Your orders{' '}
-              <ShoppingBag size={28} aria-hidden="true" className="inline-block shrink-0 align-middle" />
-            </>
-          }
-          subtitle="Track your companion's order from our warehouse to your home."
-        />
+      <PageBanner
+        title={
+          <>
+            Your Cart{' '}
+          </>
+        }
+        subtitle="Review your items and adjust quantities, proceed to checkout"
+      />       
+      
 
       {/* ── Main Body Container ───────────────────────────────────────────── */}
       <div className="mx-auto mt-6 sm:mt-8 max-w-6xl px-4 sm:px-6 lg:px-8">
-        {isLoading ? (
-          /* ── Skeleton Loading Screen ─────────────────────────────────────── */
+        {isLoading || isProcessingOrder ? (
+          /* ── Skeleton Loading Screen (Initial Load & Proceeding to Checkout) ── */
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start animate-pulse">
             {/* Left Skeleton Column */}
             <div className="flex-1 min-w-0 space-y-4">
@@ -176,33 +172,26 @@ export default function CartPage() {
                 <div className="h-10 w-full rounded-lg bg-[#e6d3b3] mt-4" />
                 <div className="h-12 w-full rounded-lg bg-[#e6d3b3] mt-4" />
               </div>
+              <div className="rounded-2xl border border-[#e1cba5] bg-[#fefaf2] p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-[#e6d3b3]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-1/2 rounded bg-[#e6d3b3]" />
+                    <div className="h-3 w-3/4 rounded bg-[#e6d3b3]" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-[#e6d3b3]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-1/2 rounded bg-[#e6d3b3]" />
+                    <div className="h-3 w-3/4 rounded bg-[#e6d3b3]" />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        ) : isProcessingOrder ? (
-          /* ── Processing Order Overlay ────────────────────────────────────── */
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="flex items-center gap-4 mb-4">
-              {[0, 1, 2].map((idx) => (
-                <img
-                  key={idx}
-                  src={pawYellowImg}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-10 w-10 sm:h-12 sm:w-12 object-contain animate-bounce"
-                  style={{
-                    animationDelay: `${idx * 150}ms`,
-                    animationDuration: '0.8s',
-                  }}
-                />
-              ))}
-            </div>
-            <p className="text-base sm:text-lg font-extrabold text-[#0B419A] tracking-wide">
-              Preparing your checkout...
-            </p>
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-[#e1cba5] bg-[#fefaf2] px-4 py-16 text-center shadow-sm">
-            <ShoppingBag className="mx-auto text-gray-400" size={54} />
             <h2 className="mt-4 text-base sm:text-lg font-extrabold text-[#0B419A]">
               Your cart is currently empty
             </h2>
@@ -221,6 +210,18 @@ export default function CartPage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
             {/* ── Left Column: Cart Items ─────────────────────────────────── */}
             <div className="flex-1 min-w-0 space-y-4">
+              {/* ── Back to Products / Storefront Button Bar ────────────────────── */}
+              <div className="justify-self-start">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+                >
+                  <ArrowLeft size={13} />
+                  <span>
+                    Back<span className="hidden sm:inline"> to Storefront</span>
+                  </span>
+                </Link>
+              </div>
               {/* Top Action Bar (Mobile + Desktop Select All) */}
               <div className="flex items-center justify-between gap-2 rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-4 sm:px-6 py-3.5 text-sm font-bold text-[#0B419A] shadow-sm">
                 <div className="flex items-center gap-3 min-w-0">
