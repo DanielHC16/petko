@@ -13,7 +13,7 @@ import {
 import { useCartStore, type CartItem } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
 import logoImg from '@/assets/logo.png'
-import pawYellowImg from '@/assets/paw_yellow.png'
+import PageBanner from '@/components/layout/PageBanner'
 import gcashImg from '@/assets/GCash_logo.png'
 import { useCheckout } from './use-checkout'
 
@@ -278,83 +278,12 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-petko-cream">
-      {/* ── Banner ────────────────────────────────────────────────────────── */}
-      <div className="rounded-b-2xl">
-        <div className="relative overflow-hidden rounded-b-2xl bg-[#FFFBF5] h-[110px] sm:h-[130px] lg:h-[150px]">
-          {/* Left paws */}
-          <img
-            src={pawYellowImg}
-            alt=""
-            aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
-            style={{ top: '40%', left: '-25px', transform: 'rotate(23deg)' }}
-          />
-          <img
-            src={pawYellowImg}
-            alt=""
-            aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
-            style={{
-              top: 'calc(40% + 4px)',
-              left: '-30px',
-              transform: 'rotate(23deg)',
-            }}
-          />
-
-          {/* Right paws */}
-          <img
-            src={pawYellowImg}
-            alt=""
-            aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[110px] sm:w-[155px] lg:w-[200px]"
-            style={{
-              top: '-45px',
-              right: '-50px',
-              transform: 'rotate(195deg)',
-            }}
-          />
-          <img
-            src={pawYellowImg}
-            alt=""
-            aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[110px] sm:w-[155px] lg:w-[200px]"
-            style={{
-              top: '-44px',
-              right: '-55px',
-              transform: 'rotate(195deg)',
-            }}
-          />
-
-          {/* Content */}
-          <div className="relative z-20 h-full max-w-4xl mx-auto px-6 sm:px-8 flex items-center">
-            <div>
-              <h1
-                className="font-extrabold text-[#0B419A] leading-[1.1] flex items-center gap-3"
-                style={{
-                  fontFamily: "'Nunito', sans-serif",
-                  fontSize: 'clamp(1.6rem, 4vw, 3rem)',
-                }}
-              >
-                Checkout
-                <img
-                  src={pawYellowImg}
-                  alt=""
-                  aria-hidden="true"
-                  className="inline-block object-contain opacity-80"
-                  style={{
-                    width: 'clamp(28px, 4vw, 44px)',
-                    height: 'clamp(28px, 4vw, 44px)',
-                  }}
-                />
-              </h1>
-              <p className="mt-1 sm:mt-2 text-[11px] sm:text-[13px] font-medium text-gray-600 leading-snug">
-                Almost there! Review your details and place your order.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
+     {/* ── Page banner ───────────────────────────────────────────── */}
+      <PageBanner
+        title="Checkout"
+        subtitle="Almost there! Review your details and place your order."
+      />
 
       {/* ── Breadcrumb ────────────────────────────────────────────────────── */}
       <div className="flex justify-center py-3">

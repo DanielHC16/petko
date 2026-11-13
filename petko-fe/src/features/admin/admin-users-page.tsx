@@ -14,6 +14,8 @@ import {
   KeyRound,
   Plus,
   X,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getApiErrorMessage } from '@/lib/api-error'
@@ -43,9 +45,11 @@ export default function AdminUsersPage() {
 
   // Access-list state
   const [accessEmails, setAccessEmails] = useState<AdminAccessEmail[]>([])
+  const [isLoadingAccess, setIsLoadingAccess] = useState(true)
   const [accessEmailInput, setAccessEmailInput] = useState('')
   const [isAddingAccess, setIsAddingAccess] = useState(false)
   const [removingAccessId, setRemovingAccessId] = useState<string | null>(null)
+  const [showAccessList, setShowAccessList] = useState(true)
   const ownEmail = currentAdmin?.email?.trim().toLowerCase() ?? ''
 
   // Confirm dialog state
@@ -131,6 +135,49 @@ export default function AdminUsersPage() {
     })
   }
 
+  async function handleDemoteListedAdmin(targetUser: AdminUser) {
+    const matchedAccess = accessEmails.find(
+      (r) => r.email.toLowerCase() === targetUser.email.toLowerCase(),
+    )
+
+    if (!matchedAccess) {
+      handleToggleRole(targetUser)
+      return
+    }
+
+    if (matchedAccess.email === ownEmail) {
+      toast.error('You cannot demote your own admin account!', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      return
+    }
+
+    if (accessEmails.length <= 1) {
+      toast.error('Cannot remove the last remaining admin from the access list.', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      return
+    }
+
+    setConfirmDialog({
+      open: true,
+      title: 'Demote allowlisted admin',
+      message: `${targetUser.email} is on the Pre-Approved Admin Access list.\n\nRemove them from the access list and demote their role to CUSTOMER?`,
+      confirmLabel: 'Remove & Demote',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmDialog((d) => ({ ...d, open: false }))
+        setUpdatingId(targetUser.id)
+        try {
+          await removeAccessEmail(matchedAccess.id)
+          await updateUserRole(targetUser.id, 'customer')
+          toast.success(`Removed from access list and demoted ${targetUser.email} to CUSTOMER`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
+          await Promise.all([loadAccessEmails(), loadUsers()])
+        } catch (err: unknown) {
+          toast.error(getApiErrorMessage(err, 'Failed to demote admin'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+        } finally {
+          setUpdatingId(null)
+        }
+      },
+    })
+  }
+
   async function handleToggleRole(targetUser: AdminUser) {
     if (targetUser.id === currentAdmin?.id) {
       toast.error('You cannot change your own admin role!', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
@@ -203,84 +250,111 @@ export default function AdminUsersPage() {
   const customerCount = users.filter((u) => u.role === 'customer').length
 
   return (
-    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
-      <div className="space-y-8">
+    <div className="min-h-screen w-full bg-[#ecdab6] p-4 font-sans sm:p-6 lg:p-10">
+      <div className="space-y-5 sm:space-y-8">
         {/* ── Page banner ───────────────────────────────────────────── */}
         <PageBanner
           title="User Roles & RBAC Management"
           subtitle="View registered accounts, assign Administrator permissions, or remove user access."
         >
-        <div className="flex items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-3 py-2 sm:px-8">
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
-          >
-            <ArrowLeft size={13} />
-            <span>
-              Back<span className="hidden sm:inline"> to Admin Portal</span>
-            </span>
-          </Link>
+          <div className="flex items-center justify-between gap-2 border-t border-orange-100 bg-orange-50/60 px-3 py-2 sm:px-8">
+            <Link
+              to="/admin"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+            >
+              <ArrowLeft size={13} />
+              <span>
+                Back<span className="hidden sm:inline"> to Admin Portal</span>
+              </span>
+            </Link>
 
-          <button
-            onClick={loadUsers}
-            disabled={isLoading}
-            title="Refresh Users"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-[#fef8e8] disabled:opacity-50 sm:px-3"
-          >
-            <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>
-              Refresh<span className="hidden sm:inline"> Users</span>
-            </span>
-          </button>
-        </div>
+            <button
+              onClick={() => {
+                loadUsers()
+                loadAccessEmails()
+              }}
+              disabled={isLoading}
+              title="Refresh Users"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-[#fef8e8] disabled:opacity-50 sm:px-3"
+            >
+              <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+              <span>
+                Refresh<span className="hidden sm:inline"> Users</span>
+              </span>
+            </button>
+          </div>
         </PageBanner>
 
         {/* ── Overview Stats ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-[#e1cba5] bg-[#fdf2e1] p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Total Users
-              </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#10298E]">
-                <Users size={16} />
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="flex min-w-0 flex-col justify-between rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-2.5 shadow-sm sm:rounded-2xl sm:p-5">
+            <div>
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-50 text-[#10298E] sm:order-2 sm:h-8 sm:w-8 sm:rounded-lg">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+                <span className="text-[10px] font-semibold uppercase leading-tight tracking-wider text-gray-500 sm:order-1 sm:text-xs">
+                  Total Users
+                </span>
               </div>
+              {isLoading ? (
+                <div className="mt-1.5 h-6 w-10 animate-pulse rounded-lg bg-[#e1cba5]/70 sm:mt-2.5 sm:h-7 sm:w-14" />
+              ) : (
+                <p className="mt-1 text-lg font-black text-[#10298E] sm:mt-2 sm:text-2xl">{users.length}</p>
+              )}
             </div>
-            <p className="mt-2 text-2xl font-black text-[#10298E]">{users.length}</p>
-            <p className="mt-0.5 text-[11px] text-gray-400">Registered across Petko</p>
+            <p className="mt-0.5 text-[10px] leading-tight text-gray-400 sm:text-[11px]">
+              Registered across Petko
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-orange-700">
-                Admin Users
-              </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-200 text-orange-800">
-                <Shield size={16} />
+          <div className="flex min-w-0 flex-col justify-between rounded-xl border border-orange-200 bg-orange-50/60 p-2.5 shadow-sm sm:rounded-2xl sm:p-5">
+            <div>
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-orange-200 text-orange-800 sm:order-2 sm:h-8 sm:w-8 sm:rounded-lg">
+                  <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase leading-tight tracking-wider text-orange-700 sm:order-1 sm:text-xs">
+                  Admin Users
+                </span>
               </div>
+              {isLoading ? (
+                <div className="mt-1.5 h-6 w-10 animate-pulse rounded-lg bg-orange-200/80 sm:mt-2.5 sm:h-7 sm:w-14" />
+              ) : (
+                <p className="mt-1 text-lg font-black text-orange-950 sm:mt-2 sm:text-2xl">{adminCount}</p>
+              )}
             </div>
-            <p className="mt-2 text-2xl font-black text-orange-950">{adminCount}</p>
-            <p className="mt-0.5 text-[11px] text-orange-700/80">Full administrative access</p>
+            <p className="mt-0.5 text-[10px] leading-tight text-orange-700/80 sm:text-[11px]">
+              Full administrative access
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
-                Customer Accounts
-              </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-200 text-blue-800">
-                <Users size={16} />
+          <div className="flex min-w-0 flex-col justify-between rounded-xl border border-blue-200 bg-blue-50/60 p-2.5 shadow-sm sm:rounded-2xl sm:p-5">
+            <div>
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-200 text-blue-800 sm:order-2 sm:h-8 sm:w-8 sm:rounded-lg">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase leading-tight tracking-wider text-blue-700 sm:order-1 sm:text-xs">
+                  Customer Accounts
+                </span>
               </div>
+              {isLoading ? (
+                <div className="mt-1.5 h-6 w-10 animate-pulse rounded-lg bg-blue-200/80 sm:mt-2.5 sm:h-7 sm:w-14" />
+              ) : (
+                <p className="mt-1 text-lg font-black text-blue-950 sm:mt-2 sm:text-2xl">{customerCount}</p>
+              )}
             </div>
-            <p className="mt-2 text-2xl font-black text-blue-950">{customerCount}</p>
-            <p className="mt-0.5 text-[11px] text-blue-700/80">Standard store shoppers</p>
+            <p className="mt-0.5 text-[10px] leading-tight text-blue-700/80 sm:text-[11px]">
+              Standard store shoppers
+            </p>
           </div>
         </div>
 
         {/* ── Pre-Approve Admin Access (unified card) ───────────────── */}
         <div className="rounded-2xl border border-orange-200 bg-[#fdf2e1] p-5 shadow-sm sm:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <KeyRound size={18} />
             </div>
             <div>
@@ -316,50 +390,96 @@ export default function AdminUsersPage() {
             </button>
           </form>
 
-          {/* Pill list */}
-          {accessEmails.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                Allowlisted emails ({accessEmails.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {accessEmails.map((row) => {
-                  const isOwn = row.email === ownEmail
-                  const isOnly = accessEmails.length <= 1
-                  const canRemove = !isOwn && !isOnly
-                  const isRemoving = removingAccessId === row.id
-
-                  // Check if this email has already signed in (exists in users list)
-                  const hasSignedIn = users.some((u) => u.email.toLowerCase() === row.email)
-
-                  return (
-                    <span
-                      key={row.id}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-3 py-1 text-xs font-medium text-[#10298E] shadow-sm"
-                    >
-                      <Shield size={11} className="text-orange-500 shrink-0" />
-                      {row.email}
-                      {isOwn && (
-                        <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[9px] font-bold text-orange-700">You</span>
-                      )}
-                      <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${hasSignedIn ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {hasSignedIn ? 'Active' : 'Pending'}
-                      </span>
-                      {canRemove && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAccessEmail(row)}
-                          disabled={isRemoving}
-                          aria-label={`Remove ${row.email}`}
-                          className="ml-0.5 rounded-full p-0.5 text-gray-400 transition hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
-                        >
-                          {isRemoving ? <RefreshCw size={10} className="animate-spin" /> : <X size={10} />}
-                        </button>
-                      )}
-                    </span>
-                  )
-                })}
+          {/* Collapsible Allowlisted Emails List (4 rows max, vertical scroll, no horizontal scroll) */}
+          {isLoadingAccess ? (
+            <div className="mt-5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="h-3.5 w-36 animate-pulse rounded bg-orange-200/70" />
+                <div className="h-6 w-14 animate-pulse rounded-lg bg-orange-200/70" />
               </div>
+              <div className="overflow-hidden rounded-xl border border-orange-200 bg-white shadow-sm">
+                <div className="divide-y divide-orange-100/80">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className="flex items-center justify-between px-3.5 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3.5 w-3.5 animate-pulse rounded-full bg-orange-200" />
+                        <div className="h-3.5 w-48 animate-pulse rounded bg-gray-200" />
+                      </div>
+                      <div className="h-6 w-6 animate-pulse rounded-lg bg-gray-100" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : accessEmails.length > 0 && (
+            <div className="mt-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  Allowlisted Emails ({accessEmails.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAccessList((prev) => !prev)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#10298E] shadow-sm transition hover:bg-orange-50"
+                >
+                  <span>{showAccessList ? 'Hide' : 'Show'}</span>
+                  {showAccessList ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
+              </div>
+
+              {showAccessList && (
+                <div className="mt-2.5 max-h-[188px] overflow-y-auto rounded-xl border border-orange-200 bg-white shadow-sm">
+                  {/* Sticky Header */}
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-orange-50 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-[#10298E] sm:px-3.5 sm:py-2.5">
+                    <span>Email Address</span>
+                    <span className="shrink-0">Remove</span>
+                  </div>
+
+                  {/* Rows */}
+                  <div className="divide-y divide-orange-100/80">
+                    {accessEmails.map((row) => {
+                      const isOwn = row.email === ownEmail
+                      const isOnly = accessEmails.length <= 1
+                      const canRemove = !isOwn && !isOnly
+                      const isRemoving = removingAccessId === row.id
+
+                      return (
+                        <div
+                          key={row.id}
+                          className="flex items-center justify-between gap-2 px-2.5 py-2 text-[11px] transition hover:bg-[#fefaf2] sm:px-3.5 sm:py-2.5 sm:text-xs"
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-1.5 font-medium text-[#10298E] sm:gap-2">
+                            <Shield size={12} className="shrink-0 text-orange-500 sm:h-[13px] sm:w-[13px]" />
+                            <span className="whitespace-nowrap">{row.email}</span>
+                            {isOwn && (
+                              <span className="shrink-0 rounded bg-orange-100 px-1 py-0.5 text-[8px] font-bold text-orange-700 sm:px-1.5 sm:text-[9px]">
+                                You
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="shrink-0">
+                            {canRemove ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAccessEmail(row)}
+                                disabled={isRemoving}
+                                aria-label={`Remove ${row.email}`}
+                                title={`Remove ${row.email} from access list`}
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                              >
+                                {isRemoving ? <RefreshCw size={11} className="animate-spin" /> : <X size={12} />}
+                              </button>
+                            ) : (
+                              <span className="inline-flex h-6 w-6 items-center justify-center text-[10px] text-gray-300">—</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -369,23 +489,40 @@ export default function AdminUsersPage() {
           {/* Table Toolbar */}
           <div className="flex flex-col gap-3 border-b border-[#e1cba5] p-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Tab switcher */}
-            <div className="flex shrink-0 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-0.5">
+            <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-1 sm:w-auto">
               <button
                 onClick={() => setActiveTab('customer')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${activeTab === 'customer' ? 'bg-white text-[#10298E] shadow-sm' : 'text-gray-500 hover:text-[#10298E]'}`}
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
+                  activeTab === 'customer'
+                    ? 'bg-white text-[#10298E] shadow-sm'
+                    : 'text-gray-500 hover:text-[#10298E]'
+                }`}
               >
-                <Users size={13} />
-                Customers <span className="ml-0.5 rounded-full bg-blue-100 px-1.5 text-blue-700">{customerCount}</span>
+                <Users size={13} className="shrink-0" />
+                <span className="truncate">Customers</span>
+                {isLoading ? (
+                  <span className="inline-block h-4 w-6 shrink-0 animate-pulse rounded-full bg-blue-100" />
+                ) : (
+                  <span className="shrink-0 rounded-full bg-blue-100 px-1.5 text-blue-700">{customerCount}</span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${activeTab === 'admin' ? 'bg-white text-[#10298E] shadow-sm' : 'text-gray-500 hover:text-[#10298E]'}`}
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
+                  activeTab === 'admin'
+                    ? 'bg-white text-[#10298E] shadow-sm'
+                    : 'text-gray-500 hover:text-[#10298E]'
+                }`}
               >
-                <Shield size={13} />
-                Admins <span className="ml-0.5 rounded-full bg-orange-100 px-1.5 text-orange-700">{adminCount}</span>
+                <Shield size={13} className="shrink-0" />
+                <span className="truncate">Admins</span>
+                {isLoading ? (
+                  <span className="inline-block h-4 w-6 shrink-0 animate-pulse rounded-full bg-orange-100" />
+                ) : (
+                  <span className="shrink-0 rounded-full bg-orange-100 px-1.5 text-orange-700">{adminCount}</span>
+                )}
               </button>
             </div>
-
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
@@ -399,7 +536,54 @@ export default function AdminUsersPage() {
           </div>
 
           {isLoading ? (
-            <div className="p-8 text-center text-sm text-gray-500">Loading users list...</div>
+            <div>
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
+                  <tr>
+                    <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="hidden px-6 py-3 md:table-cell">Email</th>
+                    <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
+                    {activeTab === 'admin' && (
+                      <th className="hidden px-6 py-3 md:table-cell whitespace-nowrap">Access</th>
+                    )}
+                    <th className="px-4 py-3 text-right whitespace-nowrap sm:px-6">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e1cba5]/60">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <tr key={n}>
+                      <td className="max-w-0 px-4 py-3.5 sm:max-w-none sm:px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-[#fdf2e1]" />
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <div className="h-3.5 w-32 animate-pulse rounded bg-gray-200" />
+                            <div className="h-2.5 w-44 animate-pulse rounded bg-gray-100 md:hidden" />
+                            <div className="hidden h-2.5 w-24 animate-pulse rounded bg-gray-100 md:block" />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="hidden px-6 py-3.5 md:table-cell">
+                        <div className="h-3.5 w-44 animate-pulse rounded bg-gray-200" />
+                      </td>
+                      <td className="hidden px-6 py-3.5 sm:table-cell">
+                        <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100" />
+                      </td>
+                      {activeTab === 'admin' && (
+                        <td className="hidden px-6 py-3.5 md:table-cell">
+                          <div className="h-5 w-24 animate-pulse rounded-full bg-emerald-100/70" />
+                        </td>
+                      )}
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap sm:px-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="hidden h-7 w-28 animate-pulse rounded-lg bg-orange-100/70 sm:block" />
+                          <div className="h-8 w-8 animate-pulse rounded-lg bg-red-100/70" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : tabUsers.length === 0 ? (
             <div className="p-12 text-center text-sm text-gray-500">
               No {activeTab === 'admin' ? 'admin' : 'customer'} accounts match your search.
@@ -409,10 +593,13 @@ export default function AdminUsersPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
-                    <th className="px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
+                    <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
                     <th className="hidden px-6 py-3 md:table-cell">Email</th>
-                    <th className="hidden px-6 py-3 sm:table-cell">Joined</th>
-                    <th className="px-4 py-3 text-right sm:px-6">Actions</th>
+                    <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
+                    {activeTab === 'admin' && (
+                      <th className="hidden px-6 py-3 md:table-cell whitespace-nowrap">Access</th>
+                    )}
+                    <th className="px-4 py-3 text-right whitespace-nowrap sm:px-6">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e1cba5]/60">
@@ -428,9 +615,9 @@ export default function AdminUsersPage() {
 
                     const avatar = user.avatar_url ? (
                       <img src={user.avatar_url} alt={user.full_name}
-                        className="h-9 w-9 rounded-full border border-[#e1cba5] object-cover" />
+                        className="h-9 w-9 shrink-0 rounded-full border border-[#e1cba5] object-cover" />
                     ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
                         {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                       </div>
                     )
@@ -443,24 +630,39 @@ export default function AdminUsersPage() {
                           onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
                           className={`transition cursor-pointer ${isExpanded ? 'bg-[#fefaf2]' : 'hover:bg-[#fef8e8]'}`}
                         >
-                          <td className="px-4 py-3 sm:px-6">
+                          <td className="max-w-0 px-4 py-3 sm:max-w-none sm:px-6">
                             <div className="flex items-center gap-3">
                               {avatar}
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <p className="truncate font-bold text-[#10298E]">
                                   {user.full_name || 'No Name Set'}
                                   {isCurrent && (
                                     <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">You</span>
                                   )}
                                 </p>
-                                <p className="truncate text-[11px] text-gray-400 md:hidden">{user.email}</p>
-                                <p className="hidden font-mono text-[10px] text-gray-400 md:block">ID: {user.id.slice(0, 8)}...</p>
+                                {!isExpanded && (
+                                  <p className="truncate text-[11px] text-gray-400 md:hidden">{user.email}</p>
+                                )}
+                                <p className="hidden break-all font-mono text-[10px] text-gray-400 md:block">ID: {user.id}</p>
                               </div>
                             </div>
                           </td>
                           <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">{user.email}</td>
-                          <td className="hidden px-6 py-3 text-gray-500 sm:table-cell">{formattedDate}</td>
-                          <td className="px-4 py-3 text-right sm:px-6" onClick={(e) => e.stopPropagation()}>
+                          <td className="hidden px-6 py-3 text-gray-500 whitespace-nowrap sm:table-cell">{formattedDate}</td>
+                          {activeTab === 'admin' && (
+                            <td className="hidden px-6 py-3 whitespace-nowrap md:table-cell">
+                              {user.admin_access_listed ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+                                  <CheckCircle size={11} /> Access List
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                  <Shield size={11} /> Manual
+                                </span>
+                              )}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-right whitespace-nowrap sm:px-6" onClick={(e) => e.stopPropagation()}>
                             {isCurrent ? (
                               <span className="text-[11px] font-medium text-gray-400">Current Session</span>
                             ) : (
@@ -474,10 +676,14 @@ export default function AdminUsersPage() {
                                     {isUpdating ? 'Updating...' : 'Promote to Admin'}
                                   </button>
                                 ) : user.admin_access_listed ? (
-                                  <button type="button" disabled
-                                    title="Remove their email from the admin access list to demote"
-                                    className="hidden cursor-not-allowed rounded-lg border border-[#e1cba5] bg-[#fefaf2] px-3 py-1.5 text-xs font-semibold text-gray-600 opacity-70 sm:block">
-                                    Demote
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDemoteListedAdmin(user)}
+                                    disabled={isUpdating || isDeleting}
+                                    title="Remove from allowlist and demote to Customer"
+                                    className="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 sm:block"
+                                  >
+                                    {isUpdating ? 'Updating...' : 'Demote to Customer'}
                                   </button>
                                 ) : (
                                   <button
@@ -505,7 +711,7 @@ export default function AdminUsersPage() {
                         {/* ── Expanded row (mobile only) ── */}
                         {isExpanded && (
                           <tr key={`${user.id}-expanded`} className="md:hidden bg-[#fefaf2]">
-                            <td colSpan={4} className="px-4 pb-4 pt-2 pl-16">
+                            <td colSpan={2} className="px-4 pb-4 pt-2 pl-16">
                               <div className="space-y-2.5 text-xs">
                                 <div>
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Email</p>
@@ -513,7 +719,7 @@ export default function AdminUsersPage() {
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">User ID</p>
-                                  <p className="font-mono text-gray-500">{user.id.slice(0, 16)}...</p>
+                                  <p className="font-mono text-gray-500 break-all">{user.id}</p>
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Joined</p>
@@ -543,9 +749,12 @@ export default function AdminUsersPage() {
                                       {isUpdating ? 'Updating...' : 'Promote to Admin'}
                                     </button>
                                   ) : user.admin_access_listed ? (
-                                    <button type="button" disabled
-                                      className="w-full cursor-not-allowed rounded-lg border border-[#e1cba5] bg-[#fefaf2] py-2 text-xs font-semibold text-gray-500 opacity-70">
-                                      Demote (remove from access list first)
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDemoteListedAdmin(user) }}
+                                      disabled={isUpdating || isDeleting}
+                                      className="w-full rounded-lg border border-amber-200 bg-amber-50 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                                    >
+                                      {isUpdating ? 'Updating...' : 'Demote to Customer'}
                                     </button>
                                   ) : (
                                     <button
