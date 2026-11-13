@@ -1,7 +1,6 @@
 import { PAYMENT_LABELS } from '@/lib/payment-methods'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { AlertCircle, CheckCircle2, ExternalLink, MapPin, Package, Truck } from 'lucide-react'
+import { AlertCircle, CheckCircle2, MapPin, Package, Truck } from 'lucide-react'
 import type { OrderDetail, OrderSummary } from '@/lib/order-types'
 import {
   formatOrderDate,
@@ -60,16 +59,6 @@ export default function OrderDetailCard({
         </div>
         <div className="flex flex-col items-end gap-2">
           <OrderStatusBadge order={order} />
-          {audience === 'admin' && (
-            <Link
-              to={`/orders?order=${order.id}`}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:underline"
-              title="Open customer order tracking page for this order"
-            >
-              <ExternalLink size={12} />
-              Customer Tracking View
-            </Link>
-          )}
         </div>
       </header>
 
