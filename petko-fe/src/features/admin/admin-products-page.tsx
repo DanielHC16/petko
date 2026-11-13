@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { Fragment, useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -16,6 +16,7 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  Menu,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { fetchAdminProducts, saveAdminProduct, setAdminProductActive, deleteAdminProduct } from './admin-api'
@@ -75,6 +76,7 @@ export default function AdminProductsPage() {
   const [petTypeFilter, setPetTypeFilter] = useState('all')
   const [stockFilter, setStockFilter] = useState<StockFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -88,6 +90,15 @@ export default function AdminProductsPage() {
 
   useEffect(() => { loadProducts() }, [])
 
+  useEffect(() => {
+    if (!isModalOpen) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [isModalOpen])
+
   async function loadProducts() {
     setIsLoading(true)
     try {
@@ -97,6 +108,13 @@ export default function AdminProductsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function clearFilters() {
+    setSearch('')
+    setCategoryFilter('all')
+    setPetTypeFilter('all')
+    setStockFilter('all')
   }
 
   function handleOpenCreateModal() {
@@ -230,9 +248,11 @@ export default function AdminProductsPage() {
   const totalCount = products.length
   const activeCount = products.filter((p) => p.is_active && p.stock > 0).length
   const lowStockCount = products.filter((p) => p.stock <= 5).length
+  const hasActiveFilters =
+    search.trim() !== '' || categoryFilter !== 'all' || petTypeFilter !== 'all' || stockFilter !== 'all'
 
   return (
-    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
+    <div className="min-h-screen w-full bg-[#ecdab6] p-4 font-sans sm:p-6 lg:p-10">
       <div className="space-y-6">
 
         {/* ── Page banner ───────────────────────────────────────────── */}
@@ -293,8 +313,10 @@ export default function AdminProductsPage() {
         </div>
 
         {/* ── Sticky Filter toolbar ─────────────────────────────────── */}
-        <div className="sticky top-0 z-20 -mx-6 border-b border-[#e1cba5]/80 bg-[#ecdab6]/95 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
-          <div className="flex flex-col gap-2 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm sm:flex-row sm:items-center">
+        <div className="sticky top-0 z-20 -mx-4 space-y-2 border-b border-[#e1cba5]/80 bg-[#ecdab6]/95 px-4 py-2.5 backdrop-blur-sm sm:-mx-6 sm:px-6 sm:py-3 lg:-mx-10 lg:px-10">
+
+          {/* ── TABLET & DESKTOP (sm+): search + inline dropdowns ───── */}
+          <div className="hidden sm:flex flex-col gap-2 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm md:flex-row md:items-center">
             {/* Search — grows to fill space */}
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
@@ -303,12 +325,22 @@ export default function AdminProductsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, SKU, or description..."
-                className="w-full rounded-lg border border-[#e1cba5] bg-white py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+                className="w-full rounded-lg border border-[#e1cba5] bg-white py-2 pl-9 pr-8 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
-            {/* Dropdowns — always one row, never wrap */}
-            <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:items-center">
+            {/* Dropdowns */}
+            <div className="grid grid-cols-3 gap-2 md:flex md:shrink-0 md:items-center">
               {/* Category */}
               <div className="flex min-w-0 flex-col gap-1">
                 <label
@@ -321,7 +353,7 @@ export default function AdminProductsPage() {
                   id="filter-category"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none md:w-auto"
                 >
                   <option value="all">All Categories</option>
                   {CATEGORIES.map((c) => (
@@ -344,11 +376,12 @@ export default function AdminProductsPage() {
                   id="filter-pet-type"
                   value={petTypeFilter}
                   onChange={(e) => setPetTypeFilter(e.target.value)}
-                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none md:w-auto"
                 >
                   <option value="all">🐾 All Pets</option>
                   <option value="dog">🐶 Dogs</option>
                   <option value="cat">🐱 Cats</option>
+                  <option value="both">🐾 Both</option>
                 </select>
               </div>
 
@@ -366,7 +399,7 @@ export default function AdminProductsPage() {
                   onChange={(e) => {
                     if (isStockFilter(e.target.value)) setStockFilter(e.target.value)
                   }}
-                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none md:w-auto"
                 >
                   <option value="all">All Stock</option>
                   <option value="in_stock">In Stock</option>
@@ -376,6 +409,131 @@ export default function AdminProductsPage() {
               </div>
             </div>
           </div>
+
+          {/* ── MOBILE ONLY (< 640px): search + hamburger button (matches shop) ── */}
+          <div className="flex sm:hidden items-center gap-2">
+            <div className="flex flex-1 items-center gap-2 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 shadow-sm">
+              <Search className="shrink-0 text-gray-400" size={15} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products, SKU..."
+                className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="shrink-0 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen((o) => !o)}
+              aria-expanded={mobileFiltersOpen}
+              aria-label="Toggle filters"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 shadow-sm transition ${
+                mobileFiltersOpen || hasActiveFilters
+                  ? 'border-orange-400 bg-orange-50 text-orange-500'
+                  : 'border-[#e1cba5] bg-white text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              {mobileFiltersOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
+
+          {/* ── MOBILE ONLY dropdown panel (in-flow, matches shop) ──── */}
+          {mobileFiltersOpen && (
+            <div className="sm:hidden space-y-4 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-4 shadow-md">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="mobile-filter-pet-type"
+                    className="text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+                  >
+                    Pet Type
+                  </label>
+                  <select
+                    id="mobile-filter-pet-type"
+                    value={petTypeFilter}
+                    onChange={(e) => setPetTypeFilter(e.target.value)}
+                    className="rounded-lg border border-[#e1cba5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400"
+                  >
+                    <option value="all">🐾 All Pets</option>
+                    <option value="dog">🐶 Dogs</option>
+                    <option value="cat">🐱 Cats</option>
+                    <option value="both">🐾 Both</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="mobile-filter-stock"
+                    className="text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+                  >
+                    Stock Status
+                  </label>
+                  <select
+                    id="mobile-filter-stock"
+                    value={stockFilter}
+                    onChange={(e) => {
+                      if (isStockFilter(e.target.value)) setStockFilter(e.target.value)
+                    }}
+                    className="rounded-lg border border-[#e1cba5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400"
+                  >
+                    <option value="all">All Stock</option>
+                    <option value="in_stock">In Stock</option>
+                    <option value="low_stock">Low Stock</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-end gap-2">
+                <div className="flex flex-1 flex-col gap-1">
+                  <label
+                    htmlFor="mobile-filter-category"
+                    className="text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+                  >
+                    Category
+                  </label>
+                  <select
+                    id="mobile-filter-category"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="rounded-lg border border-[#e1cba5] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400"
+                  >
+                    <option value="all">All Categories</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {PRODUCT_CATEGORIES.find((category) => category.id === c)?.label || c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearFilters()
+                      setMobileFiltersOpen(false)
+                    }}
+                    className="self-end rounded-lg border border-red-400 bg-white px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
+                  >
+                    ✕ Clear
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* ── Products table ────────────────────────────────────────── */}
@@ -396,7 +554,7 @@ export default function AdminProductsPage() {
             <div className="p-12 text-center text-sm text-gray-500">
               <Package className="mx-auto text-gray-300 mb-2" size={36} />
               <p className="font-semibold text-gray-700">No products match your criteria</p>
-              <button onClick={() => { setSearch(''); setCategoryFilter('all'); setPetTypeFilter('all'); setStockFilter('all') }}
+              <button onClick={clearFilters}
                 className="mt-3 text-xs font-bold text-orange-600 underline">Reset Filters</button>
             </div>
           ) : (
@@ -419,10 +577,9 @@ export default function AdminProductsPage() {
                     const isExpanded = expandedId === product.id
 
                     return (
-                      <>
+                      <Fragment key={product.id}>
                         {/* ── Main row ─────────────────────────────── */}
                         <tr
-                          key={product.id}
                           onClick={() => setExpandedId(isExpanded ? null : product.id)}
                           className={`hover:bg-[#fef8e8] transition cursor-pointer ${isExpanded ? 'hidden' : ''}`}
                         >
@@ -555,7 +712,7 @@ export default function AdminProductsPage() {
 
                         {/* ── Expandable detail row (all breakpoints) ── */}
                         {isExpanded && (
-                          <tr key={`${product.id}-expanded`} className="bg-[#fefaf2]">
+                          <tr className="bg-[#fefaf2]">
 
                             {/* ── MOBILE: colSpan=2 (Product + Actions) ── */}
                             <td colSpan={2} className="px-3 pb-3 pt-2 md:hidden">
@@ -657,7 +814,7 @@ export default function AdminProductsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })}
                 </tbody>
@@ -666,167 +823,180 @@ export default function AdminProductsPage() {
           )}
         </div>
 
-        {/* ── Create / Edit Product Modal ────────────────────────────── */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4">
-            <div role="dialog" aria-modal="true" aria-labelledby="product-dialog-title" className="flex w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl overflow-hidden sm:rounded-2xl" style={{ maxHeight: '92dvh' }}>
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-[#e1cba5] bg-[#fdf2e1] px-5 py-4 sm:px-6">
-                <h2 id="product-dialog-title" className="text-base font-bold text-[#10298E]" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
-                </h2>
-                <button type="button" aria-label="Close product editor" onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-                  <X size={18} />
-                </button>
+      </div>
+
+      {/* ── Create / Edit Product Modal (Full screen on mobile, centered card on sm+) ── */}
+      {isModalOpen && (
+        <div
+          onClick={() => setIsModalOpen(false)}
+          className="fixed inset-0 z-50 !mt-0 flex items-stretch justify-center overflow-hidden overscroll-contain bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-dialog-title"
+            className="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:rounded-2xl"
+          >
+            {/* Modal Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-[#e1cba5] bg-[#fdf2e1] px-4 py-3.5 sm:px-6 sm:py-4">
+              <h2 id="product-dialog-title" className="text-base font-bold text-[#10298E]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              <button
+                type="button"
+                aria-label="Close product editor"
+                onClick={() => setIsModalOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-orange-100/70 hover:text-gray-700 sm:h-auto sm:w-auto"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSubmitProduct} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-6">
+              {/* Name */}
+              <div>
+                <label htmlFor="modal-product-name" className="block text-xs font-bold text-[#10298E]">
+                  Product Name <span className="text-red-500">*</span>
+                </label>
+                <input id="modal-product-name" type="text" required readOnly={Boolean(formData.parent_product_name.trim())} value={variantProductName(formData.parent_product_name, formData.variant_attributes, formData.name)}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Include the variation, e.g. PetKo Pet Collar (Blue)"
+                  className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
               </div>
 
-              {/* Modal Form */}
-              <form onSubmit={handleSubmitProduct} className="flex-1 overflow-y-auto p-5 space-y-4 sm:p-6">
-                {/* Name */}
+              {/* Price + Stock */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="modal-product-name" className="block text-xs font-bold text-[#10298E]">
-                    Product Name <span className="text-red-500">*</span>
+                  <label htmlFor="modal-product-price" className="block text-xs font-bold text-[#10298E]">
+                    Price (₱ PHP) <span className="text-red-500">*</span>
                   </label>
-                  <input id="modal-product-name" type="text" required readOnly={Boolean(formData.parent_product_name.trim())} value={variantProductName(formData.parent_product_name, formData.variant_attributes, formData.name)}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Include the variation, e.g. PetKo Pet Collar (Blue)"
-                    className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
+                  <input id="modal-product-price" type="number" step="0.01" min="0" required value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="e.g. 850.00"
+                    className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none" />
                 </div>
-
-                {/* Price + Stock */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="modal-product-price" className="block text-xs font-bold text-[#10298E]">
-                      Price (₱ PHP) <span className="text-red-500">*</span>
-                    </label>
-                    <input id="modal-product-price" type="number" step="0.01" min="0" required value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="e.g. 850.00"
-                      className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none" />
-                  </div>
-                  <div>
-                    <label htmlFor="modal-product-stock" className="block text-xs font-bold text-[#10298E]">
-                      Stock Quantity <span className="text-red-500">*</span>
-                    </label>
-                    <input id="modal-product-stock" type="number" step="1" min="0" required value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                      placeholder="e.g. 30"
-                      className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none" />
-                  </div>
-                </div>
-
-                {/* Category + Pet Type */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="modal-product-category" className="block text-xs font-bold text-[#10298E]">
-                      Category <span className="text-red-500">*</span>
-                    </label>
-                    <select id="modal-product-category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none">
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{PRODUCT_CATEGORIES.find((category) => category.id === cat)?.label || cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="modal-product-pet_type" className="block text-xs font-bold text-[#10298E]">
-                      Target Pet Type <span className="text-red-500">*</span>
-                    </label>
-                    <select id="modal-product-pet_type" value={formData.pet_type} onChange={(e) => { if (isPetType(e.target.value)) setFormData({ ...formData, pet_type: e.target.value }) }}
-                      className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none">
-                      <option value="both">🐾 For All Pets (Both)</option>
-                      <option value="dog">🐶 Dogs</option>
-                      <option value="cat">🐱 Cats</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Image URL */}
                 <div>
-                  <label htmlFor="modal-product-image_url" className="block text-xs font-bold text-[#10298E]">
-                    Image URL (Direct image link)
+                  <label htmlFor="modal-product-stock" className="block text-xs font-bold text-[#10298E]">
+                    Stock Quantity <span className="text-red-500">*</span>
                   </label>
-                  <div className="mt-1 flex gap-3">
-                    <input id="modal-product-image_url" type="url" value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                      placeholder="https://cdn.shopify.com/s/files/... or Unsplash image"
-                      className="flex-1 rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
-                    {formData.image_url && (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e1cba5] bg-[#fefaf2] p-0.5 overflow-hidden">
-                        <img src={formData.image_url} alt="Preview"
-                          className="h-full w-full object-contain"
-                          onError={(e) => { ;(e.target as HTMLElement).style.display = 'none' }} />
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-1 text-[11px] text-gray-400">
-                    Leave blank to use the high-resolution category fallback image.
-                  </p>
+                  <input id="modal-product-stock" type="number" step="1" min="0" required value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    placeholder="e.g. 30"
+                    className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none" />
                 </div>
+              </div>
 
-                {/* Is Active Toggle */}
-                {(() => {
-                  const stockNum = parseInt(formData.stock, 10)
-                  const isOut = isNaN(stockNum) || stockNum <= 0
-                  return (
-                    <div className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-[#fefaf2] p-3">
-                      <input
-                        type="checkbox"
-                        id="modal-is-active"
-                        checked={isOut ? false : formData.is_active}
-                        disabled={isOut}
-                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                        className="h-4 w-4 rounded text-orange-600 focus:ring-orange-500 disabled:opacity-50"
-                      />
-                      <div className="flex flex-col">
-                        <label
-                          htmlFor="modal-is-active"
-                          className={`text-xs font-semibold ${isOut ? 'text-gray-400 cursor-not-allowed' : 'text-gray-800 cursor-pointer'}`}
-                        >
-                          Publish to Storefront (Item is active and purchasable by customers)
-                        </label>
-                        {isOut && (
-                          <span className="text-[11px] text-amber-700 font-medium mt-0.5">
-                            Out-of-stock items are automatically deemed inactive.
-                          </span>
-                        )}
-                      </div>
+              {/* Category + Pet Type */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="modal-product-category" className="block text-xs font-bold text-[#10298E]">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select id="modal-product-category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none">
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{PRODUCT_CATEGORIES.find((category) => category.id === cat)?.label || cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="modal-product-pet_type" className="block text-xs font-bold text-[#10298E]">
+                    Target Pet Type <span className="text-red-500">*</span>
+                  </label>
+                  <select id="modal-product-pet_type" value={formData.pet_type} onChange={(e) => { if (isPetType(e.target.value)) setFormData({ ...formData, pet_type: e.target.value }) }}
+                    className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 focus:border-orange-500 focus:outline-none">
+                    <option value="both">🐾 For All Pets (Both)</option>
+                    <option value="dog">🐶 Dogs</option>
+                    <option value="cat">🐱 Cats</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Image URL */}
+              <div>
+                <label htmlFor="modal-product-image_url" className="block text-xs font-bold text-[#10298E]">
+                  Image URL (Direct image link)
+                </label>
+                <div className="mt-1 flex gap-3">
+                  <input id="modal-product-image_url" type="url" value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    placeholder="https://cdn.shopify.com/s/files/... or Unsplash image"
+                    className="flex-1 rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
+                  {formData.image_url && (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#e1cba5] bg-[#fefaf2] p-0.5 overflow-hidden">
+                      <img src={formData.image_url} alt="Preview"
+                        className="h-full w-full object-contain"
+                        onError={(e) => { ;(e.target as HTMLElement).style.display = 'none' }} />
                     </div>
-                  )
-                })()}
-
-                {/* Description */}
-                <div>
-                  <label htmlFor="modal-product-description" className="block text-xs font-bold text-[#10298E]">
-                    Product Description
-                  </label>
-                  <textarea id="modal-product-description" rows={3} value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Details, ingredients, usage directions, size specifications..."
-                    className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
+                  )}
                 </div>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Leave blank to use the high-resolution category fallback image.
+                </p>
+              </div>
 
-                <AdminProductFields value={formData} onChange={(patch) => setFormData((current) => ({ ...current, ...patch }))} />
+              {/* Is Active Toggle */}
+              {(() => {
+                const stockNum = parseInt(formData.stock, 10)
+                const isOut = isNaN(stockNum) || stockNum <= 0
+                return (
+                  <div className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-[#fefaf2] p-3">
+                    <input
+                      type="checkbox"
+                      id="modal-is-active"
+                      checked={isOut ? false : formData.is_active}
+                      disabled={isOut}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="h-4 w-4 rounded text-orange-600 focus:ring-orange-500 disabled:opacity-50"
+                    />
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="modal-is-active"
+                        className={`text-xs font-semibold ${isOut ? 'text-gray-400 cursor-not-allowed' : 'text-gray-800 cursor-pointer'}`}
+                      >
+                        Publish to Storefront (Item is active and purchasable by customers)
+                      </label>
+                      {isOut && (
+                        <span className="text-[11px] text-amber-700 font-medium mt-0.5">
+                          Out-of-stock items are automatically deemed inactive.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
 
-                {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 border-t border-[#e1cba5] pt-4">
-                  <button type="button" onClick={() => setIsModalOpen(false)}
-                    className="rounded-xl border border-[#e1cba5] px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-[#fef8e8]">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={isSaving}
-                    className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-orange-600 disabled:opacity-50">
-                    {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                    <span>{editingProduct ? 'Save Changes' : 'Create Product'}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
+              {/* Description */}
+              <div>
+                <label htmlFor="modal-product-description" className="block text-xs font-bold text-[#10298E]">
+                  Product Description
+                </label>
+                <textarea id="modal-product-description" rows={3} value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Details, ingredients, usage directions, size specifications..."
+                  className="mt-1 w-full rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
+              </div>
+
+              <AdminProductFields value={formData} onChange={(patch) => setFormData((current) => ({ ...current, ...patch }))} />
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 border-t border-[#e1cba5] pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0">
+                <button type="button" onClick={() => setIsModalOpen(false)}
+                  className="rounded-xl border border-[#e1cba5] px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-[#fef8e8] sm:py-2">
+                  Cancel
+                </button>
+                <button type="submit" disabled={isSaving}
+                  className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-500/20 hover:bg-orange-600 disabled:opacity-50 sm:py-2">
+                  {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                  <span>{editingProduct ? 'Save Changes' : 'Create Product'}</span>
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
 
       {/* ── Confirm Dialog ─────────────────────────────────────────── */}
       <ConfirmDialog

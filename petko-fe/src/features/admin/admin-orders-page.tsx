@@ -71,7 +71,7 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
+    <div className="min-h-screen flex-1 w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
       <div className="space-y-6">
         <PageBanner
           title="Order Management"
