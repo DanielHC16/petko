@@ -25,6 +25,7 @@ const AdminProductsPage  = lazy(() => import('@/features/admin/admin-products-pa
 const AdminOrdersPage    = lazy(() => import('@/features/admin/admin-orders-page'))
 const AdminUsersPage     = lazy(() => import('@/features/admin/admin-users-page'))
 const AdminAnalyticsPage = lazy(() => import('@/features/analytics/admin-analytics-page'))
+const AdminReviewsPage = lazy(() => import('@/features/reviews/admin-reviews-page'))
 
 function PageFallback() {
   return (
@@ -47,11 +48,11 @@ export default function App() {
           {/* Dev preview */}
           <Route path="/loading-preview" element={<LoadingPreview />} />
 
-          {/* Authenticated customer routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
-              <Route path="/"             element={<ProductsPage />} />
-              <Route path="/products/:id" element={<ProductDetailPage />} />
+          {/* Public storefront with protected account actions. */}
+          <Route element={<AppLayout />}>
+            <Route path="/"             element={<ProductsPage />} />
+            <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route element={<ProtectedRoute />}>
               <Route path="/cart"         element={<CartPage />} />
               <Route path="/checkout"     element={<CheckoutPage />} />
               <Route path="/orders"       element={<OrdersPage />} />
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="/admin/orders"    element={<AdminOrdersPage />} />
               <Route path="/admin/users"     element={<AdminUsersPage />} />
               <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/reviews" element={<AdminReviewsPage />} />
             </Route>
           </Route>
 

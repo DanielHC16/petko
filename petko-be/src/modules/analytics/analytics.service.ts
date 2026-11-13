@@ -15,9 +15,9 @@ export class AnalyticsService {
     event: RecordAnalyticsEventDto,
     actor?: UserProfile,
   ): Promise<{ accepted: boolean }> {
-    if (!actor && event.page !== 'login')
+    if (!actor && !['login', 'catalog', 'product'].includes(event.page))
       throw new BadRequestException(
-        'Anonymous analytics only accepts login views.',
+        'Anonymous analytics only accepts public store views.',
       )
     return { accepted: await this.repository.record(event, actor) }
   }

@@ -109,9 +109,13 @@ begin
   update public.analytics_events set created_at='2024-03-01T03:00:00Z'
     where session_id in(v_customer_session,v_guest_session,v_identity_session,v_admin_session,v_promoted_session,v_listed_session);
   update public.analytics_events set created_at='2024-03-01T16:00:00Z' where id=v_other_event;
+  if not public.petko_record_analytics_event(gen_random_uuid(),gen_random_uuid(),'catalog',null,false)
+    or not public.petko_record_analytics_event(gen_random_uuid(),gen_random_uuid(),'product',null,false) then
+    raise exception 'Anonymous public store views rejected';
+  end if;
   begin
-    perform public.petko_record_analytics_event(gen_random_uuid(),gen_random_uuid(),'catalog',null,false);
-    raise exception 'Anonymous catalog view accepted';
+    perform public.petko_record_analytics_event(gen_random_uuid(),gen_random_uuid(),'checkout',null,false);
+    raise exception 'Anonymous private checkout view accepted';
   exception when sqlstate 'P4000' then null; end;
 
   insert into public.products(id,name,price,stock,category,pet_type) values

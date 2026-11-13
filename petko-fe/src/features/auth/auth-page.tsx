@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { rememberAuthReturn, safeAuthReturnPath } from '@/lib/auth-redirect'
 import { signInWithGoogle } from '@/lib/auth'
 import logoImg    from '@/assets/logo.png'
 import pageImg    from '@/assets/page.png'
@@ -49,7 +51,7 @@ function SignInForm({ isLoading, error, onSignIn, pawImg, dark = false }: SignIn
             <img src={logoImg} alt="PetKo" className="h-6 object-contain" />
           </div>
           <p className="text-sm text-gray-500 text-center">
-            Log in using Google to continue shopping.
+            Sign in or create an account with Google to place orders.
           </p>
         </div>
 
@@ -87,12 +89,14 @@ function SignInForm({ isLoading, error, onSignIn, pawImg, dark = false }: SignIn
           )}
           <span>{isLoading ? 'Redirecting…' : 'Continue with Google'}</span>
         </button>
+        <Link to="/" className="mt-4 block rounded-xl border border-petko-blue px-4 py-3 text-center text-sm font-bold text-petko-blue transition hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-petko-blue">Browse without an account</Link>
       </div>
     </div>
   )
 }
 
 export default function AuthPage() {
+  const [params] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -100,6 +104,7 @@ export default function AuthPage() {
     setIsLoading(true)
     setError(null)
     try {
+      rememberAuthReturn(safeAuthReturnPath(params.get('next')))
       await signInWithGoogle()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed. Please try again.')
@@ -220,7 +225,7 @@ export default function AuthPage() {
                     <span className="text-base font-bold text-petko-blue" style={{ fontFamily: "'Nunito', sans-serif" }}>Sign In to</span>
                     <img src={logoImg} alt="PetKo" className="h-5 object-contain" />
                   </div>
-                  <p className="text-xs text-gray-500 text-center">Log in using Google to continue shopping.</p>
+                  <p className="text-xs text-gray-500 text-center">Sign in or create an account with Google to place orders.</p>
                 </div>
                 {error && (
                   <div role="alert" className="mb-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700 flex items-start gap-2">
@@ -242,6 +247,7 @@ export default function AuthPage() {
                   )}
                   <span>{isLoading ? 'Redirecting…' : 'Continue with Google'}</span>
                 </button>
+                <Link to="/" className="mt-4 block rounded-xl border border-petko-blue px-3 py-2.5 text-center text-sm font-bold text-petko-blue transition hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-petko-blue">Browse without an account</Link>
               </div>
             </div>
           </div>

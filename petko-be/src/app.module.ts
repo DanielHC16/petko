@@ -10,6 +10,7 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { OrdersModule } from './modules/orders/orders.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
+import { ReviewsModule } from './modules/reviews/reviews.module'
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module'
     AdminStatsModule,
     OrdersModule,
     AnalyticsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

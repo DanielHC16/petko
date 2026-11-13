@@ -5,6 +5,8 @@ import toast from 'react-hot-toast'
 import { fetchProducts, type Product } from './products-api'
 import { PRODUCT_CATEGORIES, groupProductFamilies } from '@/lib/product-catalog'
 import { useCartStore } from '@/store/cart.store'
+import { shoppingSessionMatches, useShoppingSession } from '@/hooks/use-shopping-session'
+import { loginPath } from '@/lib/auth-redirect'
 import { getApiErrorMessage } from '@/lib/api-error'
 import dogcatImg    from '@/assets/proheader.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
@@ -21,6 +23,7 @@ function isSortOption(v: string): v is SortOption {
 }
 
 export default function ProductsPage() {
+  const { userId } = useShoppingSession()
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts]                     = useState<Product[]>([])
   const [search, setSearch]                         = useState('')
@@ -37,6 +40,7 @@ export default function ProductsPage() {
   const removeItem  = useCartStore((s) => s.removeItem)
   const updateQty   = useCartStore((s) => s.updateQuantity)
   const cartItems   = useCartStore((s) => s.items)
+  const cartReady = useCartStore(state => state.ownerId === userId && Boolean(userId) && !state.isLoading && !state.error && !state.isCheckingOut)
 
   const requestKey = JSON.stringify({ cat: selectedCategory, pet: petTab, search, sortBy, retryCount })
   const isLoading  = loadedKey !== requestKey
@@ -84,6 +88,7 @@ export default function ProductsPage() {
     setSearchParams(params)
   }
   function handleAddToCart(product: Product) {
+    if (!userId || !cartReady || !shoppingSessionMatches(userId) || useCartStore.getState().ownerId !== userId) return
     addItem({ product_id: product.id, name: product.name, price: Number(product.price), quantity: 1, image_url: product.image_url, stock: product.stock })
     toast.success(`Added ${product.name} to cart!`, {
       duration: 2000,
@@ -477,7 +482,7 @@ export default function ProductsPage() {
             {displayed.map(family => {
               const { product } = family
               const hasOptions = Boolean(product.parent_product_name)
-              const itemInCart = cartItems.find(i => i.product_id === product.id)
+              const itemInCart = userId ? cartItems.find(i => i.product_id === product.id) : undefined
               const canAddMore = product.stock > (itemInCart?.quantity ?? 0)
               return (
                 <div key={product.id}
@@ -530,6 +535,8 @@ export default function ProductsPage() {
                         className="mt-1.5 flex w-full items-center justify-center rounded-lg border border-orange-300 bg-orange-50 py-2 text-xs font-semibold text-orange-800 transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-petko-blue">
                         Choose options
                       </Link>
+                    ) : !userId && product.stock > 0 ? (
+                      <Link to={loginPath(`/products/${product.id}`)} className="mt-1.5 flex w-full items-center justify-center rounded-lg bg-petko-blue px-2 py-2 text-center text-xs font-semibold text-white hover:bg-petko-blue-dark focus-visible:ring-2 focus-visible:ring-orange-500">Sign in to add to cart</Link>
                     ) : itemInCart ? (
                       /* Quantity stepper — same style as Add to Cart button */
                       <div className="mt-1.5 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-gray-50 overflow-hidden">
@@ -550,7 +557,7 @@ export default function ProductsPage() {
                         </span>
                         <button
                           onClick={() => handleAddToCart(product)}
-                          disabled={!canAddMore}
+                          disabled={!canAddMore || !cartReady}
                           className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label="Add one more"
                         >
@@ -560,7 +567,7 @@ export default function ProductsPage() {
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore}
+                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore || !cartReady}
                         className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-gray-50 py-2 text-xs font-semibold text-gray-700 transition
                           hover:border-orange-500 hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
                         <ShoppingCart size={12} /> Add to Cart

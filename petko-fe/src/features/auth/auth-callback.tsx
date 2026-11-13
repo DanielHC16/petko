@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth.store'
 import { fetchCurrentProfile } from '@/lib/auth'
+import { consumeAuthReturn } from '@/lib/auth-redirect'
 import pawBlueImg from '@/assets/paw_blue.png'
 
 export default function AuthCallbackPage() {
@@ -19,11 +20,12 @@ export default function AuthCallbackPage() {
         setSession(session)
         const profile = await fetchCurrentProfile()
         if (!active || useAuthStore.getState().session?.user.id !== session.user.id) return
-        if (profile?.id === session.user.id) setProfile(profile)
+        if (profile?.id !== session.user.id) { setLoading(false); navigate('/login', { replace: true }); return }
+        setProfile(profile)
         setLoading(false)
 
         // The layout derives the terms prompt from the persisted user profile.
-        navigate('/', { replace: true })
+        navigate(consumeAuthReturn(), { replace: true })
       } catch {
         navigate('/login', { replace: true })
       }
