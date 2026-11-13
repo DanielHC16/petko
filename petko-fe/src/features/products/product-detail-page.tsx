@@ -1,5 +1,4 @@
 import { saveDirectCheckout } from '@/lib/checkout-selection'
-import { useAuthStore } from '@/store/auth.store'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
@@ -22,8 +21,12 @@ import {
   variantLabel,
 } from '@/lib/product-catalog'
 import { useCartStore } from '@/store/cart.store'
+import { shoppingSessionMatches, useShoppingSession } from '@/hooks/use-shopping-session'
+import { loginPath } from '@/lib/auth-redirect'
+import ProductReviews from '@/features/reviews/product-reviews'
 
 export default function ProductDetailPage() {
+  const { userId } = useShoppingSession()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -66,7 +69,7 @@ export default function ProductDetailPage() {
   }
 
   function handleAddToCart(): void {
-    if (!product || !cartReady) return
+    if (!product || !cartReady || !shoppingSessionMatches(userId) || useCartStore.getState().ownerId !== userId) return
     const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
     const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
     if (quantityToAdd <= 0) {
@@ -104,7 +107,7 @@ export default function ProductDetailPage() {
   }
 
   function handleBuyNow(): void {
-    if (!product || product.stock <= 0) return
+    if (!product || product.stock <= 0 || !shoppingSessionMatches(userId)) return
 
     const buyQty = Math.max(1, Math.min(quantity, product.stock))
 
@@ -119,7 +122,7 @@ export default function ProductDetailPage() {
     }
 
     // Save it to session storage so the checkout page can read it immediately
-    const buyerId = useAuthStore.getState().profile?.id
+    const buyerId = userId
     if (!buyerId) return
     saveDirectCheckout(buyerId, directItem)
 
@@ -453,7 +456,9 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Add to Cart Button */}
-                <button
+                {!userId && product.stock > 0 ? (
+                  <Link to={loginPath(`/products/${product.id}`)} className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-petko-blue px-3 py-3 text-center text-xs font-extrabold text-white hover:bg-petko-blue-dark focus-visible:ring-2 focus-visible:ring-orange-500 sm:text-sm">Sign in to add to cart</Link>
+                ) : <button
                   onClick={handleAddToCart}
                   disabled={remainingStock <= 0 || !cartReady}
                   className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-3 text-xs font-extrabold shadow-md transition sm:text-sm ${
@@ -470,10 +475,12 @@ export default function ProductDetailPage() {
                   ) : (
                     <span className="truncate">Add to Cart</span>
                   )}
-                </button>
+                </button>}
 
                 {/* Buy Now Button */}
-                <button
+                {!userId && product.stock > 0 ? (
+                  <Link to={loginPath(`/products/${product.id}`)} className="flex min-w-0 flex-1 items-center justify-center rounded-xl bg-petko-red px-3 py-3 text-center text-xs font-extrabold text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-petko-blue sm:text-sm">Sign in to buy</Link>
+                ) : <button
                   onClick={handleBuyNow}
                   disabled={product.stock <= 0}
                   className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl bg-[#D32F2F] px-3 py-2 text-xs font-extrabold text-white shadow-md transition hover:bg-[#B71C1C] disabled:bg-gray-300 disabled:text-gray-500 sm:px-4 sm:text-sm"
@@ -482,7 +489,7 @@ export default function ProductDetailPage() {
                   <span className="w-full truncate text-center text-[10px] font-normal">
                     Express Checkout
                   </span>
-                </button>
+                </button>}
               </div>
             </div>
 
@@ -585,6 +592,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+        <ProductReviews key={product.id} product={product} />
       </div>
     </div>
   )

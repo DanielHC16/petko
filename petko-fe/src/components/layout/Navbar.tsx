@@ -9,11 +9,15 @@ import {
 import { useAuthStore } from '@/store/auth.store'
 import { useCartStore } from '@/store/cart.store'
 import { signOut } from '@/lib/auth'
+import { useShoppingSession } from '@/hooks/use-shopping-session'
+import { loginPath } from '@/lib/auth-redirect'
 import logoImg from '@/assets/logo.png'
 import pawImg from '@/assets/paw_blue.png'
 
 export default function Navbar() {
-  const profile = useAuthStore((s) => s.profile)
+  const storedProfile = useAuthStore((s) => s.profile)
+  const { userId, isLoading } = useShoppingSession()
+  const profile = userId ? storedProfile : null
   const totalItems = useCartStore((s) => s.totalItems())
   const navigate = useNavigate()
   const location = useLocation()
@@ -80,6 +84,11 @@ export default function Navbar() {
 
         {/* Right Actions — always on same row */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {!profile ? (
+            <Link to={loginPath(location.pathname + location.search + location.hash)} className="rounded-xl bg-petko-blue px-3 py-2.5 text-xs font-bold text-white hover:bg-petko-blue-dark focus-visible:ring-2 focus-visible:ring-orange-500">
+              {isLoading ? 'Loading account…' : 'Sign in / Sign up'}
+            </Link>
+          ) : <>
           <Link
             to="/orders"
             aria-label="Your orders"
@@ -155,6 +164,7 @@ export default function Navbar() {
           >
             <LogOut size={17} />
           </button>
+          </>}
         </div>
       </div>
     </nav>

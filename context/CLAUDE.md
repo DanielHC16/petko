@@ -179,6 +179,29 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 - **Flow**: feature branch → PR on GitHub (`DanielHC16/petko`) → Vercel preview check → merge to `main` (merge commit) → production deploy. Never push directly to `main`.
 - PR #1/#2 shipped the unified Vercel deploy and the `@nestjs/config` CJS pin. `feat/admin-access-emails` carries the admin access list, the tsconfig fix and the audit fixes.
 
+### Guest browsing and verified product reviews
+
+The storefront `/` and `/products/:id` are public, including search, filters, variations, and visible reviews. Login offers **Browse without an account**. Guests must sign in before cart or purchase actions; no guest cart or automatic mutation is created on return from Google sign-in. Cart, checkout, orders, profile, and admin routes retain their existing guards.
+
+Reviews require a purchased SKU in an owned, noncancelled order with `delivery_confirmed_at` set by the customer. Shipping or admin-reported delivery alone does not qualify. There is one editable review per customer/SKU, with a required integer 1-5 paw rating and optional plain-text comment up to 2,000 characters. Product pages combine sibling reviews using the catalog's exact product-family semantics and label each purchased variant; inactive siblings' historic feedback remains included.
+
+Reviews publish immediately. Owners can edit or withdraw; admins can hide/unhide at `/admin/reviews` but cannot alter ratings/comments. Withdrawal retains a private slot so reposting cannot bypass an admin's hidden decision. Hidden/withdrawn reviews never contribute to public summaries. Account deletion removes authored reviews by cascade. Public review responses exclude private identity and purchase identifiers; owner eligibility and moderation use separate guarded endpoints.
+
+Apply additive `migration-010-guest-browsing-product-reviews.sql` before releasing review consumers; retain review data on application rollback. Run `verify-product-reviews.sql` in an isolated database only. `PRODUCT_REVIEWS_ENABLED=false` temporarily disables review APIs without disabling shopping. See `docs/plans/2026-11-14-guest-browsing-product-reviews.md` for contracts, verification, and handoff.
+
+Review API routes (all under `/api`):
+
+| Route | Access |
+|---|---|
+| `GET /products/:productId/reviews` | public family list, pagination and rating summary |
+| `GET /products/:productId/reviews/me?order_id=<optional UUID>` | authenticated owner eligibility and review |
+| `POST /products/:productId/reviews` | authenticated owner; verified purchase, rating/comment and optional expected version |
+| `DELETE /reviews/:id?expected_version=N` | authenticated owner; withdraw from public view |
+| `GET /reviews/admin` | admin; paginated visibility filter |
+| `PATCH /reviews/:id/visibility` | admin; version-checked hide/unhide |
+
+Anonymous analytics accepts only `login`, `catalog`, and `product` pages. Admin exclusion, session identity rotation, and private-page restrictions remain in force.
+
 ### API overview (all under `/api`)
 
 | Route | Auth |
@@ -195,7 +218,7 @@ Optional, normally unset on Vercel: `VITE_API_URL` (FE, defaults to `/api`) and 
 | `GET /admin-access-emails`, `POST /admin-access-emails`, `DELETE /admin-access-emails/:id` | admin |
 | `GET /admin/stats` | admin (dashboard counts) |
 | `GET /admin/analytics?start=YYYY-MM-DD&end=YYYY-MM-DD` | admin (aggregate sales and traffic; inclusive Manila dates, maximum 366 days) |
-| `POST /analytics/events` | optional authentication; guests can record login views only, identity/role derived by the server |
+| `POST /analytics/events` | optional authentication; guests can record login/catalog/product views, identity/role derived by the server |
 | `GET /orders`, `GET /orders/:id`, `POST /orders` | signed-in owner (COD or simulated cashless placement) |
 | `POST /orders/:id/confirm-receipt`, `POST /orders/:id/delivery-issue` | signed-in owner |
 | `GET /orders/admin/all`, `GET /orders/admin/:id` | admin |
@@ -215,7 +238,7 @@ See `docs/plans/2026-11-10-order-tracking.md` for the API contract, interview de
 
 Reports default to the last 30 calendar days in `Asia/Manila`; dates are inclusive and use server-side database aggregates, avoiding PostgREST row-limit truncation. Placed merchandise value uses order creation dates; completed sales use customer receipt-confirmation dates, independently of order creation. Cancelled orders are excluded. Simulated payments remain in order counts and placed value, but are excluded from summary/daily completed sales. Shipping is excluded for new orders; imported legacy subtotals retain migration 003's historical fallback and may include shipping. Confirmation is not evidence of COD collection. Buyer cohorts use first-ever noncancelled order dates; top products use purchase-time quantity/price snapshots.
 
-Traffic counts browser sessions and page views, not unique people. Guests record login-page views while the catalog remains protected. Authenticated admins exclude their entire current session, including earlier anonymous views; anonymous admins cannot be identified until sign-in. Capture accepts finite page categories and UUIDs only, with server timestamps and no raw URLs, IP addresses, or email fields. Collection errors never block checkout or navigation. Reports expose aggregate data only and display collection coverage rather than inventing historical visits.
+Traffic counts browser sessions and page views, not unique people. Guests can record login, catalog, and product views. Authenticated admins exclude their entire current session, including earlier anonymous views; anonymous admins cannot be identified until sign-in. Capture accepts finite page categories and UUIDs only, with server timestamps and no raw URLs, IP addresses, or email fields. Collection errors never block checkout or navigation. Reports expose aggregate data only and display collection coverage rather than inventing historical visits.
 
 Analytics follows controller/service/repository separation and service-role-only database RPCs. See `docs/plans/2026-11-11-admin-analytics.md` for the contract and rollback. Fixtures must never run against production.
 

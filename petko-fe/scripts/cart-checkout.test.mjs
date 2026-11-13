@@ -148,9 +148,11 @@ test('a previous account checkout cannot release a new account checkout lock', (
 test('protected routes reject stale/missing profiles and remount for each account', () => {
   const auth = { session: { user: { id: 'b' } }, profile: { id: 'a' }, isLoading: false }
   const Outlet = () => null
+  const Navigate = () => null
   const { default: Guard } = load('components/layout/ProtectedRoute.tsx', {
     '@/store/auth.store': { useAuthStore: selector => selector(auth) },
-    'react-router-dom': { Outlet, Navigate: () => null },
+    '@/lib/auth-redirect': load('lib/auth-redirect.ts'),
+    'react-router-dom': { Outlet, Navigate, useLocation: () => ({ pathname: '/cart', search: '', hash: '' }) },
   })
   assert.notEqual(Guard({}).type, Outlet)
   auth.profile = null
@@ -158,6 +160,9 @@ test('protected routes reject stale/missing profiles and remount for each accoun
   auth.profile = { id: 'b' }
   assert.equal(Guard({}).type, Outlet)
   assert.equal(Guard({}).key, 'b')
+  auth.session = null
+  assert.equal(Guard({}).type, Navigate)
+  assert.equal(Guard({}).props.to, '/login?next=%2Fcart')
 })
 
 test('profile and deletion requests remain bound to the initiating account token', async () => {

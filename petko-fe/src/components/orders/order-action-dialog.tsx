@@ -35,7 +35,22 @@ export default function OrderActionDialog({
     const dialog = ref.current
     const previousFocus = document.activeElement
     dialog?.showModal()
+    function containFocus(event: KeyboardEvent): void {
+      if (event.key !== 'Tab' || !dialog?.open) return
+      const controls = [...dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]')]
+        .filter(element => element.getClientRects().length > 0)
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (!first || !last) { event.preventDefault(); dialog.focus(); return }
+      if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        event.preventDefault(); last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        event.preventDefault(); first.focus()
+      }
+    }
+    document.addEventListener('keydown', containFocus)
     return () => {
+      document.removeEventListener('keydown', containFocus)
       dialog?.close()
       if (previousFocus instanceof HTMLElement) previousFocus.focus()
     }
@@ -50,6 +65,7 @@ export default function OrderActionDialog({
   return (
     <dialog
       ref={ref}
+      tabIndex={-1}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       onCancel={(event) => {

@@ -102,7 +102,7 @@ async function capture(observation: PendingView): Promise<void> {
   await identities.get(current)
   await save(current)
   const page = pageFor(observation.path)
-  if (!page || actor?.role === 'admin' || (!actor && page !== 'login') || (actor && !token)) return
+  if (!page || actor?.role === 'admin' || (!actor && !['login', 'catalog', 'product'].includes(page)) || (actor && !token)) return
   await recordAnalyticsEvent(current.id, crypto.randomUUID(), page, token)
 }
 

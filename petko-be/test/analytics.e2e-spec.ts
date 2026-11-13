@@ -97,7 +97,7 @@ describe('Analytics HTTP contract', () => {
     expect(repository.report).toHaveBeenCalledWith('2024-03-01', '2024-03-02')
   })
 
-  it('accepts guest login with 202 but rejects anonymous storefront/identity calls', async () => {
+  it('accepts guest public store views with 202 but rejects private/identity calls', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/analytics/events')
       .send(capture)
@@ -108,7 +108,16 @@ describe('Analytics HTTP contract', () => {
       message: '',
     })
     expect(repository.record).toHaveBeenCalledWith(capture, undefined)
-    for (const page of ['catalog', 'identify']) {
+    for (const page of ['catalog', 'product']) {
+      expect(
+        (
+          await request(app.getHttpServer())
+            .post('/api/analytics/events')
+            .send({ ...capture, page })
+        ).status,
+      ).toBe(202)
+    }
+    for (const page of ['cart', 'checkout', 'orders', 'identify']) {
       expect(
         (
           await request(app.getHttpServer())

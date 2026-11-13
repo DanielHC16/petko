@@ -1,5 +1,6 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
+import { loginPath } from '@/lib/auth-redirect'
 
 interface ProtectedRouteProps {
   requiredRole?: 'admin' | 'customer'
@@ -11,6 +12,7 @@ interface ProtectedRouteProps {
  * Renders <Outlet /> when the user passes all checks.
  */
 export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
+  const location = useLocation()
   const session = useAuthStore((s) => s.session)
   const profile = useAuthStore((s) => s.profile)
   const isLoading = useAuthStore((s) => s.isLoading)
@@ -25,7 +27,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />
+    return <Navigate to={loginPath(location.pathname + location.search + location.hash)} replace />
   }
 
   if (!profile || profile.id !== session.user.id) {

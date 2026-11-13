@@ -6,6 +6,7 @@ import OrderActionDialog from '@/components/orders/order-action-dialog'
 import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'
 import { formatOrderDate, formatOrderMoney, orderNumber } from '@/lib/order-status'
 import PageBanner from '@/components/layout/PageBanner'
+import OrderProductReviews from '@/features/reviews/order-product-reviews'
 
 function OrderListSkeleton() {
   return (
@@ -238,6 +239,7 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
           )}
         </OrderDetailCard>
       </div>
+      <OrderProductReviews key={order.id} order={order} />
       {dialog && (
         <OrderActionDialog
           key={dialog}

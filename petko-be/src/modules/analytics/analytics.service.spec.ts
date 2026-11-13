@@ -64,12 +64,18 @@ describe('AnalyticsService', () => {
     },
   )
 
-  it('accepts only login views from guests', async () => {
+  it('accepts only public store views from guests', async () => {
     expect(await service.record(event)).toEqual({ accepted: true })
     expect(repository.record).toHaveBeenCalledWith(event, undefined)
-    await expect(service.record({ ...event, page: 'catalog' })).rejects.toThrow(
-      BadRequestException,
-    )
+    await expect(
+      service.record({ ...event, page: 'catalog' }),
+    ).resolves.toEqual({ accepted: true })
+    await expect(
+      service.record({ ...event, page: 'product' }),
+    ).resolves.toEqual({ accepted: true })
+    await expect(
+      service.record({ ...event, page: 'checkout' }),
+    ).rejects.toThrow(BadRequestException)
     await expect(
       service.record({ ...event, page: 'identify' }),
     ).rejects.toThrow(BadRequestException)
