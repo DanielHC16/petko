@@ -83,10 +83,7 @@ export default function ProductsPage() {
     else params.set('pet', pet)
     setSearchParams(params)
   }
-  const cartReady = useCartStore(state => Boolean(state.ownerId) && !state.isLoading && !state.error && !state.isCheckingOut)
-
   function handleAddToCart(product: Product) {
-    if (!cartReady) { toast.error('Your cart is not ready. Open your cart to refresh it.'); return }
     addItem({ product_id: product.id, name: product.name, price: Number(product.price), quantity: 1, image_url: product.image_url, stock: product.stock })
     toast.success(`Added ${product.name} to cart!`, {
       duration: 2000,
@@ -193,105 +190,151 @@ export default function ProductsPage() {
 
       {/* ── Sticky filter area ────────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-petko-cream border-b border-amber-200 shadow-sm">
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-4 xl:px-6 py-3 space-y-2">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 space-y-2">
 
-          <div className="hidden lg:flex items-center gap-3 rounded-xl bg-white border border-gray-200 px-4 py-2.5 shadow-sm">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+      {/* ── TABLET & DESKTOP row 1: search + pet tabs + category select + sort ── */}
+          <div className="hidden md:flex flex-wrap xl:flex-nowrap items-center gap-2 lg:gap-3 rounded-xl bg-white border border-gray-200 px-3 lg:px-4 py-2 lg:py-2.5 shadow-sm">
+            {/* Search input: full width on tablet line 1, flex-1 on desktop */}
+            <div className="relative w-full xl:w-auto xl:flex-1 min-w-[200px]">
+              <Search className="absolute left-2.5 lg:left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 placeholder="Search dog food, cat treats, shampoo, toys..."
-                className="w-full bg-transparent py-1 pl-9 pr-2 text-sm text-gray-700 placeholder-gray-400 outline-none" />
-            </div>
-            <div className="h-6 w-px bg-gray-200 shrink-0" />
-            <div className="flex items-center gap-1 shrink-0">
-              {([
-                { value: 'all' as PetTab, label: 'All Pets', emoji: null },
-                { value: 'dog' as PetTab, label: 'Dogs',     emoji: '🐶' },
-                { value: 'cat' as PetTab, label: 'Cats',     emoji: '🐱' },
-              ]).map(tab => (
-                <button key={tab.value} onClick={() => setPetTab(tab.value)}
-                  className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition
-                    ${petTab === tab.value ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}>
-                  {tab.emoji && <span>{tab.emoji}</span>}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="h-6 w-px bg-gray-200 shrink-0" />
-            <div className="flex items-center gap-1.5 shrink-0 text-sm text-gray-500">
-              <span>Sort:</span>
-              <select value={sortBy} onChange={e => { if (isSortOption(e.target.value)) setSortBy(e.target.value) }}
-                className="rounded-md border border-orange-400 bg-white px-2 py-1 text-sm text-gray-700 outline-none focus:ring-1 focus:ring-orange-400">
-                <option value="newest">Newest First</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="name">Name (A-Z)</option>
-              </select>
-            </div>
-          </div>
-
-{/* ── DESKTOP row 2: category pills (fits 100% width on 1 line, no horizontal scroll) ── */}
-          <div className="hidden lg:flex items-center gap-1.5">
-            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  title={cat.label}
-                  className={`min-w-0 truncate rounded-full px-2 xl:px-2.5 py-1 text-[11px] font-medium transition text-center
-                    ${selectedCategory === cat.id
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'border border-gray-300 bg-white text-gray-600 hover:border-orange-400 hover:text-orange-600'}`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="shrink-0 rounded-full border border-red-400 bg-white px-2.5 py-1 text-[11px] font-medium text-red-500 hover:bg-red-50 transition"
-              >
-                ✕ Clear
-              </button>
-            )}
-          </div>
-
-          {/* ── MOBILE: search + hamburger button ───────────────────────── */}
-          <div className="flex lg:hidden items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2.5 shadow-sm">
-              <Search className="shrink-0 text-gray-400" size={15} />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search products..."
-                className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none" />
+                className="w-full bg-transparent py-1 pl-8 lg:pl-9 pr-6 text-xs lg:text-sm text-gray-700 placeholder-gray-400 outline-none"
+              />
               {search && (
-                <button onClick={() => setSearch('')} className="shrink-0 text-gray-400 hover:text-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
                   <X size={14} />
                 </button>
               )}
             </div>
-            {/* hamburger */}
+
+            <div className="hidden xl:block h-6 w-px bg-gray-200 shrink-0" />
+
+            {/* Tablet line 2: all filters on one single line (dissolves on xl+ via xl:contents) */}
+            <div className="flex xl:contents items-center justify-between gap-2 w-full pt-2 border-t border-gray-100 xl:w-auto xl:pt-0 xl:border-0">
+              <div className="flex items-center gap-2 lg:gap-3">
+                {/* Pet tabs */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {([
+                    { value: 'all' as PetTab, label: 'All Pets', emoji: null },
+                    { value: 'dog' as PetTab, label: 'Dogs',     emoji: '🐶' },
+                    { value: 'cat' as PetTab, label: 'Cats',     emoji: '🐱' },
+                  ]).map(tab => (
+                    <button
+                      key={tab.value}
+                      onClick={() => setPetTab(tab.value)}
+                      className={`flex items-center gap-1 rounded-full px-2.5 lg:px-3 py-1 text-xs lg:text-sm font-medium transition
+                        ${petTab === tab.value ? 'bg-orange-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}
+                    >
+                      {tab.emoji && <span>{tab.emoji}</span>}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="h-5 w-px bg-gray-200 shrink-0" />
+
+                {/* Category dropdown with label on tablet (md–lg) */}
+                <div className="flex xl:hidden items-center gap-1.5 shrink-0 text-xs lg:text-sm text-gray-500">
+                  <label htmlFor="tablet-category-filter">Category:</label>
+                  <select
+                    id="tablet-category-filter"
+                    value={selectedCategory}
+                    onChange={e => setSelectedCategory(e.target.value)}
+                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs lg:text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Sort dropdown with label */}
+                <div className="flex items-center gap-1.5 shrink-0 text-xs lg:text-sm text-gray-500">
+                  <label htmlFor="desktop-sort-by">Sort:</label>
+                  <select
+                    id="desktop-sort-by"
+                    value={sortBy}
+                    onChange={e => { if (isSortOption(e.target.value)) setSortBy(e.target.value) }}
+                    className="rounded-md border border-orange-400 bg-white px-2 py-1 text-xs lg:text-sm text-gray-700 outline-none focus:ring-1 focus:ring-orange-400"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="name">Name (A-Z)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear pill on tablet (md–lg) when filters are active */}
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="flex xl:hidden shrink-0 whitespace-nowrap rounded-full border border-red-400 bg-white px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-red-50 transition"
+                >
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── MOBILE ONLY (< 768px): search + hamburger button ────────── */}
+          <div className="flex md:hidden items-center gap-2">
+            <div className="flex flex-1 items-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2.5 shadow-sm">
+              <Search className="shrink-0 text-gray-400" size={15} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search products..."
+                className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="shrink-0 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(o => !o)}
+              aria-expanded={mobileMenuOpen}
+              aria-label="Toggle filters"
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 shadow-sm transition
                 ${mobileMenuOpen || hasActiveFilters
                   ? 'border-orange-400 bg-orange-50 text-orange-500'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
-              aria-label="Toggle filters"
             >
               {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
 
-          {/* ── MOBILE dropdown panel ───────────────────────────────────── */}
+          {/* ── MOBILE ONLY dropdown panel (in-flow) ────────────────────── */}
           {mobileMenuOpen && (
-            <div className="lg:hidden rounded-xl border border-gray-200 bg-white shadow-md p-4 space-y-4">
-
+            <div className="md:hidden rounded-xl border border-gray-200 bg-white shadow-md p-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Pet Type</span>
-                  <select value={petTab} onChange={e => setPetTab(e.target.value as PetTab)}
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400">
+                  <select
+                    value={petTab}
+                    onChange={e => setPetTab(e.target.value as PetTab)}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400"
+                  >
                     <option value="all">🐾 All Pets</option>
                     <option value="dog">🐶 Dogs</option>
                     <option value="cat">🐱 Cats</option>
@@ -299,8 +342,11 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Sort By</span>
-                  <select value={sortBy} onChange={e => { if (isSortOption(e.target.value)) setSortBy(e.target.value) }}
-                    className="rounded-lg border border-orange-400 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-500">
+                  <select
+                    value={sortBy}
+                    onChange={e => { if (isSortOption(e.target.value)) setSortBy(e.target.value) }}
+                    className="rounded-lg border border-orange-400 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-500"
+                  >
                     <option value="newest">Newest First</option>
                     <option value="price_asc">Price: Low → High</option>
                     <option value="price_desc">Price: High → Low</option>
@@ -312,21 +358,26 @@ export default function ProductsPage() {
               <div className="flex items-end gap-2">
                 <div className="flex flex-col gap-1 flex-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Category</span>
-                  <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400">
+                  <select
+                    value={selectedCategory}
+                    onChange={e => setSelectedCategory(e.target.value)}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400"
+                  >
                     {CATEGORIES.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.label}</option>
                     ))}
                   </select>
                 </div>
                 {hasActiveFilters && (
-                  <button onClick={() => { clearFilters(); setMobileMenuOpen(false) }}
-                    className="rounded-lg border border-red-400 bg-white px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition self-end">
+                  <button
+                    type="button"
+                    onClick={() => { clearFilters(); setMobileMenuOpen(false) }}
+                    className="rounded-lg border border-red-400 bg-white px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition self-end"
+                  >
                     ✕ Clear
                   </button>
                 )}
               </div>
-
             </div>
           )}
 
@@ -445,7 +496,7 @@ export default function ProductsPage() {
                         </span>
                         <button
                           onClick={() => handleAddToCart(product)}
-                          disabled={!canAddMore || !cartReady}
+                          disabled={!canAddMore}
                           className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label="Add one more"
                         >
@@ -455,7 +506,7 @@ export default function ProductsPage() {
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore || !cartReady}
+                      <button onClick={() => handleAddToCart(product)} disabled={!canAddMore}
                         className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-gray-50 py-2 text-xs font-semibold text-gray-700 transition
                           hover:border-orange-500 hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
                         <ShoppingCart size={12} /> Add to Cart

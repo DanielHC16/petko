@@ -274,102 +274,110 @@ export default function AdminProductsPage() {
 
         {/* ── Metrics ───────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-4 shadow-sm">
+          <div className="flex h-full flex-col justify-between rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-4 shadow-sm">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Total Products</span>
             <p className="mt-1 text-xl font-black text-[#10298E]">{totalCount}</p>
           </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+          <div className="flex h-full flex-col justify-between rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Active in Store</span>
             <p className="mt-1 text-xl font-black text-emerald-950">{activeCount}</p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
+          <div className="flex h-full flex-col justify-between rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Low / Out of Stock</span>
             <p className="mt-1 text-xl font-black text-amber-950">{lowStockCount}</p>
           </div>
-          <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 shadow-sm">
+          <div className="flex h-full flex-col justify-between rounded-xl border border-blue-200 bg-blue-50/50 p-4 shadow-sm">
             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Categories</span>
             <p className="mt-1 text-xl font-black text-blue-950">{PRODUCT_CATEGORIES.length}</p>
           </div>
         </div>
 
-        {/* ── Filter toolbar ────────────────────────────────────────── */}
-        <div className="flex flex-col gap-2 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm sm:flex-row sm:items-center">
-          {/* Search — grows to fill space */}
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, SKU, or description..."
-              className="w-full rounded-lg border border-[#e1cba5] bg-white py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none" />
-          </div>
-          {/* Dropdowns — always one row, never wrap */}
-          <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:items-center">
-            {/* Category */}
-            <div className="flex min-w-0 flex-col gap-1">
-              <label
-                htmlFor="filter-category"
-                className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
-              >
-                Category
-              </label>
-              <select
-                id="filter-category"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
-              >
-                <option value="all">All Categories</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {PRODUCT_CATEGORIES.find((category) => category.id === c)?.label || c}
-                  </option>
-                ))}
-              </select>
+        {/* ── Sticky Filter toolbar ─────────────────────────────────── */}
+        <div className="sticky top-0 z-20 -mx-6 border-b border-[#e1cba5]/80 bg-[#ecdab6]/95 px-6 py-3 backdrop-blur-sm lg:-mx-10 lg:px-10">
+          <div className="flex flex-col gap-2 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm sm:flex-row sm:items-center">
+            {/* Search — grows to fill space */}
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, SKU, or description..."
+                className="w-full rounded-lg border border-[#e1cba5] bg-white py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+              />
             </div>
 
-            {/* Pet Type */}
-            <div className="flex min-w-0 flex-col gap-1">
-              <label
-                htmlFor="filter-pet-type"
-                className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
-              >
-                Pet Type
-              </label>
-              <select
-                id="filter-pet-type"
-                value={petTypeFilter}
-                onChange={(e) => setPetTypeFilter(e.target.value)}
-                className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
-              >
-                <option value="all">🐾 All Pets</option>
-                <option value="dog">🐶 Dogs</option>
-                <option value="cat">🐱 Cats</option>
-              </select>
-            </div>
+            {/* Dropdowns — always one row, never wrap */}
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:items-center">
+              {/* Category */}
+              <div className="flex min-w-0 flex-col gap-1">
+                <label
+                  htmlFor="filter-category"
+                  className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+                >
+                  Category
+                </label>
+                <select
+                  id="filter-category"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+                >
+                  <option value="all">All Categories</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {PRODUCT_CATEGORIES.find((category) => category.id === c)?.label || c}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Stock Status */}
-            <div className="flex min-w-0 flex-col gap-1">
-              <label
-                htmlFor="filter-stock"
-                className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
-              >
-                Stock
-              </label>
-              <select
-                id="filter-stock"
-                value={stockFilter}
-                onChange={(e) => {
-                  if (isStockFilter(e.target.value)) setStockFilter(e.target.value)
-                }}
-                className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
-              >
-                <option value="all">All Stock</option>
-                <option value="in_stock">In Stock</option>
-                <option value="low_stock">Low Stock</option>
-                <option value="out_of_stock">Out of Stock</option>
-              </select>
+              {/* Pet Type */}
+              <div className="flex min-w-0 flex-col gap-1">
+                <label
+                  htmlFor="filter-pet-type"
+                  className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+                >
+                  Pet Type
+                </label>
+                <select
+                  id="filter-pet-type"
+                  value={petTypeFilter}
+                  onChange={(e) => setPetTypeFilter(e.target.value)}
+                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+                >
+                  <option value="all">🐾 All Pets</option>
+                  <option value="dog">🐶 Dogs</option>
+                  <option value="cat">🐱 Cats</option>
+                </select>
+              </div>
+
+              {/* Stock Status */}
+              <div className="flex min-w-0 flex-col gap-1">
+                <label
+                  htmlFor="filter-stock"
+                  className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+                >
+                  Stock
+                </label>
+                <select
+                  id="filter-stock"
+                  value={stockFilter}
+                  onChange={(e) => {
+                    if (isStockFilter(e.target.value)) setStockFilter(e.target.value)
+                  }}
+                  className="w-full min-w-0 truncate rounded-lg border border-[#e1cba5] bg-white px-2.5 py-2 text-xs text-gray-700 focus:border-orange-500 focus:outline-none sm:w-auto"
+                >
+                  <option value="all">All Stock</option>
+                  <option value="in_stock">In Stock</option>
+                  <option value="low_stock">Low Stock</option>
+                  <option value="out_of_stock">Out of Stock</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
+
         {/* ── Products table ────────────────────────────────────────── */}
         <div className="rounded-2xl border border-[#e1cba5] bg-white shadow-sm overflow-hidden">
           <div className="flex flex-col gap-2 border-b border-[#e1cba5] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
