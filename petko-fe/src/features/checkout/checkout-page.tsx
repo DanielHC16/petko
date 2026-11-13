@@ -16,6 +16,7 @@ import logoImg from '@/assets/logo.png'
 import pawYellowImg from '@/assets/paw_yellow.png'
 import gcashImg from '@/assets/GCash_logo.png'
 import { useCheckout } from './use-checkout'
+import { CHECKOUT_SELECTED_ITEMS_KEY, removeCheckedItemsAfterOrder } from '@/features/cart/cart-page'
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
 function StepBreadcrumb() {
@@ -219,8 +220,21 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isDirect = searchParams.get('mode') === 'direct'
+  
   const cartItems = useCartStore((s) => s.items)
+  const removeItem = useCartStore((s) => s.removeItem)
   const profile = useAuthStore((s) => s.profile)
+
+  // Load checked items saved from cart-page.tsx
+  const selectedCartItems = useMemo((): CartItem[] => {
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_SELECTED_ITEMS_KEY)
+      if (!raw) return []
+      return JSON.parse(raw) as CartItem[]
+    } catch {
+      return []
+    }
+  }, [])
 
   const directItem = useMemo((): CartItem | null => {
     if (!isDirect) return null
@@ -233,7 +247,9 @@ export default function CheckoutPage() {
     }
   }, [isDirect])
 
-  const items = isDirect && directItem ? [directItem] : cartItems
+  // Determine items to display: Direct Buy vs Checked Cart Items vs Fallback to all cart items
+  const items = isDirect && directItem ? [directItem] : selectedCartItems.length > 0 ? selectedCartItems : cartItems
+  
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
 
@@ -257,6 +273,7 @@ export default function CheckoutPage() {
     const directOrderItems = isDirect && directItem
       ? [{ product_id: directItem.product_id, quantity: directItem.quantity }]
       : undefined
+
     const order = await checkout.submit(
       {
         full_name: fullName,
@@ -271,14 +288,22 @@ export default function CheckoutPage() {
       delivery,
       directOrderItems,
     )
+
     if (order) {
-      if (isDirect) sessionStorage.removeItem('direct_checkout_item')
+      if (isDirect) {
+        sessionStorage.removeItem('direct_checkout_item')
+      } else {
+        // Clear only the checked/purchased items from the global cart store
+        removeCheckedItemsAfterOrder((id) => removeItem(String(id)))
+        // Set completion flag for cart-page safety clear
+        sessionStorage.setItem('petko_order_completed', 'true')
+      }
       navigate(`/orders?order=${order.id}`)
     }
   }
 
   return (
-    <div className="min-h-screen bg-petko-cream">
+    <div className="min-h-screen bg-petko-cream" style={{ fontFamily: "'Nunito', sans-serif" }}>
       {/* ── Banner ────────────────────────────────────────────────────────── */}
       <div className="rounded-b-2xl">
         <div className="relative overflow-hidden rounded-b-2xl bg-[#FFFBF5] h-[110px] sm:h-[130px] lg:h-[150px]">
@@ -577,7 +602,7 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Items stay scrollable so large carts keep the summary compact. */}
+              {/* Items list */}
               <ul className="max-h-[280px] divide-y divide-gray-100 overflow-y-auto pr-1">
                 {items.map((item) => (
                   <li

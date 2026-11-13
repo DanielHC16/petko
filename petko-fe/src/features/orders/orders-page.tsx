@@ -5,8 +5,116 @@ import OrderDetailCard, { OrderStatusBadge } from '@/components/orders/order-det
 import OrderActionDialog from '@/components/orders/order-action-dialog'
 import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'
 import { formatOrderDate, formatOrderMoney, orderNumber } from '@/lib/order-status'
-import petOrders from '@/assets/pet_orders.png'
 import PageBanner from '@/components/layout/PageBanner'
+
+function OrderListSkeleton() {
+  return (
+    <section
+      role="status"
+      aria-label="Loading your orders"
+      className="rounded-2xl border border-orange-200/80 bg-white/90 p-4 shadow-sm sm:p-5"
+    >
+      <span className="sr-only">Loading your orders…</span>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="h-4 w-32 animate-pulse rounded-md bg-orange-100/90" />
+        <div className="h-3.5 w-44 animate-pulse rounded-md bg-orange-100/60" />
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="flex flex-col justify-between rounded-xl border border-orange-100 bg-white p-4"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-4 w-28 animate-pulse rounded bg-orange-100/80" />
+              <div className="h-4 w-16 shrink-0 animate-pulse rounded bg-orange-100/80" />
+            </div>
+            <div className="my-3 h-3 w-36 animate-pulse rounded bg-orange-100/50" />
+            <div className="h-6 w-24 animate-pulse rounded-full bg-orange-100/70" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+        <div className="h-8 w-20 animate-pulse rounded-lg bg-orange-100/60" />
+        <div className="h-4 w-24 animate-pulse rounded bg-orange-100/50" />
+        <div className="h-8 w-16 animate-pulse rounded-lg bg-orange-100/60" />
+      </div>
+    </section>
+  )
+}
+
+function OrderDetailSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading order details"
+      className="space-y-6 rounded-2xl border border-orange-200/80 bg-[#FFF8EA] p-4 shadow-sm sm:p-6 lg:p-8"
+    >
+      <span className="sr-only">Loading order details…</span>
+
+      {/* Top 3-column summary skeleton */}
+      <div className="grid grid-cols-1 gap-6 border-b border-orange-200/60 pb-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8 lg:pb-8">
+        <div className="flex min-w-0 gap-4 lg:border-r lg:border-orange-200/60 lg:pr-6">
+          <div className="h-28 w-20 shrink-0 animate-pulse rounded-xl bg-orange-200/50 sm:h-32 sm:w-24" />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <div className="h-6 w-3/4 animate-pulse rounded-lg bg-orange-200/60" />
+            <div className="h-3.5 w-1/2 animate-pulse rounded bg-orange-200/40" />
+            <div className="h-6 w-24 animate-pulse rounded-full bg-orange-200/50" />
+            <div className="h-3.5 w-5/6 animate-pulse rounded bg-orange-200/40" />
+            <div className="h-9 w-28 animate-pulse rounded-lg bg-orange-200/60" />
+          </div>
+        </div>
+
+        <div className="min-w-0 space-y-2.5 lg:border-r lg:border-orange-200/60 lg:px-4">
+          <div className="mb-3 h-5 w-36 animate-pulse rounded bg-orange-200/60" />
+          <div className="h-4 w-32 animate-pulse rounded bg-orange-200/50" />
+          <div className="h-3.5 w-48 animate-pulse rounded bg-orange-200/40" />
+          <div className="h-3.5 w-40 animate-pulse rounded bg-orange-200/40" />
+          <div className="h-3.5 w-28 animate-pulse rounded bg-orange-200/40" />
+        </div>
+
+        <div className="min-w-0 md:col-span-2 lg:col-span-1 lg:pl-2">
+          <div className="h-36 w-full max-w-xs animate-pulse rounded-xl bg-orange-200/50 p-5" />
+        </div>
+      </div>
+
+      {/* Bottom progress & summary skeleton */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+        <div className="min-w-0 space-y-5 lg:col-span-2">
+          <div className="h-6 w-36 animate-pulse rounded bg-orange-200/60" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <div key={idx} className="flex flex-col items-center space-y-2">
+                <div className="h-12 w-12 animate-pulse rounded-xl bg-orange-200/60" />
+                <div className="h-3.5 w-16 animate-pulse rounded bg-orange-200/50" />
+                <div className="h-2.5 w-12 animate-pulse rounded bg-orange-200/40" />
+              </div>
+            ))}
+          </div>
+          <div className="h-11 w-full animate-pulse rounded-xl bg-orange-200/40" />
+        </div>
+
+        <div className="min-w-0 space-y-4 rounded-xl border border-orange-100 bg-[#fcf8f2] p-5">
+          <div className="h-5 w-32 animate-pulse rounded bg-orange-200/60" />
+          <div className="space-y-3 pt-2">
+            <div className="flex justify-between gap-2">
+              <div className="h-3.5 w-24 animate-pulse rounded bg-orange-200/40" />
+              <div className="h-3.5 w-16 animate-pulse rounded bg-orange-200/50" />
+            </div>
+            <div className="flex justify-between gap-2">
+              <div className="h-3.5 w-20 animate-pulse rounded bg-orange-200/40" />
+              <div className="h-3.5 w-12 animate-pulse rounded bg-orange-200/50" />
+            </div>
+            <div className="flex justify-between gap-2 border-t border-orange-200/50 pt-3">
+              <div className="h-5 w-28 animate-pulse rounded bg-orange-200/60" />
+              <div className="h-6 w-20 animate-pulse rounded bg-orange-200/70" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void }) {
   const detail = useOrderDetail(id)
@@ -26,82 +134,81 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
     return detail.error ? (
       <div
         role="alert"
-        className="rounded-2xl border border-red-200 bg-white p-6 text-sm text-red-800"
+        className="rounded-2xl border border-red-200 bg-white p-4 text-sm text-red-800 shadow-sm sm:p-6"
       >
-        <p>{detail.error}</p>
+        <p className="break-words">{detail.error}</p>
         <button
           type="button"
           onClick={detail.refresh}
-          className="mt-3 font-bold underline"
+          className="mt-3 font-bold underline hover:text-red-950"
         >
           Try loading this order again
         </button>
       </div>
     ) : (
-      <p
-        role="status"
-        className="rounded-2xl border border-orange-200 bg-white p-8 text-center text-sm text-gray-600"
-      >
-        Loading order details…
-      </p>
+      <OrderDetailSkeleton />
     )
 
   return (
-    <>
+    <div className="min-w-0">
       {detail.error && (
         <p
           role="alert"
-          className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-800"
+          className="mb-3 break-words rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
         >
           {detail.error} The last loaded details are shown below.{' '}
           <button
             type="button"
             onClick={detail.refresh}
-            className="font-bold underline"
+            className="font-bold underline hover:text-red-950"
           >
             Refresh
           </button>
         </p>
       )}
-      <OrderDetailCard order={order}>
-        {canConfirm && (
-          <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-700">
-              Have your pet's goodies arrived?
-              <span className="mt-1 block text-xs text-gray-500">
-                Confirm only after you have received this order.
-              </span>
-            </p>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={mutation.isPending || detail.isLoading}
-                onClick={() => {
-                  mutation.clearError()
-                  setDialog('confirm')
-                }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-petko-blue px-4 py-2.5 text-sm font-bold text-white hover:bg-petko-blue-dark disabled:opacity-50"
-              >
-                <CheckCircle2 size={17} />
-                Confirm received
-              </button>
-              {!hasOpenIssue && (
+      <div className="min-w-0 overflow-hidden">
+        <OrderDetailCard order={order}>
+          {canConfirm && (
+            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50/60 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+              <p className="min-w-0 text-sm text-gray-700">
+                <span className="block truncate font-semibold text-gray-800">
+                  Have your pet's goodies arrived?
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-gray-500">
+                  Confirm only after you have received this order.
+                </span>
+              </p>
+              <div className="flex w-full shrink-0 flex-col gap-2 xs:flex-row sm:w-auto sm:flex-wrap">
                 <button
                   type="button"
                   disabled={mutation.isPending || detail.isLoading}
                   onClick={() => {
                     mutation.clearError()
-                    setDialog('report')
+                    setDialog('confirm')
                   }}
-                  className="rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-900 hover:bg-orange-100 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 truncate rounded-xl bg-petko-blue px-4 py-2.5 text-sm font-bold text-white transition hover:bg-petko-blue-dark disabled:opacity-50 sm:w-auto"
                 >
-                  I haven't received it
+                  <CheckCircle2 size={17} className="shrink-0" />
+                  <span className="truncate">Confirm received</span>
                 </button>
-              )}
+                {!hasOpenIssue && (
+                  <button
+                    type="button"
+                    disabled={mutation.isPending || detail.isLoading}
+                    onClick={() => {
+                      mutation.clearError()
+                      setDialog('report')
+                    }}
+                    className="w-full truncate rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-orange-900 transition hover:bg-orange-100 disabled:opacity-50 sm:w-auto"
+                  >
+                    I haven't received it
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </OrderDetailCard>
+          )}
+        </OrderDetailCard>
+      </div>
       {dialog && (
         <OrderActionDialog
           key={dialog}
@@ -132,7 +239,7 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
           }
         />
       )}
-    </>
+    </div>
   )
 }
 
@@ -162,148 +269,192 @@ export default function OrdersPage() {
     setRefreshToken((value) => value + 1)
   }
 
-  return (
-    <div className="min-h-screen bg-[#ecdab6] pb-8 sm:pb-10">
+  const totalPages = list.data
+    ? Math.max(1, Math.ceil(list.data.total / list.data.limit))
+    : 1
 
+  return (
+    <div
+      style={{ fontFamily: "'Nunito', sans-serif" }}
+      className="min-h-screen overflow-x-hidden bg-[#f5eddb] pb-8 sm:pb-12"
+    >
       {/* Shared checkout-style banner */}
-      <div className="px-4 pt-4 sm:px-6 lg:px-10">
+      <div className="px-3 pt-3 sm:px-6 sm:pt-4 lg:px-10">
         <PageBanner
           title={
-            <>
-              Your orders{' '}
-              <PawPrint size={28} aria-hidden="true" className="inline-block shrink-0 align-middle" />
-            </>
+            <span className="inline-flex max-w-full items-center gap-2 truncate">
+              <span className="truncate">Your orders</span>
+              <PawPrint
+                size={26}
+                aria-hidden="true"
+                className="inline-block shrink-0 align-middle sm:h-7 sm:w-7"
+              />
+            </span>
           }
           subtitle="Track your companion's order from our warehouse to your home."
         />
       </div>
 
-      <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6">
-        <div className="flex items-center justify-between">
-          {/* Pet illustration on larger screens */}
-          <div className="hidden lg:block" aria-hidden="true">
-            <img src={petOrders} alt="" className="h-24 w-auto object-contain opacity-80" />
-          </div>
+      <div className="mx-auto max-w-6xl space-y-5 px-3 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Pet illustration on larger screens */}          
           <button
             type="button"
             onClick={refreshOrders}
             disabled={list.isLoading}
-            className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-semibold text-petko-blue hover:bg-orange-50 disabled:opacity-50"
+            className="ml-auto inline-flex max-w-full items-center justify-center gap-2 truncate rounded-xl border border-orange-200 bg-white px-3.5 py-2 text-xs font-bold text-petko-blue shadow-sm transition hover:bg-orange-50 disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm"
           >
             <RefreshCw
               size={16}
-              className={list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''}
+              className={`shrink-0 ${
+                list.isLoading ? 'animate-spin motion-reduce:animate-none' : ''
+              }`}
             />
-            Refresh orders
+            <span className="truncate">Refresh orders</span>
           </button>
         </div>
 
         {list.error && (
           <div
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+            className="break-words rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm"
           >
             {list.error}{' '}
-            <button type="button" onClick={refreshOrders} className="font-bold underline">
+            <button
+              type="button"
+              onClick={refreshOrders}
+              className="font-bold underline hover:text-red-950"
+            >
               Try again
             </button>
           </div>
         )}
+
         {!list.data && list.isLoading && (
-          <p
-            role="status"
-            className="rounded-2xl border border-orange-200 bg-white p-10 text-center text-sm text-gray-600"
-          >
-            Loading your orders…
-          </p>
+          <>
+            <OrderListSkeleton />
+            <OrderDetailSkeleton />
+          </>
         )}
+
         {list.data && list.data.orders.length === 0 && (
-          <div className="rounded-2xl border border-orange-200 bg-white px-6 py-12 text-center">
-            <Package size={40} className="mx-auto mb-4 text-petko-gold" aria-hidden="true" />
-            <h2 className="font-display text-xl font-bold text-petko-blue">
-              {page > 1 ? 'No orders on this page' : 'Your first delivery starts here'}
+          <div className="rounded-2xl border border-orange-200 bg-white px-4 py-10 text-center shadow-sm sm:px-6 sm:py-12">
+            <Package
+              size={40}
+              className="mx-auto mb-4 text-petko-gold"
+              aria-hidden="true"
+            />
+            <h2 className="truncate text-lg font-extrabold text-petko-blue sm:text-xl">
+              {page > 1
+                ? 'No orders on this page'
+                : 'Your first delivery starts here'}
             </h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mx-auto mt-2 max-w-md text-xs text-gray-500 sm:text-sm">
               {page > 1
                 ? 'Head back to see your recent orders.'
                 : 'Once you place an order, you can follow every step here.'}
             </p>
             {page > 1 ? (
               <button
+                type="button"
                 onClick={() => changePage(page - 1)}
-                className="mt-5 rounded-xl bg-petko-blue px-5 py-2.5 text-sm font-bold text-white"
+                className="mt-5 inline-flex max-w-full items-center justify-center truncate rounded-xl bg-petko-blue px-5 py-2.5 text-sm font-bold text-white transition hover:bg-petko-blue-dark"
               >
                 Previous page
               </button>
             ) : (
               <Link
                 to="/"
-                className="mt-5 inline-flex rounded-xl bg-petko-blue px-5 py-2.5 text-sm font-bold text-white"
+                className="mt-5 inline-flex max-w-full items-center justify-center truncate rounded-xl bg-petko-blue px-5 py-2.5 text-sm font-bold text-white transition hover:bg-petko-blue-dark"
               >
                 Browse pet essentials
               </Link>
             )}
           </div>
         )}
+
         {list.data && list.data.orders.length > 0 && (
           <section
             aria-label="Your order list"
-            className="rounded-2xl border border-orange-200 bg-white p-4 sm:p-5"
+            className="rounded-2xl border border-orange-200 bg-white p-3.5 shadow-sm sm:p-5"
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-bold text-petko-blue">
+              <h2 className="min-w-0 truncate text-sm font-extrabold text-petko-blue sm:text-base">
                 Your orders ({list.data.total})
               </h2>
-              <p className="text-xs text-gray-500">Choose an order to see its progress</p>
+              <p className="truncate text-xs text-gray-500">
+                Choose an order to see its progress
+              </p>
             </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
               {list.data.orders.map((order) => (
                 <button
                   key={order.id}
                   type="button"
                   aria-pressed={selectedId === order.id}
                   onClick={() => selectOrder(order.id)}
-                  className={`min-w-0 rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue ${
+                  className={`group flex min-w-0 flex-col justify-between overflow-hidden rounded-xl border p-3.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue sm:p-4 ${
                     selectedId === order.id
-                      ? 'border-petko-blue bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-orange-300'
+                      ? 'border-petko-blue bg-blue-50/80 shadow-sm'
+                      : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/30'
                   }`}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-petko-blue">{orderNumber(order.id)}</span>
-                    <span className="text-sm font-bold text-gray-800">{formatOrderMoney(order.total_amount)}</span>
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <span
+                      title={orderNumber(order.id)}
+                      className="min-w-0 flex-1 truncate text-sm font-extrabold text-petko-blue"
+                    >
+                      {orderNumber(order.id)}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-gray-800">
+                      {formatOrderMoney(order.total_amount)}
+                    </span>
                   </div>
-                  <p className="mb-3 mt-1 text-xs text-gray-500">{formatOrderDate(order.created_at)}</p>
-                  <OrderStatusBadge order={order} />
+
+                  <p
+                    title={formatOrderDate(order.created_at)}
+                    className="mb-3 mt-1 truncate text-xs text-gray-500"
+                  >
+                    {formatOrderDate(order.created_at)}
+                  </p>
+
+                  <div className="min-w-0 max-w-full overflow-hidden">
+                    <OrderStatusBadge order={order} />
+                  </div>
                 </button>
               ))}
             </div>
+
             <nav
               aria-label="Order pages"
-              className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4 text-xs"
+              className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3.5 text-xs sm:gap-3 sm:pt-4"
             >
               <button
                 type="button"
                 disabled={page <= 1 || list.isLoading}
                 onClick={() => changePage(page - 1)}
-                className="rounded-lg border border-gray-300 px-3 py-2 font-semibold disabled:opacity-40"
+                className="truncate rounded-lg border border-gray-300 bg-white px-3 py-1.5 font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40 sm:py-2"
               >
                 Previous
               </button>
-              <span className="text-gray-500">
-                Page {page} of {Math.max(1, Math.ceil(list.data.total / list.data.limit))}
+              <span className="truncate font-semibold text-gray-500">
+                Page {page} of {totalPages}
               </span>
               <button
                 type="button"
-                disabled={page * list.data.limit >= list.data.total || list.isLoading}
+                disabled={
+                  page * list.data.limit >= list.data.total || list.isLoading
+                }
                 onClick={() => changePage(page + 1)}
-                className="rounded-lg border border-gray-300 px-3 py-2 font-semibold disabled:opacity-40"
+                className="truncate rounded-lg border border-gray-300 bg-white px-3 py-1.5 font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-40 sm:py-2"
               >
                 Next
               </button>
             </nav>
           </section>
         )}
+
         {selectedId && (
           <CustomerOrder
             key={`${selectedId}:${refreshToken}`}
