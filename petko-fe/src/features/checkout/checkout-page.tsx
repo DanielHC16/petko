@@ -12,8 +12,8 @@ import {
 } from 'lucide-react'
 import { useCartStore, type CartItem } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
-import logoImg from '@/assets/logo.png'
 import PageBanner from '@/components/layout/PageBanner'
+import logoImg from '@/assets/logo.png'
 import gcashImg from '@/assets/GCash_logo.png'
 import { useCheckout } from './use-checkout'
 import { CHECKOUT_SELECTED_ITEMS_KEY, removeCheckedItemsAfterOrder } from '@/features/cart/cart-page'
@@ -220,7 +220,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isDirect = searchParams.get('mode') === 'direct'
-  
+
   const cartItems = useCartStore((s) => s.items)
   const removeItem = useCartStore((s) => s.removeItem)
   const profile = useAuthStore((s) => s.profile)
@@ -249,7 +249,7 @@ export default function CheckoutPage() {
 
   // Determine items to display: Direct Buy vs Checked Cart Items vs Fallback to all cart items
   const items = isDirect && directItem ? [directItem] : selectedCartItems.length > 0 ? selectedCartItems : cartItems
-  
+
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
 
@@ -303,20 +303,22 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#ecdab6] p-6 font-sans lg:p-10">
-     {/* ── Page banner ───────────────────────────────────────────── */}
+    <div
+      className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
+      style={{ fontFamily: "'Nunito', sans-serif" }}
+    >
+      {/* ── Page banner ───────────────────────────────────────────────────── */}
       <PageBanner
         title="Checkout"
         subtitle="Almost there! Review your details and place your order."
-      />
-
-      {/* ── Breadcrumb ────────────────────────────────────────────────────── */}
-      <div className="flex justify-center py-3">
-        <StepBreadcrumb />
-      </div>
+      >
+        <div className="flex justify-center pt-3">
+          <StepBreadcrumb />
+        </div>
+      </PageBanner>
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-screen-xl px-4 pb-10 sm:px-6">
+      <div className="mx-auto max-w-screen-xl pb-10">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_380px] lg:items-stretch">
           {/* LEFT ── form sections */}
           <fieldset
