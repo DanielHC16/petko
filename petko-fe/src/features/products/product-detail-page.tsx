@@ -11,6 +11,7 @@ import {
   Minus,
   Plus,
   Package,
+  Home,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useProductDetail } from './use-product-detail'
@@ -267,11 +268,11 @@ export default function ProductDetailPage() {
               to="/"
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
             >
-              <span>
-                <span className="hidden sm:inline">Home</span>
-              </span>
+              <Home size={15} />
+              <span className="hidden sm:inline">Home</span>
             </Link>
           </div>
+
           <ChevronRight size={14} className="shrink-0 text-gray-400" />
 
           <Link

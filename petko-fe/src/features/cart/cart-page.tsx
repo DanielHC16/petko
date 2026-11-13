@@ -239,6 +239,17 @@ export default function CartPage() {
 
               {/* Items List Card */}
               <div className="rounded-2xl border border-[#e1cba5] bg-[#fefaf2] p-4 sm:p-6 shadow-sm">
+                
+                {selectedIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveSelected}
+                      className="text-xs font-bold text-[#0B419A] underline hover:text-red-600 shrink-0"
+                    >
+                      Remove Checked
+                    </button>
+                  )}
+                  
                 <div className="divide-y divide-gray-200/70">
                   {items.map((item) => {
                     const isChecked  = selectedIds.includes(String(item.product_id))
@@ -385,15 +396,6 @@ export default function CartPage() {
                   <h2 className="text-base sm:text-lg font-extrabold text-[#0B419A] truncate">
                     Order Summary
                   </h2>
-                  {selectedIds.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveSelected}
-                      className="text-xs font-bold text-[#0B419A] underline hover:text-red-600 shrink-0"
-                    >
-                      Remove Checked
-                    </button>
-                  )}
                 </div>
 
                 <div className="space-y-4 py-4 text-sm">

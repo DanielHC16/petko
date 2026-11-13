@@ -112,7 +112,7 @@ export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicat
                   <Package size={18} className="text-orange-500" />
                   Top Ordered Products
                 </h3>
-                <p className="mt-0.5 text-xs text-gray-600">Ranked by units ordered across noncancelled orders.</p>
+                <p className="mt-0.5 text-xs text-gray-600">Ranked by total units ordered across noncancelled orders.</p>
               </div>
               <span className="text-xs font-semibold text-gray-500">
                 {report.topProducts.length} items ranked
@@ -127,9 +127,9 @@ export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicat
                   <thead className="bg-orange-50/70 text-xs text-gray-700 font-bold">
                     <tr>
                       <th scope="col" className="px-5 py-3">Rank &amp; Product</th>
-                      <th scope="col" className="px-5 py-3 text-right">Units Sold</th>
-                      <th scope="col" className="px-5 py-3 text-right">Placed Value</th>
-                      <th scope="col" className="px-5 py-3 text-right">Share</th>
+                      <th scope="col" className="px-5 py-3 text-right">Units Ordered</th>
+                      <th scope="col" className="px-5 py-3 text-right">Order Value</th>
+                      <th scope="col" className="px-5 py-3 text-right">Order Share (%)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
