@@ -275,11 +275,10 @@ export default function OrdersPage() {
 
   return (
     <div
+      className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
-      className="min-h-screen overflow-x-hidden bg-[#f5eddb] pb-8 sm:pb-12"
     >
       {/* Shared checkout-style banner */}
-      <div className="px-3 pt-3 sm:px-6 sm:pt-4 lg:px-10">
         <PageBanner
           title={
             <span className="inline-flex max-w-full items-center gap-2 truncate">
@@ -293,7 +292,6 @@ export default function OrdersPage() {
           }
           subtitle="Track your companion's order from our warehouse to your home."
         />
-      </div>
 
       <div className="mx-auto max-w-6xl space-y-5 px-3 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">

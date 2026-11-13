@@ -126,12 +126,11 @@ export default function CartPage() {
 
   return (
     <div
-      className="relative left-1/2 right-1/2 -mx-[50vw] min-h-screen w-screen overflow-x-hidden bg-[#f5eddb] pb-12"
+      className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
 
       {/* Shared checkout-style banner */}
-      <div className="px-4 pt-4 sm:px-6 lg:px-10">
         <PageBanner
           title={
             <>
@@ -141,7 +140,6 @@ export default function CartPage() {
           }
           subtitle="Track your companion's order from our warehouse to your home."
         />
-      </div>
 
       {/* ── Main Body Container ───────────────────────────────────────────── */}
       <div className="mx-auto mt-6 sm:mt-8 max-w-6xl px-4 sm:px-6 lg:px-8">

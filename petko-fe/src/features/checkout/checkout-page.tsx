@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
+  ArrowLeft,
   ShoppingCart,
   ChevronRight,
   Truck,
@@ -247,6 +248,9 @@ export default function CheckoutPage() {
     }
   }, [isDirect])
 
+  const backTo = isDirect && directItem ? `/products/${directItem.product_id}` : '/cart'
+  const backLabel = isDirect && directItem ? 'to Product Details' : 'to Cart'
+
   // Determine items to display: Direct Buy vs Checked Cart Items vs Fallback to all cart items
   const items = isDirect && directItem ? [directItem] : selectedCartItems.length > 0 ? selectedCartItems : cartItems
 
@@ -307,13 +311,30 @@ export default function CheckoutPage() {
       className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
-      {/* ── Page banner ───────────────────────────────────────────────────── */}
+     {/* ── Page banner ───────────────────────────────────────────────────── */}
       <PageBanner
         title="Checkout"
         subtitle="Almost there! Review your details and place your order."
       >
-        <div className="flex justify-center pt-3">
-          <StepBreadcrumb />
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-t border-orange-100 bg-orange-50/60 px-3 py-2 sm:px-8">
+          <div className="justify-self-start">
+            <Link
+              to={backTo}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+            >
+              <ArrowLeft size={13} />
+              <span>
+                Back<span className="hidden sm:inline"> {backLabel}</span>
+              </span>
+            </Link>
+          </div>
+
+          <div className="justify-self-center">
+            <StepBreadcrumb />
+          </div>
+
+          {/* Empty right column balances the left button so StepBreadcrumb stays dead-center */}
+          <div aria-hidden="true" />
         </div>
       </PageBanner>
 
