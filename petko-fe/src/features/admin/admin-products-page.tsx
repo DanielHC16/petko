@@ -381,7 +381,6 @@ export default function AdminProductsPage() {
                   <option value="all">🐾 All Pets</option>
                   <option value="dog">🐶 Dogs</option>
                   <option value="cat">🐱 Cats</option>
-                  <option value="both">🐾 Both</option>
                 </select>
               </div>
 
