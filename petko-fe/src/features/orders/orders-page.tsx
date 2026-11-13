@@ -6,7 +6,9 @@ import OrderActionDialog from '@/components/orders/order-action-dialog'
 import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'
 import { formatOrderDate, formatOrderMoney, orderNumber } from '@/lib/order-status'
 import PageBanner from '@/components/layout/PageBanner'
+import type { OrderDetail } from '@/lib/order-types'
 import OrderProductReviews from '@/features/reviews/order-product-reviews'
+import DeliveryReviewModal from '@/features/reviews/delivery-review-modal'
 
 function OrderListSkeleton() {
   return (
@@ -120,6 +122,7 @@ function OrderDetailSkeleton() {
 function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void }) {
   const detail = useOrderDetail(id)
   const [dialog, setDialog] = useState<'confirm' | 'report' | 'cancel' | null>(null)
+  const [reviewPromptOrder, setReviewPromptOrder] = useState<OrderDetail | null>(null)
   const mutation = useOrderMutation(() => {
     detail.refresh()
     onUpdated()
@@ -276,16 +279,27 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
           isPending={mutation.isPending}
           error={mutation.error}
           onClose={() => setDialog(null)}
-          onSubmit={(note) =>
-            mutation.mutate(
+          onSubmit={async (note) => {
+            const isConfirming = dialog === 'confirm'
+            const success = await mutation.mutate(
               order,
-              dialog === 'confirm'
+              isConfirming
                 ? { type: 'confirm' }
                 : dialog === 'cancel'
                   ? { type: 'cancel', reason: note || undefined }
                   : { type: 'report', message: note },
             )
-          }
+            if (success && isConfirming) {
+              setReviewPromptOrder(order)
+            }
+            return success
+          }}
+        />
+      )}
+      {reviewPromptOrder && (
+        <DeliveryReviewModal
+          order={reviewPromptOrder}
+          onClose={() => setReviewPromptOrder(null)}
         />
       )}
     </div>

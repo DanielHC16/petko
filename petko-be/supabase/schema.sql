@@ -922,7 +922,7 @@ create table if not exists public.product_reviews (
   version integer not null default 0 check (version >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (user_id,product_id)
+  unique (order_item_id)
 );
 create index if not exists product_reviews_visible_idx
   on public.product_reviews(product_id,created_at desc,id desc)
@@ -1008,15 +1008,39 @@ begin
     select 1 from public.orders o join public.order_items i on i.order_id=o.id
     where o.id=p_order_id and o.user_id=p_user_id and i.product_id=p_product_id
   ) then raise exception using errcode='P4040',message='Purchase not found'; end if;
-  select i.id into v_item from public.orders o join public.order_items i on i.order_id=o.id
-    where o.user_id=p_user_id and i.product_id=p_product_id
-      and (p_order_id is null or o.id=p_order_id)
-      and o.delivery_confirmed_at is not null and o.fulfillment_status<>'cancelled' and o.status<>'cancelled'
-    order by o.delivery_confirmed_at desc,i.id limit 1;
-  v_purchased := exists(select 1 from public.orders o join public.order_items i on i.order_id=o.id
-    where o.user_id=p_user_id and i.product_id=p_product_id
-      and (p_order_id is null or o.id=p_order_id) and o.fulfillment_status<>'cancelled' and o.status<>'cancelled');
-  select * into v_review from public.product_reviews where user_id=p_user_id and product_id=p_product_id;
+
+  if p_order_id is not null then
+    select i.id into v_item from public.orders o join public.order_items i on i.order_id=o.id
+      where o.user_id=p_user_id and i.product_id=p_product_id and o.id=p_order_id
+        and o.delivery_confirmed_at is not null and o.fulfillment_status<>'cancelled' and o.status<>'cancelled'
+      order by o.delivery_confirmed_at desc,i.id limit 1;
+    v_purchased := exists(select 1 from public.orders o join public.order_items i on i.order_id=o.id
+      where o.user_id=p_user_id and i.product_id=p_product_id and o.id=p_order_id
+        and o.fulfillment_status<>'cancelled' and o.status<>'cancelled');
+    if v_item is not null then
+      select * into v_review from public.product_reviews where user_id=p_user_id and order_item_id=v_item;
+    end if;
+  else
+    select i.id into v_item from public.orders o join public.order_items i on i.order_id=o.id
+      left join public.product_reviews r on r.order_item_id=i.id and r.user_id=p_user_id and r.withdrawn_at is null
+      where o.user_id=p_user_id and i.product_id=p_product_id
+        and o.delivery_confirmed_at is not null and o.fulfillment_status<>'cancelled' and o.status<>'cancelled'
+        and r.id is null
+      order by o.delivery_confirmed_at desc,i.id limit 1;
+    if v_item is null then
+      select i.id into v_item from public.orders o join public.order_items i on i.order_id=o.id
+        where o.user_id=p_user_id and i.product_id=p_product_id
+          and o.delivery_confirmed_at is not null and o.fulfillment_status<>'cancelled' and o.status<>'cancelled'
+        order by o.delivery_confirmed_at desc,i.id limit 1;
+    end if;
+    v_purchased := exists(select 1 from public.orders o join public.order_items i on i.order_id=o.id
+      where o.user_id=p_user_id and i.product_id=p_product_id
+        and o.fulfillment_status<>'cancelled' and o.status<>'cancelled');
+    if v_item is not null then
+      select * into v_review from public.product_reviews where user_id=p_user_id and order_item_id=v_item;
+    end if;
+  end if;
+
   return jsonb_build_object('eligible',v_item is not null,
     'reason',case when v_item is not null then 'eligible' when v_purchased then 'receipt_required' else 'purchase_required' end,
     'order_item_id',v_item,'review',case when v_review.id is not null then public.petko_review_projection(v_review) else null end);
@@ -1042,7 +1066,7 @@ begin
   if v_order.delivery_confirmed_at is null or v_order.fulfillment_status='cancelled' or v_order.status='cancelled' then
     raise exception using errcode='P4091',message='Confirmed receipt required';
   end if;
-  select * into v_review from public.product_reviews where user_id=p_user_id and product_id=p_product_id for update;
+  select * into v_review from public.product_reviews where user_id=p_user_id and order_item_id=p_order_item_id for update;
   if found then
     if p_expected_version is null or p_expected_version<>v_review.version then
       raise exception using errcode='P4090',message='Review changed';

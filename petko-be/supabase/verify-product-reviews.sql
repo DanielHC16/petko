@@ -87,14 +87,16 @@ begin
   review_id:=(result->>'id')::uuid;
   if result->>'comment'<>'<script>inert text</script>' or result->>'author_name'<>'Alex E.' then raise exception 'Normalization/projection incorrect'; end if;
   begin
-    perform public.petko_save_product_review(owner_id,product_id,repeated_item,4,'Repeat',null);
-    raise exception 'Repeat purchase added a rating';
+    perform public.petko_save_product_review(owner_id,product_id,item_id,4,'Repeat same item',null);
+    raise exception 'Repeat same item added without version';
   exception when sqlstate 'P4090' then null; end;
+  result:=public.petko_save_product_review(owner_id,product_id,repeated_item,4,'Second order review',null);
+  if result->>'comment'<>'Second order review' then raise exception 'Repeat order review failed'; end if;
   result:=public.petko_save_product_review(owner_id,sibling_id,sibling_item,3,'',null);
   sibling_review:=(result->>'id')::uuid;
   update public.products set stock=0 where id=sibling_id;
   result:=public.petko_product_reviews(product_id,1,10);
-  if (result->>'total')::integer<>2 or (result#>>'{summary,average_rating}')::numeric<>4
+  if (result->>'total')::integer<>3 or (result#>>'{summary,average_rating}')::numeric<>4
     or result#>>'{summary,ratings,3}'<>'1' or result->>'scope'<>'family' then raise exception 'Family aggregates lost inactive sibling'; end if;
   if result->'reviews'->0 ?| array['user_id','order_id','order_item_id','is_hidden','version','withdrawn_at','email','avatar_url'] then
     raise exception 'Public projection leaked private information';
