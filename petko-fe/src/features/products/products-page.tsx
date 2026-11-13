@@ -114,47 +114,74 @@ export default function ProductsPage() {
     <>
     <div className="bg-petko-cream min-h-screen flex flex-col">
 
-      {/* ── Hero banner ───────────────────────────────────────────────────── */}
+{/* ── Hero banner ───────────────────────────────────────────────────── */}
       <div className="rounded-b-2xl">
         <div className="relative overflow-hidden rounded-b-2xl bg-[#FFFBF5] h-[160px] sm:h-[190px] lg:h-[220px]">
 
-          {/* Left paws — scale with viewport */}
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
-            style={{ top: '40%', left: '-25px', transform: 'rotate(23deg)' }} />
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
-            style={{ top: 'calc(40% + 4px)', left: '-30px', transform: 'rotate(23deg)' }} />
+          {/* Left paws */}
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-[16] pointer-events-none opacity-30 w-[100px] sm:w-[140px] lg:w-[180px]"
+            style={{ top: '55%', left: '-33px', transform: 'rotate(23deg)' }}
+          />
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-[16] pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
+            style={{ top: 'calc(55% + 4px)', left: 'calc(-33px + 3px)', transform: 'rotate(23deg)' }}
+          />
 
           {/* Right paws */}
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[110px] sm:w-[155px] lg:w-[200px]"
-            style={{ top: '-45px', right: '-50px', transform: 'rotate(195deg)' }} />
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[110px] sm:w-[155px] lg:w-[200px]"
-            style={{ top: '-44px', right: '-55px', transform: 'rotate(195deg)' }} />
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-10 pointer-events-none opacity-30 -top-8 -right-7 sm:-top-12 sm:-right-11 lg:-top-16 lg:-right-14 w-[110px] sm:w-[155px] lg:w-[200px]"
+            style={{ transform: 'rotate(195deg)' }}
+          />
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-10 pointer-events-none opacity-70 -top-[calc(2rem-4px)] -right-[calc(1.75rem-3px)] sm:-top-[calc(3rem-4px)] sm:-right-[calc(2.75rem-3px)] lg:-top-[calc(4rem-4px)] lg:-right-[calc(3.5rem-3px)] w-[110px] sm:w-[155px] lg:w-[200px]"
+            style={{ transform: 'rotate(195deg)' }}
+          />
 
-          {/* Content */}
-          <div className="relative z-20 h-full max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-2">
+          {/* Soft cream fade */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-0 z-[15] w-[68%] sm:w-[58%] bg-gradient-to-r from-[#FFFBF5]/85 via-[#FFFBF5]/75 to-transparent"
+          />
+
+          {/* Content — centered as a single unit on sm+ */}
+          <div className="relative h-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 flex items-center justify-between sm:justify-center gap-4">
 
             {/* Text */}
-            <div className="flex-shrink-0 max-w-[55%] sm:max-w-[45%]">
-              <h1 className="font-extrabold text-[#0B419A] leading-[1.1]"
-                style={{ fontFamily: "'Nunito', sans-serif", fontSize: 'clamp(1.4rem, 5vw, 3.2rem)' }}>
+            <div className="relative z-20 flex-shrink-0 max-w-[62%] sm:max-w-none">
+              <h1
+                className="font-extrabold text-[#0B419A] leading-[1.08] drop-shadow-[0_1px_6px_rgba(255,251,245,0.9)]"
+                style={{ fontFamily: "'Nunito', sans-serif", fontSize: 'clamp(1.35rem, 5vw, 3.2rem)' }}
+              >
                 There's More<br />
                 <span className="text-[#0B419A]">to </span>
                 <span className="text-[#E31B23]">Care</span>
               </h1>
-              <p className="mt-1 sm:mt-2 text-[10px] sm:text-[12px] lg:text-[13px] font-medium text-gray-700 leading-snug">
-                Dekalidad na pagkain, laruan, at essentials para sa mas masayang buhay ng inyong pet
+              <p className="mt-1 sm:mt-2 max-w-[240px] sm:max-w-[330px] text-[10px] sm:text-[12px] lg:text-[13px] font-bold text-gray-900 leading-snug drop-shadow-[0_1px_4px_rgba(255,251,245,0.95)]">
+                Dekalidad na pagkain, laruan, at essentials<br className="hidden sm:inline" /> para sa mas masayang buhay ng inyong pet
               </p>
             </div>
 
-            {/* Animal image */}
-            <div className="relative h-full flex items-end justify-center flex-1 min-w-0">
-              <img src={dogcatImg} alt="" aria-hidden="true"
-                className="absolute bottom-0 z-20 object-contain object-bottom pointer-events-none"
-                style={{ height: '115%', right: 0 }} />
+            {/* Animal image — keeps exact overlap with text while centering the pair */}
+            <div className="flex h-full flex-shrink-0 items-end justify-start sm:-ml-16 md:-ml-24 lg:-ml-28">
+              <img
+                src={dogcatImg}
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-0 right-1 z-10 h-[118px] w-auto max-w-none object-contain object-bottom sm:static sm:z-10 sm:h-[92%] lg:h-[95%] sm:w-auto sm:max-w-none"
+              />
             </div>
 
           </div>

@@ -393,7 +393,7 @@ export default function AdminProductsPage() {
             </div>
           ) : (
             <div>
-              <table className="w-full text-left text-sm">
+              <table className="w-full table-fixed text-left text-sm">
                 <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
                   <tr>
                     <th className="px-4 py-3">Product</th>
@@ -401,8 +401,8 @@ export default function AdminProductsPage() {
                     <th className="hidden px-4 py-3 md:table-cell">Pet Type</th>
                     <th className="hidden px-4 py-3 md:table-cell">Price</th>
                     <th className="hidden px-4 py-3 md:table-cell">Stock</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="hidden px-4 py-3 md:table-cell w-24">Status</th>
+                    <th className="px-4 py-3 text-right w-20 md:w-28">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e1cba5]/60">
@@ -459,6 +459,20 @@ export default function AdminProductsPage() {
                                 </p>
                                 {product.sku && <p className="mt-0.5 break-all text-[10px] font-semibold text-gray-600">{product.sku}</p>}
                                 {product.parent_product_name && <p className="text-[10px] text-orange-700 line-clamp-1" title={product.parent_product_name}>Family: {product.parent_product_name}</p>}
+                                {/* Status badge — mobile only (replaces the hidden Status column) */}
+                                <span
+                                  onClick={(e) => { e.stopPropagation(); if (product.stock > 0) handleToggleActive(product) }}
+                                  className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider md:hidden ${
+                                    product.stock <= 0
+                                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-75'
+                                      : product.is_active
+                                      ? 'bg-emerald-100 text-emerald-800 cursor-pointer hover:bg-emerald-200'
+                                      : 'bg-gray-100 text-gray-600 cursor-pointer hover:bg-gray-200'
+                                  }`}
+                                  title={product.stock <= 0 ? 'Out-of-stock items are automatically inactive' : 'Click to toggle'}
+                                >
+                                  {product.stock <= 0 ? 'Inactive' : product.is_active ? 'Active' : 'Inactive'}
+                                </span>
                                 <p className="hidden truncate text-[11px] text-gray-400 md:block">
                                   {product.description || 'No description'}
                                 </p>
@@ -485,8 +499,8 @@ export default function AdminProductsPage() {
                             </span>
                           </td>
 
-                          {/* Status — always visible */}
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          {/* Status — desktop only (mobile shows it inline in Product cell) */}
+                          <td className="hidden px-4 py-3 md:table-cell" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => handleToggleActive(product)}
                               disabled={product.stock <= 0}
@@ -535,8 +549,8 @@ export default function AdminProductsPage() {
                         {isExpanded && (
                           <tr key={`${product.id}-expanded`} className="bg-[#fefaf2]">
 
-                            {/* ── MOBILE: colSpan=3, stacked layout ── */}
-                            <td colSpan={3} className="px-3 pb-3 pt-2 md:hidden">
+                            {/* ── MOBILE: colSpan=2 (Product + Actions) ── */}
+                            <td colSpan={2} className="px-3 pb-3 pt-2 md:hidden">
                               {/* Top: chevron + name + status pill */}
                               <div className="flex items-start gap-2 mb-3">
                                 <button onClick={() => setExpandedId(null)}
@@ -574,12 +588,12 @@ export default function AdminProductsPage() {
                               </div>
                               {/* Bottom: edit + delete buttons */}
                               <div className="flex gap-2 pl-7">
-                                <button onClick={() => handleOpenEditModal(product)}
+                                <button onClick={(e) => { e.stopPropagation(); handleOpenEditModal(product) }}
                                   className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#e1cba5] bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
                                   aria-label={`Edit ${product.name}`}>
                                   <Edit2 size={15} /> Edit
                                 </button>
-                                <button onClick={() => handleDeleteProduct(product)} disabled={isDeleting}
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product) }} disabled={isDeleting}
                                   className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                                   aria-label={`Delete ${product.name}`}>
                                   <Trash2 size={15} className={isDeleting ? 'animate-pulse' : ''} /> Delete

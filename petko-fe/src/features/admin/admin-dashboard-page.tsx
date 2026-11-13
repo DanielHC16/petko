@@ -55,57 +55,88 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10">
       <div className="space-y-8">
 
-        {/* ── Hero banner ─────────────────────────────────────────────── */}
+{/* ── Hero banner ─────────────────────────────────────────────── */}
         <div className="relative -mx-6 -mt-6 mb-2 overflow-hidden rounded-b-2xl bg-[#FFFBF5] shadow-sm lg:-mx-12 lg:-mt-12">
-          {/* Left paw pair */}
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
-            style={{ top: '40%', left: '-25px', transform: 'rotate(23deg)' }} />
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
-            style={{ top: 'calc(40% + 4px)', left: '-30px', transform: 'rotate(23deg)' }} />
-          {/* Right paw pair */}
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[110px] sm:w-[155px] lg:w-[200px]"
-            style={{ top: '-45px', right: '-50px', transform: 'rotate(195deg)' }} />
-          <img src={pawYellowImg} alt="" aria-hidden="true"
-            className="absolute z-10 pointer-events-none opacity-70 w-[110px] sm:w-[155px] lg:w-[200px]"
-            style={{ top: '-44px', right: '-55px', transform: 'rotate(195deg)' }} />
+          {/* Left paws */}
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-[16] pointer-events-none opacity-30 w-[100px] sm:w-[140px] lg:w-[180px]"
+            style={{ top: '55%', left: '-33px', transform: 'rotate(23deg)' }}
+          />
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-[16] pointer-events-none opacity-70 w-[100px] sm:w-[140px] lg:w-[180px]"
+            style={{ top: 'calc(55% + 4px)', left: 'calc(-33px + 3px)', transform: 'rotate(23deg)' }}
+          />
 
-          <div className="relative z-20 mx-auto flex h-[160px] max-w-4xl items-center justify-between gap-2 px-4 sm:h-[190px] sm:px-6 lg:h-[220px]">
+          {/* Right paws */}
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-10 pointer-events-none opacity-30 -top-8 -right-7 sm:-top-12 sm:-right-11 lg:-top-16 lg:-right-14 w-[110px] sm:w-[155px] lg:w-[200px]"
+            style={{ transform: 'rotate(195deg)' }}
+          />
+          <img
+            src={pawYellowImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute z-10 pointer-events-none opacity-70 -top-[calc(2rem-4px)] -right-[calc(1.75rem-3px)] sm:-top-[calc(3rem-4px)] sm:-right-[calc(2.75rem-3px)] lg:-top-[calc(4rem-4px)] lg:-right-[calc(3.5rem-3px)] w-[110px] sm:w-[155px] lg:w-[200px]"
+            style={{ transform: 'rotate(195deg)' }}
+          />
+
+          {/* Soft cream fade */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-0 z-[15] w-[68%] sm:w-[58%] bg-gradient-to-r from-[#FFFBF5]/85 via-[#FFFBF5]/75 to-transparent"
+          />
+
+          {/* Content */}
+          <div className="relative mx-auto flex h-[160px] max-w-4xl items-center justify-between gap-2 px-6 sm:h-[190px] sm:px-10 md:px-12 lg:h-[220px]">
             {/* Text */}
-            <div className="flex-shrink-0 max-w-[55%] sm:max-w-[45%]">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-orange-200 bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
-                  <ShieldCheck size={11} />
+            <div className="relative z-20 flex-shrink-0 max-w-[62%] sm:max-w-[55%]">
+              <div className="flex flex-nowrap items-center gap-1.5">
+                <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-orange-200 bg-orange-100 px-2 py-0.5 text-[9px] font-semibold text-orange-700 sm:text-[10px]">
+                  <ShieldCheck size={10} />
                   Admin Portal
                 </span>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-medium text-emerald-700 sm:text-[10px]">
                   <CheckCircle2 size={10} />
                   RBAC Verified
                 </span>
               </div>
-              <h1 className="mt-1.5 font-extrabold text-[#0B419A] leading-[1.1]"
-                style={{ fontFamily: "'Nunito', sans-serif", fontSize: 'clamp(1.1rem, 4vw, 2.4rem)' }}>
+              <h1
+                className="mt-1.5 font-extrabold text-[#0B419A] leading-[1.1] drop-shadow-[0_1px_6px_rgba(255,251,245,0.9)]"
+                style={{ fontFamily: "'Nunito', sans-serif", fontSize: 'clamp(1.1rem, 4vw, 2.4rem)' }}
+              >
                 Welcome back,<br />
                 <span className="text-[#E31B23]">{profile?.full_name?.split(' ')[0] || 'Admin'}!</span>
               </h1>
-              <p className="mt-0.5 text-[9px] font-medium text-gray-600 leading-snug sm:text-[12px]">
+              <p className="mt-0.5 truncate text-[10px] font-semibold text-gray-800 leading-snug drop-shadow-[0_1px_4px_rgba(255,251,245,0.95)] sm:text-[12px]">
                 Signed in as <span className="font-mono text-orange-600">{profile?.email}</span>
               </p>
-              <Link to="/"
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:mt-3 sm:text-xs">
-                <Eye size={13} />
+              <Link
+                to="/"
+                className="mt-2 inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#10298E] px-2.5 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:mt-3 sm:px-3 sm:text-xs"
+              >
+                <Eye size={12} />
                 Launch Customer View
-                <ExternalLink size={11} className="opacity-80" />
+                <ExternalLink size={10} className="opacity-80" />
               </Link>
             </div>
 
             {/* Dog/cat illustration */}
-            <div className="relative h-full flex items-end justify-center flex-1 min-w-0">
-              <img src={dogcatImg} alt="" aria-hidden="true"
-                className="absolute bottom-0 z-20 object-contain object-bottom pointer-events-none"
-                style={{ height: '115%', right: 0 }} />
+            <div className="flex h-full flex-1 min-w-0 items-end justify-end sm:-ml-10 md:-ml-16">
+              <img
+                src={dogcatImg}
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-0 right-1 z-10 h-[118px] w-auto max-w-none object-contain object-bottom sm:static sm:z-10 sm:h-[90%] lg:h-[95%] sm:w-auto sm:max-w-full"
+              />
             </div>
           </div>
         </div>
