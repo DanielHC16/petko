@@ -254,9 +254,16 @@ export default function ProductDetailPage() {
           aria-label="Breadcrumb"
           className="flex min-w-0 items-center gap-1.5 overflow-hidden text-xs font-semibold text-gray-600 sm:gap-2 sm:text-sm"
         >
-          <Link to="/" className="shrink-0 transition hover:text-[#0B3B8C]">
-            Home
-          </Link>
+          <div className="justify-self-start">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+            >
+              <span>
+                <span className="hidden sm:inline">Home</span>
+              </span>
+            </Link>
+          </div>
           <ChevronRight size={14} className="shrink-0 text-gray-400" />
 
           <Link
