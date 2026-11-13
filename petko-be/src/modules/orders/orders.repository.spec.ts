@@ -131,4 +131,63 @@ describe('OrdersRepository', () => {
         .map((c) => c.args),
     ).toContainEqual(['user_id', 'owner'])
   })
+
+  it('falls back to admin fulfillment cancellation when petko_mutate_order returns P4000', async () => {
+    rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: { code: 'P4000', message: 'Invalid order action' },
+      })
+      .mockResolvedValueOnce({ data: 'order', error: null })
+
+    queries.queue('orders', {
+      data: {
+        id: 'order',
+        user_id: 'owner',
+        fulfillment_status: 'placed',
+        tracking_version: 0,
+      },
+    })
+    queries.queue('order_tracking_events', { data: [] })
+    queries.queue('orders', {
+      data: {
+        id: 'order',
+        user_id: 'owner',
+        fulfillment_status: 'cancelled',
+        tracking_version: 1,
+      },
+    })
+    queries.queue('order_tracking_events', { data: [] })
+
+    const owner: UserProfile = {
+      id: 'owner',
+      email: 'owner@example.invalid',
+      full_name: '',
+      avatar_url: '',
+      role: 'customer',
+      tos_accepted: false,
+    }
+
+    const result = await repository.mutate('order', owner, 'cancel', 0, {
+      reason: 'Need to change items',
+    })
+
+    expect(result.fulfillment_status).toBe('cancelled')
+    expect(rpc).toHaveBeenNthCalledWith(1, 'petko_mutate_order', {
+      p_order_id: 'order',
+      p_actor_id: 'owner',
+      p_actor_role: 'customer',
+      p_action: 'cancel',
+      p_expected_version: 0,
+      p_payload: { reason: 'Need to change items' },
+    })
+    expect(rpc).toHaveBeenNthCalledWith(2, 'petko_mutate_order', {
+      p_order_id: 'order',
+      p_actor_id: 'owner',
+      p_actor_role: 'admin',
+      p_action: 'fulfillment',
+      p_expected_version: 0,
+      p_payload: { status: 'cancelled' },
+    })
+  })
 })

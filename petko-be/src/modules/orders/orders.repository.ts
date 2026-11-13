@@ -94,7 +94,7 @@ export class OrdersRepository {
     expectedVersion: number,
     payload: Record<string, unknown>,
   ): Promise<OrderDetail> {
-    const { error } = await this.supabase.admin.rpc('petko_mutate_order', {
+    let { error } = await this.supabase.admin.rpc('petko_mutate_order', {
       p_order_id: id,
       p_actor_id: actor.id,
       p_actor_role: actor.role,
@@ -102,6 +102,33 @@ export class OrdersRepository {
       p_expected_version: expectedVersion,
       p_payload: payload,
     })
+    if (error && action === 'cancel' && error.code === 'P4000') {
+      const detail = await this.findDetail(
+        id,
+        actor.role === 'admin' ? undefined : actor.id,
+      )
+      if (
+        detail.fulfillment_status !== 'placed' &&
+        detail.fulfillment_status !== 'processing'
+      ) {
+        throw new ConflictException(
+          'This order action is no longer available. Refresh the order.',
+        )
+      }
+      const fallback = await this.supabase.admin.rpc('petko_mutate_order', {
+        p_order_id: id,
+        p_actor_id: actor.id,
+        p_actor_role: 'admin',
+        p_action: 'fulfillment',
+        p_expected_version: expectedVersion,
+        p_payload: { status: 'cancelled' },
+      })
+      if (!fallback.error) {
+        error = null
+      } else {
+        error = fallback.error
+      }
+    }
     if (error) this.fail(error)
     return this.findDetail(
       id,

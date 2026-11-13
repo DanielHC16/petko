@@ -21,11 +21,12 @@ interface AnalyticsDedicatedViewProps {
 
 export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicatedViewProps) {
   const s = report.summary
+  const dailyList = Array.isArray(report.daily) ? report.daily : []
 
   // Find peak day by placed value
-  const peakDay = report.daily.reduce(
+  const peakDay = dailyList.reduce(
     (max, day) => (day.placedValue > (max?.placedValue ?? 0) ? day : max),
-    report.daily[0],
+    dailyList[0],
   )
 
   const aov = s.placedOrders > 0 ? s.placedValue / s.placedOrders : 0
@@ -101,7 +102,7 @@ export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicat
           </div>
 
           {/* Dedicated Chart */}
-          <AnalyticsTrends daily={report.daily} activeTab="placed_value" />
+          <AnalyticsTrends daily={dailyList} activeTab="placed_value" />
 
           {/* Top ordered products table */}
           <section className="overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm" aria-labelledby="analytics-top-products-heading">
@@ -258,7 +259,7 @@ export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicat
           </div>
 
           {/* Dedicated Chart */}
-          <AnalyticsTrends daily={report.daily} activeTab="completed_sales" />
+          <AnalyticsTrends daily={dailyList} activeTab="completed_sales" />
         </div>
       )}
 
@@ -368,7 +369,7 @@ export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicat
           </div>
 
           {/* Dedicated Chart */}
-          <AnalyticsTrends daily={report.daily} activeTab="sessions" />
+          <AnalyticsTrends daily={dailyList} activeTab="sessions" />
         </div>
       )}
 
@@ -479,7 +480,7 @@ export default function AnalyticsDedicatedView({ tab, report }: AnalyticsDedicat
           </div>
 
           {/* Dedicated Chart */}
-          <AnalyticsTrends daily={report.daily} activeTab="customers" />
+          <AnalyticsTrends daily={dailyList} activeTab="customers" />
         </div>
       )}
     </div>
