@@ -45,7 +45,7 @@ export default function AdminUsersPage() {
 
   // Access-list state
   const [accessEmails, setAccessEmails] = useState<AdminAccessEmail[]>([])
-  const [isLoadingAccess] = useState(false)
+  const [isLoadingAccess, setIsLoadingAccess] = useState(false)
   const [accessEmailInput, setAccessEmailInput] = useState('')
   const [isAddingAccess, setIsAddingAccess] = useState(false)
   const [removingAccessId, setRemovingAccessId] = useState<string | null>(null)
@@ -60,7 +60,14 @@ export default function AdminUsersPage() {
     confirmLabel: string
     variant: 'danger' | 'warning' | 'info'
     onConfirm: () => void
-  }>({ open: false, title: '', message: '', confirmLabel: 'Confirm', variant: 'danger', onConfirm: () => {} })
+  }>({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirm',
+    variant: 'danger',
+    onConfirm: () => {},
+  })
 
   // Lock base page scroll when confirmation popup is open
   useEffect(() => {
@@ -101,17 +108,26 @@ export default function AdminUsersPage() {
     try {
       setUsers(await fetchUsers())
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to fetch users'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error(getApiErrorMessage(err, 'Failed to fetch users'), {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
   async function loadAccessEmails() {
+    setIsLoadingAccess(true)
     try {
       setAccessEmails(await fetchAccessEmails())
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to load admin access list'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error(getApiErrorMessage(err, 'Failed to load admin access list'), {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
+    } finally {
+      setIsLoadingAccess(false)
     }
   }
 
@@ -119,45 +135,89 @@ export default function AdminUsersPage() {
     e.preventDefault()
     const email = accessEmailInput.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Please enter a valid email address', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error('Please enter a valid email address', {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
-    if (accessEmails.some((r) => r.email === email)) {
-      toast.error('That email is already on the access list', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+    if (accessEmails.some((r) => r.email.toLowerCase() === email)) {
+      toast.error('That email is already on the access list', {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
     setIsAddingAccess(true)
     try {
       await addAccessEmail(email)
       await promoteUser(email, 'admin')
-      toast.success(`${email} pre-approved as admin`, { icon: '🛡️', style: toastStyle('success'), iconTheme: toastIconTheme('success') })
+      toast.success(`${email} pre-approved as admin`, {
+        icon: '🛡️',
+        style: toastStyle('success'),
+        iconTheme: toastIconTheme('success'),
+      })
       setAccessEmailInput('')
       await Promise.all([loadAccessEmails(), loadUsers()])
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to pre-approve email'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error(getApiErrorMessage(err, 'Failed to pre-approve email'), {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
     } finally {
       setIsAddingAccess(false)
     }
   }
 
   async function handleRemoveAccessEmail(row: AdminAccessEmail) {
+    const matchedUser = users.find(
+      (u) => u.email.trim().toLowerCase() === row.email.trim().toLowerCase(),
+    )
+
     setConfirmDialog({
       open: true,
       title: 'Remove from access list',
-      message: `Remove ${row.email} from the admin access list?\n\nThey lose list-granted access on their next request.`,
+      message: `Remove ${row.email} from the admin access list?\n\nThey will immediately be removed from the Admins table and demoted to CUSTOMER.`,
       confirmLabel: 'Remove',
       variant: 'danger',
       onConfirm: async () => {
         setConfirmDialog((d) => ({ ...d, open: false }))
         setRemovingAccessId(row.id)
+        if (matchedUser) setUpdatingId(matchedUser.id)
+
         try {
           await removeAccessEmail(row.id)
-          toast.success(`Removed ${row.email} from access list`, { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+
+          // If the user exists in the users list as an admin, demote/remove them from the Admins tab immediately
+          if (matchedUser && matchedUser.role === 'admin') {
+            await updateUserRole(matchedUser.id, 'customer')
+          }
+
+          // Optimistic immediate UI state update so Admins table updates right away
+          setAccessEmails((prev) => prev.filter((item) => item.id !== row.id))
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.email.trim().toLowerCase() === row.email.trim().toLowerCase()
+                ? { ...u, role: 'customer', admin_access_listed: false }
+                : u,
+            ),
+          )
+
+          toast.success(`Removed ${row.email} from Admins`, {
+            style: toastStyle('error'),
+            iconTheme: toastIconTheme('error'),
+          })
+
+          // Background sync with server
           await Promise.all([loadAccessEmails(), loadUsers()])
         } catch (err: unknown) {
-          toast.error(getApiErrorMessage(err, 'Failed to remove email'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+          toast.error(getApiErrorMessage(err, 'Failed to remove email'), {
+            style: toastStyle('error'),
+            iconTheme: toastIconTheme('error'),
+          })
         } finally {
           setRemovingAccessId(null)
+          setUpdatingId(null)
         }
       },
     })
@@ -174,12 +234,18 @@ export default function AdminUsersPage() {
     }
 
     if (matchedAccess.email === ownEmail) {
-      toast.error('You cannot demote your own admin account!', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error('You cannot demote your own admin account!', {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
 
     if (accessEmails.length <= 1) {
-      toast.error('Cannot remove the last remaining admin from the access list.', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error('Cannot remove the last remaining admin from the access list.', {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
 
@@ -195,10 +261,27 @@ export default function AdminUsersPage() {
         try {
           await removeAccessEmail(matchedAccess.id)
           await updateUserRole(targetUser.id, 'customer')
-          toast.success(`Removed from access list and demoted ${targetUser.email} to CUSTOMER`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
+
+          // Optimistic UI update
+          setAccessEmails((prev) => prev.filter((item) => item.id !== matchedAccess.id))
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === targetUser.id
+                ? { ...u, role: 'customer', admin_access_listed: false }
+                : u,
+            ),
+          )
+
+          toast.success(
+            `Removed from access list and demoted ${targetUser.email} to CUSTOMER`,
+            { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') },
+          )
           await Promise.all([loadAccessEmails(), loadUsers()])
         } catch (err: unknown) {
-          toast.error(getApiErrorMessage(err, 'Failed to demote admin'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+          toast.error(getApiErrorMessage(err, 'Failed to demote admin'), {
+            style: toastStyle('error'),
+            iconTheme: toastIconTheme('error'),
+          })
         } finally {
           setUpdatingId(null)
         }
@@ -208,7 +291,10 @@ export default function AdminUsersPage() {
 
   async function handleToggleRole(targetUser: AdminUser) {
     if (targetUser.id === currentAdmin?.id) {
-      toast.error('You cannot change your own admin role!', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error('You cannot change your own admin role!', {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
 
@@ -225,10 +311,19 @@ export default function AdminUsersPage() {
         setUpdatingId(targetUser.id)
         try {
           await updateUserRole(targetUser.id, newRole)
-          toast.success(`Updated ${targetUser.email} to ${newRole.toUpperCase()}`, { style: toastStyle('warning'), iconTheme: toastIconTheme('warning') })
+          setUsers((prev) =>
+            prev.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u)),
+          )
+          toast.success(`Updated ${targetUser.email} to ${newRole.toUpperCase()}`, {
+            style: toastStyle('warning'),
+            iconTheme: toastIconTheme('warning'),
+          })
           loadUsers()
         } catch (err: unknown) {
-          toast.error(getApiErrorMessage(err, 'Failed to update role'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+          toast.error(getApiErrorMessage(err, 'Failed to update role'), {
+            style: toastStyle('error'),
+            iconTheme: toastIconTheme('error'),
+          })
         } finally {
           setUpdatingId(null)
         }
@@ -238,11 +333,17 @@ export default function AdminUsersPage() {
 
   async function handleDeleteUser(targetUser: AdminUser) {
     if (targetUser.id === currentAdmin?.id) {
-      toast.error('You cannot remove your own active admin account!', { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+      toast.error('You cannot remove your own active admin account!', {
+        style: toastStyle('error'),
+        iconTheme: toastIconTheme('error'),
+      })
       return
     }
 
     const email = targetUser.email
+    const matchedAccess = accessEmails.find(
+      (r) => r.email.trim().toLowerCase() === email.trim().toLowerCase(),
+    )
 
     setConfirmDialog({
       open: true,
@@ -254,11 +355,25 @@ export default function AdminUsersPage() {
         setConfirmDialog((d) => ({ ...d, open: false }))
         setDeletingId(targetUser.id)
         try {
+          if (matchedAccess) {
+            await removeAccessEmail(matchedAccess.id)
+          }
           await deleteUser(targetUser.id)
-          toast.success(`Removed account ${email}`, { icon: '🗑️', style: toastStyle('error'), iconTheme: toastIconTheme('error') })
-          loadUsers()
+          setUsers((prev) => prev.filter((u) => u.id !== targetUser.id))
+          if (matchedAccess) {
+            setAccessEmails((prev) => prev.filter((a) => a.id !== matchedAccess.id))
+          }
+          toast.success(`Removed account ${email}`, {
+            icon: '🗑️',
+            style: toastStyle('error'),
+            iconTheme: toastIconTheme('error'),
+          })
+          await Promise.all([loadAccessEmails(), loadUsers()])
         } catch (err: unknown) {
-          toast.error(getApiErrorMessage(err, 'Failed to delete user account'), { style: toastStyle('error'), iconTheme: toastIconTheme('error') })
+          toast.error(getApiErrorMessage(err, 'Failed to delete user account'), {
+            style: toastStyle('error'),
+            iconTheme: toastIconTheme('error'),
+          })
         } finally {
           setDeletingId(null)
         }
@@ -328,7 +443,9 @@ export default function AdminUsersPage() {
               {isLoading ? (
                 <div className="mt-1.5 h-6 w-10 animate-pulse rounded-lg bg-[#e1cba5]/70 sm:mt-2.5 sm:h-7 sm:w-14" />
               ) : (
-                <p className="mt-1 text-lg font-black text-[#10298E] sm:mt-2 sm:text-2xl">{users.length}</p>
+                <p className="mt-1 text-lg font-black text-[#10298E] sm:mt-2 sm:text-2xl">
+                  {users.length}
+                </p>
               )}
             </div>
             <p className="mt-0.5 text-[10px] leading-tight text-gray-400 sm:text-[11px]">
@@ -349,7 +466,9 @@ export default function AdminUsersPage() {
               {isLoading ? (
                 <div className="mt-1.5 h-6 w-10 animate-pulse rounded-lg bg-orange-200/80 sm:mt-2.5 sm:h-7 sm:w-14" />
               ) : (
-                <p className="mt-1 text-lg font-black text-orange-950 sm:mt-2 sm:text-2xl">{adminCount}</p>
+                <p className="mt-1 text-lg font-black text-orange-950 sm:mt-2 sm:text-2xl">
+                  {adminCount}
+                </p>
               )}
             </div>
             <p className="mt-0.5 text-[10px] leading-tight text-orange-700/80 sm:text-[11px]">
@@ -370,7 +489,9 @@ export default function AdminUsersPage() {
               {isLoading ? (
                 <div className="mt-1.5 h-6 w-10 animate-pulse rounded-lg bg-blue-200/80 sm:mt-2.5 sm:h-7 sm:w-14" />
               ) : (
-                <p className="mt-1 text-lg font-black text-blue-950 sm:mt-2 sm:text-2xl">{customerCount}</p>
+                <p className="mt-1 text-lg font-black text-blue-950 sm:mt-2 sm:text-2xl">
+                  {customerCount}
+                </p>
               )}
             </div>
             <p className="mt-0.5 text-[10px] leading-tight text-blue-700/80 sm:text-[11px]">
@@ -380,23 +501,29 @@ export default function AdminUsersPage() {
         </div>
 
         {/* ── Pre-Approve Admin Access (unified card) ───────────────── */}
-        <div className="rounded-2xl border border-orange-200 bg-[#fdf2e1] p-5 shadow-sm sm:p-6">
+        <div className="rounded-2xl border border-orange-200 bg-[#fdf2e1] p-4 shadow-sm sm:p-6">
           <div className="mb-4 flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <KeyRound size={18} />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-[#10298E]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            <div className="min-w-0 flex-1">
+              <h2
+                className="text-base font-bold text-[#10298E]"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
                 Pre-Approve Admin Access
               </h2>
               <p className="text-xs text-gray-600">
-                Adding an email allowlists it <strong>and</strong> sets their DB role to Admin. They appear in the Admins tab immediately — even before they first sign in.
+                Adding an email allowlists it <strong>and</strong> sets their DB role to Admin. They
+                appear in the Admins tab immediately — even before they first sign in.
               </p>
             </div>
           </div>
 
           <form onSubmit={handleAddAccessEmail} className="flex flex-col gap-3 sm:flex-row">
-            <label htmlFor="access-email-input" className="sr-only">Email to pre-approve</label>
+            <label htmlFor="access-email-input" className="sr-only">
+              Email to pre-approve
+            </label>
             <input
               id="access-email-input"
               type="email"
@@ -405,14 +532,18 @@ export default function AdminUsersPage() {
               value={accessEmailInput}
               onChange={(e) => setAccessEmailInput(e.target.value)}
               placeholder="e.g. colleague@gmail.com"
-              className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-base text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 sm:text-sm"
+              className="min-w-0 flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-base text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 sm:text-sm"
             />
             <button
               type="submit"
               disabled={isAddingAccess}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50"
             >
-              {isAddingAccess ? <RefreshCw size={15} className="animate-spin" /> : <Plus size={15} />}
+              {isAddingAccess ? (
+                <RefreshCw size={15} className="animate-spin" />
+              ) : (
+                <Plus size={15} />
+              )}
               Pre-Approve
             </button>
           </form>
@@ -437,83 +568,97 @@ export default function AdminUsersPage() {
                 </div>
               </div>
             </div>
-          ) : accessEmails.length > 0 && (
-            <div className="mt-5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                  Allowlisted Emails ({accessEmails.length})
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowAccessList((prev) => !prev)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#10298E] shadow-sm transition hover:bg-orange-50"
-                >
-                  <span>{showAccessList ? 'Hide' : 'Show'}</span>
-                  {showAccessList ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                </button>
-              </div>
-
-              {showAccessList && (
-                <div className="mt-2.5 max-h-[188px] overflow-y-auto rounded-xl border border-orange-200 bg-white shadow-sm">
-                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-orange-50 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-[#10298E] sm:px-3.5 sm:py-2.5">
-                    <span>Email Address</span>
-                    <span className="shrink-0">Remove</span>
-                  </div>
-
-                  <div className="divide-y divide-orange-100/80">
-                    {accessEmails.map((row) => {
-                      const isOwn = row.email === ownEmail
-                      const isOnly = accessEmails.length <= 1
-                      const canRemove = !isOwn && !isOnly
-                      const isRemoving = removingAccessId === row.id
-
-                      return (
-                        <div
-                          key={row.id}
-                          className="flex items-center justify-between gap-2 px-2.5 py-2 text-[11px] transition hover:bg-[#fefaf2] sm:px-3.5 sm:py-2.5 sm:text-xs"
-                        >
-                          <div className="flex min-w-0 flex-1 items-center gap-1.5 font-medium text-[#10298E] sm:gap-2">
-                            <Shield size={12} className="shrink-0 text-orange-500 sm:h-[13px] sm:w-[13px]" />
-                            <span className="whitespace-nowrap">{row.email}</span>
-                            {isOwn && (
-                              <span className="shrink-0 rounded bg-orange-100 px-1 py-0.5 text-[8px] font-bold text-orange-700 sm:px-1.5 sm:text-[9px]">
-                                You
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="shrink-0">
-                            {canRemove ? (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveAccessEmail(row)}
-                                disabled={isRemoving}
-                                aria-label={`Remove ${row.email}`}
-                                title={`Remove ${row.email} from access list`}
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
-                              >
-                                {isRemoving ? <RefreshCw size={11} className="animate-spin" /> : <X size={12} />}
-                              </button>
-                            ) : (
-                              <span className="inline-flex h-6 w-6 items-center justify-center text-[10px] text-gray-300">—</span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+          ) : (
+            accessEmails.length > 0 && (
+              <div className="mt-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                    Allowlisted Emails ({accessEmails.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAccessList((prev) => !prev)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#10298E] shadow-sm transition hover:bg-orange-50"
+                  >
+                    <span>{showAccessList ? 'Hide' : 'Show'}</span>
+                    {showAccessList ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {showAccessList && (
+                  <div className="mt-2.5 max-h-[188px] overflow-y-auto rounded-xl border border-orange-200 bg-white shadow-sm">
+                    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-orange-100 bg-orange-50 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-[#10298E] sm:px-3.5 sm:py-2.5">
+                      <span>Email Address</span>
+                      <span className="shrink-0">Remove</span>
+                    </div>
+
+                    <div className="divide-y divide-orange-100/80">
+                      {accessEmails.map((row) => {
+                        const isOwn = row.email.toLowerCase() === ownEmail
+                        const isOnly = accessEmails.length <= 1
+                        const canRemove = !isOwn && !isOnly
+                        const isRemoving = removingAccessId === row.id
+
+                        return (
+                          <div
+                            key={row.id}
+                            className="flex items-center justify-between gap-2 px-2.5 py-2 text-[11px] transition hover:bg-[#fefaf2] sm:px-3.5 sm:py-2.5 sm:text-xs"
+                          >
+                            <div className="flex min-w-0 flex-1 items-center gap-1.5 font-medium text-[#10298E] sm:gap-2">
+                              <Shield
+                                size={12}
+                                className="shrink-0 text-orange-500 sm:h-[13px] sm:w-[13px]"
+                              />
+                              <span className="truncate">{row.email}</span>
+                              {isOwn && (
+                                <span className="shrink-0 rounded bg-orange-100 px-1 py-0.5 text-[8px] font-bold text-orange-700 sm:px-1.5 sm:text-[9px]">
+                                  You
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="shrink-0">
+                              {canRemove ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAccessEmail(row)}
+                                  disabled={isRemoving}
+                                  aria-label={`Remove ${row.email}`}
+                                  title={`Remove ${row.email} from access list`}
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-red-200 bg-red-50/70 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                                >
+                                  {isRemoving ? (
+                                    <RefreshCw size={11} className="animate-spin" />
+                                  ) : (
+                                    <X size={12} />
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="inline-flex h-6 w-6 items-center justify-center text-[10px] text-gray-300">
+                                  —
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
           )}
         </div>
 
-        {/* ── Sticky Search & Inline Tab Switcher Bar (matches admin-products-page) ── */}
+        {/* ── Sticky Search & Inline Tab Switcher Bar ── */}
         <div className="sticky top-0 z-20 -mx-4 border-b border-[#e1cba5]/80 bg-[#ecdab6]/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
           <div className="flex flex-col gap-2 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             {/* Search — grows to fill space */}
             <div className="relative min-w-0 flex-1 sm:max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={15}
+              />
               <input
                 type="text"
                 value={search}
@@ -537,7 +682,10 @@ export default function AdminUsersPage() {
             <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#e1cba5] bg-white p-1 sm:w-auto sm:shrink-0">
               <button
                 type="button"
-                onClick={() => setActiveTab('customer')}
+                onClick={() => {
+                  setActiveTab('customer')
+                  setExpandedUserId(null)
+                }}
                 className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === 'customer'
                     ? 'bg-[#10298E] text-white shadow-sm'
@@ -546,13 +694,22 @@ export default function AdminUsersPage() {
               >
                 <Users size={13} />
                 <span>Customers</span>
-                <span className={`rounded-full px-1.5 text-[10px] ${activeTab === 'customer' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                <span
+                  className={`rounded-full px-1.5 text-[10px] ${
+                    activeTab === 'customer'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}
+                >
                   {customerCount}
                 </span>
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('admin')}
+                onClick={() => {
+                  setActiveTab('admin')
+                  setExpandedUserId(null)
+                }}
                 className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === 'admin'
                     ? 'bg-[#10298E] text-white shadow-sm'
@@ -561,7 +718,13 @@ export default function AdminUsersPage() {
               >
                 <Shield size={13} />
                 <span>Admins</span>
-                <span className={`rounded-full px-1.5 text-[10px] ${activeTab === 'admin' ? 'bg-white/20 text-white' : 'bg-orange-100 text-orange-700'}`}>
+                <span
+                  className={`rounded-full px-1.5 text-[10px] ${
+                    activeTab === 'admin'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-orange-100 text-orange-700'
+                  }`}
+                >
                   {adminCount}
                 </span>
               </button>
@@ -572,48 +735,50 @@ export default function AdminUsersPage() {
         {/* ── Users Table Card ──────────────────────────────────────── */}
         <div className="overflow-hidden rounded-2xl border border-[#e1cba5] bg-white shadow-sm">
           {isLoading ? (
-            <div>
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto text-left text-sm">
+                <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] text-xs font-semibold uppercase tracking-wider text-[#10298E]">
                   <tr>
-                    <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
-                    <th className="hidden px-6 py-3 lg:table-cell whitespace-nowrap">Display Name</th>
-                    <th className="hidden px-6 py-3 md:table-cell">Email</th>
-                    <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
+                    <th className="px-4 py-3 sm:px-6">
+                      {activeTab === 'customer' ? 'Customer' : 'Admin'}
+                    </th>
+                    <th className="hidden px-4 py-3 md:table-cell lg:px-6">Email</th>
+                    <th className="hidden whitespace-nowrap px-4 py-3 sm:table-cell lg:px-6">
+                      Joined
+                    </th>
                     {activeTab === 'admin' && (
-                      <th className="hidden px-6 py-3 md:table-cell whitespace-nowrap">Access</th>
+                      <th className="hidden whitespace-nowrap px-4 py-3 md:table-cell lg:px-6">
+                        Access
+                      </th>
                     )}
-                    <th className="px-4 py-3 text-right whitespace-nowrap sm:px-6">Actions</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right sm:px-6">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e1cba5]/60">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <tr key={n}>
-                      <td className="max-w-0 px-4 py-3.5 sm:max-w-none sm:px-6">
+                      <td className="px-4 py-3.5 sm:px-6">
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-[#fdf2e1]" />
                           <div className="min-w-0 flex-1 space-y-1.5">
                             <div className="h-3.5 w-32 animate-pulse rounded bg-gray-200" />
-                            <div className="h-2.5 w-44 animate-pulse rounded bg-gray-100 md:hidden" />
+                            <div className="h-2.5 w-40 animate-pulse rounded bg-gray-100 md:hidden" />
                             <div className="hidden h-2.5 w-24 animate-pulse rounded bg-gray-100 md:block" />
                           </div>
                         </div>
                       </td>
-                      <td className="hidden px-6 py-3.5 lg:table-cell">
-                        <div className="h-3.5 w-28 animate-pulse rounded bg-gray-200" />
-                      </td>
-                      <td className="hidden px-6 py-3.5 md:table-cell">
+                      <td className="hidden px-4 py-3.5 md:table-cell lg:px-6">
                         <div className="h-3.5 w-44 animate-pulse rounded bg-gray-200" />
                       </td>
-                      <td className="hidden px-6 py-3.5 sm:table-cell">
+                      <td className="hidden px-4 py-3.5 sm:table-cell lg:px-6">
                         <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100" />
                       </td>
                       {activeTab === 'admin' && (
-                        <td className="hidden px-6 py-3.5 md:table-cell">
+                        <td className="hidden px-4 py-3.5 md:table-cell lg:px-6">
                           <div className="h-5 w-24 animate-pulse rounded-full bg-emerald-100/70" />
                         </td>
                       )}
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap sm:px-6">
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right sm:px-6">
                         <div className="flex items-center justify-end gap-2">
                           <div className="hidden h-7 w-28 animate-pulse rounded-lg bg-orange-100/70 sm:block" />
                           <div className="h-8 w-8 animate-pulse rounded-lg bg-red-100/70" />
@@ -629,18 +794,23 @@ export default function AdminUsersPage() {
               No {activeTab === 'admin' ? 'admin' : 'customer'} accounts match your search.
             </div>
           ) : (
-            <div>
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] uppercase tracking-wider font-semibold text-[#10298E] text-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto text-left text-sm">
+                <thead className="border-b border-[#e1cba5] bg-[#fdf2e1] text-xs font-semibold uppercase tracking-wider text-[#10298E]">
                   <tr>
-                    <th className="w-full px-4 py-3 sm:px-6">{activeTab === 'customer' ? 'Customer' : 'Admin'}</th>
-                    <th className="hidden px-6 py-3 lg:table-cell whitespace-nowrap">Display Name</th>
-                    <th className="hidden px-6 py-3 md:table-cell">Email</th>
-                    <th className="hidden px-6 py-3 sm:table-cell whitespace-nowrap">Joined</th>
+                    <th className="px-4 py-3 sm:px-6">
+                      {activeTab === 'customer' ? 'Customer' : 'Admin'}
+                    </th>
+                    <th className="hidden px-4 py-3 md:table-cell lg:px-6">Email</th>
+                    <th className="hidden whitespace-nowrap px-4 py-3 sm:table-cell lg:px-6">
+                      Joined
+                    </th>
                     {activeTab === 'admin' && (
-                      <th className="hidden px-6 py-3 md:table-cell whitespace-nowrap">Access</th>
+                      <th className="hidden whitespace-nowrap px-4 py-3 md:table-cell lg:px-6">
+                        Access
+                      </th>
                     )}
-                    <th className="px-4 py-3 text-right whitespace-nowrap sm:px-6">Actions</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right sm:px-6">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e1cba5]/60">
@@ -652,15 +822,23 @@ export default function AdminUsersPage() {
                     const displayName = user.full_name?.trim()
 
                     const formattedDate = user.created_at
-                      ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                      ? new Date(user.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
                       : 'Recent'
 
                     const avatar = user.avatar_url ? (
-                      <img src={user.avatar_url} alt={displayName || user.email}
-                        className="h-9 w-9 shrink-0 rounded-full border border-[#e1cba5] object-cover" />
+                      <img
+                        src={user.avatar_url}
+                        alt={displayName || user.email}
+                        className="h-9 w-9 shrink-0 rounded-full border border-[#e1cba5] object-cover"
+                      />
                     ) : (
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
-                        {displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
+                        {displayName?.charAt(0).toUpperCase() ||
+                          user.email.charAt(0).toUpperCase()}
                       </div>
                     )
 
@@ -669,36 +847,48 @@ export default function AdminUsersPage() {
                         {/* ── Main row ── */}
                         <tr
                           onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
-                          className={`transition cursor-pointer ${isExpanded ? 'bg-[#fefaf2]' : 'hover:bg-[#fef8e8]'}`}
+                          className={`cursor-pointer transition md:cursor-default ${
+                            isExpanded ? 'bg-[#fefaf2]' : 'hover:bg-[#fef8e8]'
+                          }`}
                         >
-                          <td className="max-w-0 px-4 py-3 sm:max-w-none sm:px-6">
+                          <td className="max-w-[180px] px-4 py-3 sm:max-w-[240px] sm:px-6 md:max-w-[260px] lg:max-w-xs">
                             <div className="flex items-center gap-3">
                               {avatar}
                               <div className="min-w-0 flex-1">
-                                <p className="truncate font-bold text-[#10298E]">
-                                  {displayName || 'No Display Name'}
+                                <div className="flex items-center gap-1.5">
+                                  <p className="truncate font-bold text-[#10298E]">
+                                    {displayName || 'No Display Name'}
+                                  </p>
                                   {isCurrent && (
-                                    <span className="ml-1.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">You</span>
+                                    <span className="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                                      You
+                                    </span>
                                   )}
-                                </p>
+                                </div>
                                 {!isExpanded && (
-                                  <p className="truncate text-[11px] text-gray-400 md:hidden">{user.email}</p>
+                                  <p className="truncate text-[11px] text-gray-400 md:hidden">
+                                    {user.email}
+                                  </p>
                                 )}
-                                <p className="hidden break-all font-mono text-[10px] text-gray-400 md:block">ID: {user.id}</p>
+                                <p className="hidden truncate font-mono text-[10px] text-gray-400 md:block">
+                                  ID: {user.id}
+                                </p>
                               </div>
                             </div>
                           </td>
-                          <td className="hidden px-6 py-3 whitespace-nowrap lg:table-cell">
-                            {displayName ? (
-                              <span className="font-semibold text-gray-800">{displayName}</span>
-                            ) : (
-                              <span className="italic text-gray-400">Not set</span>
-                            )}
+
+                          <td className="hidden max-w-[200px] px-4 py-3 font-medium text-gray-700 md:table-cell lg:max-w-xs lg:px-6">
+                            <span className="block truncate" title={user.email}>
+                              {user.email}
+                            </span>
                           </td>
-                          <td className="hidden px-6 py-3 font-medium text-gray-700 md:table-cell">{user.email}</td>
-                          <td className="hidden px-6 py-3 text-gray-500 whitespace-nowrap sm:table-cell">{formattedDate}</td>
+
+                          <td className="hidden whitespace-nowrap px-4 py-3 text-gray-500 sm:table-cell lg:px-6">
+                            {formattedDate}
+                          </td>
+
                           {activeTab === 'admin' && (
-                            <td className="hidden px-6 py-3 whitespace-nowrap md:table-cell">
+                            <td className="hidden whitespace-nowrap px-4 py-3 md:table-cell lg:px-6">
                               {user.admin_access_listed ? (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
                                   <CheckCircle size={11} /> Access List
@@ -710,16 +900,23 @@ export default function AdminUsersPage() {
                               )}
                             </td>
                           )}
-                          <td className="px-4 py-3 text-right whitespace-nowrap sm:px-6" onClick={(e) => e.stopPropagation()}>
+
+                          <td
+                            className="whitespace-nowrap px-4 py-3 text-right sm:px-6"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {isCurrent ? (
-                              <span className="text-[11px] font-medium text-gray-400">Current Session</span>
+                              <span className="text-[11px] font-medium text-gray-400">
+                                Current Session
+                              </span>
                             ) : (
                               <div className="flex items-center justify-end gap-2">
                                 {activeTab === 'customer' ? (
                                   <button
+                                    type="button"
                                     onClick={() => handleToggleRole(user)}
                                     disabled={isUpdating || isDeleting}
-                                    className="hidden rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50 sm:block"
+                                    className="hidden rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50 sm:inline-flex"
                                   >
                                     {isUpdating ? 'Updating...' : 'Promote to Admin'}
                                   </button>
@@ -729,23 +926,25 @@ export default function AdminUsersPage() {
                                     onClick={() => handleDemoteListedAdmin(user)}
                                     disabled={isUpdating || isDeleting}
                                     title="Remove from allowlist and demote to Customer"
-                                    className="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 sm:block"
+                                    className="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 sm:inline-flex"
                                   >
                                     {isUpdating ? 'Updating...' : 'Demote to Customer'}
                                   </button>
                                 ) : (
                                   <button
+                                    type="button"
                                     onClick={() => handleToggleRole(user)}
                                     disabled={isUpdating || isDeleting}
-                                    className="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 sm:block"
+                                    className="hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 sm:inline-flex"
                                   >
                                     {isUpdating ? 'Updating...' : 'Demote to Customer'}
                                   </button>
                                 )}
                                 <button
+                                  type="button"
                                   onClick={() => handleDeleteUser(user)}
                                   disabled={isUpdating || isDeleting}
-                                  className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                                  className="inline-flex rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
                                   title="Delete User Account"
                                   aria-label={`Delete user ${user.email}`}
                                 >
@@ -756,30 +955,44 @@ export default function AdminUsersPage() {
                           </td>
                         </tr>
 
-                        {/* ── Expanded row (mobile only) ── */}
+                        {/* ── Expanded row (mobile/small tablet only) ── */}
                         {isExpanded && (
-                          <tr className="md:hidden bg-[#fefaf2]">
-                            <td colSpan={2} className="px-4 pb-4 pt-2 pl-16">
+                          <tr className="bg-[#fefaf2] md:hidden">
+                            <td colSpan={6} className="px-4 pb-4 pl-16 pt-2">
                               <div className="space-y-2.5 text-xs">
                                 <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Display Name</p>
-                                  <p className="font-medium text-gray-700">{displayName || 'Not set'}</p>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                    Display Name
+                                  </p>
+                                  <p className="font-medium text-gray-700">
+                                    {displayName || 'Not set'}
+                                  </p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Email</p>
-                                  <p className="font-medium text-gray-700 break-all">{user.email}</p>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                    Email
+                                  </p>
+                                  <p className="break-all font-medium text-gray-700">
+                                    {user.email}
+                                  </p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">User ID</p>
-                                  <p className="font-mono text-gray-500 break-all">{user.id}</p>
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                    User ID
+                                  </p>
+                                  <p className="break-all font-mono text-gray-500">{user.id}</p>
                                 </div>
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Joined</p>
+                                <div className="sm:hidden">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                    Joined
+                                  </p>
                                   <p className="font-medium text-gray-700">{formattedDate}</p>
                                 </div>
                                 {activeTab === 'admin' && (
                                   <div>
-                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Access</p>
+                                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                      Access
+                                    </p>
                                     {user.admin_access_listed ? (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
                                         <CheckCircle size={11} /> Access List
@@ -792,31 +1005,45 @@ export default function AdminUsersPage() {
                                   </div>
                                 )}
                                 {!isCurrent && (
-                                  activeTab === 'customer' ? (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleToggleRole(user) }}
-                                      disabled={isUpdating || isDeleting}
-                                      className="w-full rounded-lg border border-orange-200 bg-orange-50 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50"
-                                    >
-                                      {isUpdating ? 'Updating...' : 'Promote to Admin'}
-                                    </button>
-                                  ) : user.admin_access_listed ? (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleDemoteListedAdmin(user) }}
-                                      disabled={isUpdating || isDeleting}
-                                      className="w-full rounded-lg border border-amber-200 bg-amber-50 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-                                    >
-                                      {isUpdating ? 'Updating...' : 'Demote to Customer'}
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleToggleRole(user) }}
-                                      disabled={isUpdating || isDeleting}
-                                      className="w-full rounded-lg border border-amber-200 bg-amber-50 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-                                    >
-                                      {isUpdating ? 'Updating...' : 'Demote to Customer'}
-                                    </button>
-                                  )
+                                  <div className="pt-1 sm:hidden">
+                                    {activeTab === 'customer' ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleToggleRole(user)
+                                        }}
+                                        disabled={isUpdating || isDeleting}
+                                        className="w-full rounded-lg border border-orange-200 bg-orange-50 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 disabled:opacity-50"
+                                      >
+                                        {isUpdating ? 'Updating...' : 'Promote to Admin'}
+                                      </button>
+                                    ) : user.admin_access_listed ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleDemoteListedAdmin(user)
+                                        }}
+                                        disabled={isUpdating || isDeleting}
+                                        className="w-full rounded-lg border border-amber-200 bg-amber-50 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                                      >
+                                        {isUpdating ? 'Updating...' : 'Demote to Customer'}
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleToggleRole(user)
+                                        }}
+                                        disabled={isUpdating || isDeleting}
+                                        className="w-full rounded-lg border border-amber-200 bg-amber-50 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                                      >
+                                        {isUpdating ? 'Updating...' : 'Demote to Customer'}
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </td>
@@ -837,7 +1064,9 @@ export default function AdminUsersPage() {
           <div>
             <p className="font-bold">Admin Privileges &amp; Account Removal</p>
             <p className="mt-0.5 text-amber-800">
-              Admins have full write access to product catalogs, user roles, and order statuses. Removing an account permanently deletes their database profile and revokes authentication credentials.
+              Admins have full write access to product catalogs, user roles, and order statuses.
+              Removing an account permanently deletes their database profile and revokes
+              authentication credentials.
             </p>
           </div>
         </div>
