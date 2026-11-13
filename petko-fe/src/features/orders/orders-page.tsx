@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Package, RefreshCw } from 'lucide-react'
+import { CheckCircle2, Package, RefreshCw, ArrowLeft } from 'lucide-react'
 import OrderDetailCard, { OrderStatusBadge } from '@/components/orders/order-detail'
 import OrderActionDialog from '@/components/orders/order-action-dialog'
 import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'
@@ -286,6 +286,20 @@ export default function OrdersPage() {
 
       <div className="mx-auto max-w-6xl space-y-5 px-3 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
+          
+          {/* ── Back to Products / Storefront Button Bar ────────────────────── */}
+              <div className="justify-self-start">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+                >
+                  <ArrowLeft size={13} />
+                  <span>
+                    Back<span className="hidden sm:inline"> to Storefront</span>
+                  </span>
+                </Link>
+              </div>
+          
           {/* Pet illustration on larger screens */}          
           <button
             type="button"
