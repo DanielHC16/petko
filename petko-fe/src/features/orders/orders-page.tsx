@@ -280,16 +280,7 @@ export default function OrdersPage() {
     >
       {/* Shared checkout-style banner */}
         <PageBanner
-          title={
-            <span className="inline-flex max-w-full items-center gap-2 truncate">
-              <span className="truncate">Your orders</span>
-              <PawPrint
-                size={26}
-                aria-hidden="true"
-                className="inline-block shrink-0 align-middle sm:h-7 sm:w-7"
-              />
-            </span>
-          }
+          title="Your Orders"
           subtitle="Track your companion's order from our warehouse to your home."
         />
 

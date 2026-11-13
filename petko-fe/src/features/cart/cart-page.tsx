@@ -132,12 +132,7 @@ export default function CartPage() {
 
       {/* Shared checkout-style banner */}
         <PageBanner
-          title={
-            <>
-              Your orders{' '}
-              <ShoppingBag size={28} aria-hidden="true" className="inline-block shrink-0 align-middle" />
-            </>
-          }
+          title="Your Cart"
           subtitle="Track your companion's order from our warehouse to your home."
         />
 

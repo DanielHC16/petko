@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -13,11 +13,23 @@ import {
 } from 'lucide-react'
 import { useCartStore, type CartItem } from '@/store/cart.store'
 import { useAuthStore } from '@/store/auth.store'
+import { supabase } from '@/lib/supabase'
 import PageBanner from '@/components/layout/PageBanner'
 import logoImg from '@/assets/logo.png'
 import gcashImg from '@/assets/GCash_logo.png'
 import { useCheckout } from './use-checkout'
 import { CHECKOUT_SELECTED_ITEMS_KEY, removeCheckedItemsAfterOrder } from '@/features/cart/cart-page'
+
+interface SavedShippingMetadata {
+  full_name?: string
+  email?: string
+  phone?: string
+  address_line1?: string
+  address_line2?: string
+  city?: string
+  province?: string
+  postal_code?: string
+}
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
 function StepBreadcrumb() {
@@ -257,6 +269,7 @@ export default function CheckoutPage() {
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
 
+  const [saveDetails, setSaveDetails] = useState(true)
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [email, setEmail] = useState(profile?.email ?? '')
   const [contactNumber, setContactNumber] = useState('')
@@ -268,6 +281,36 @@ export default function CheckoutPage() {
   const [delivery, setDelivery] = useState<'standard' | 'express'>('standard')
   const checkout = useCheckout()
   const errors = checkout.errors
+
+  // Load saved contact & shipping details from Supabase Auth user_metadata
+  useEffect(() => {
+    let active = true
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active || !data.user) return
+
+      const meta = data.user.user_metadata ?? {}
+      const saved = meta.saved_shipping as SavedShippingMetadata | undefined
+
+      if (saved) {
+        setFullName(saved.full_name || profile?.full_name || '')
+        setEmail(saved.email || profile?.email || '')
+        setContactNumber(saved.phone || '')
+        setAddressLine1(saved.address_line1 || '')
+        setAddressLine2(saved.address_line2 || '')
+        setCity(saved.city || '')
+        setProvince(saved.province || '')
+        setPostalCode(saved.postal_code || '')
+      } else if (profile) {
+        setFullName((prev) => prev || profile.full_name || '')
+        setEmail((prev) => prev || profile.email || '')
+      }
+    })
+
+    return () => {
+      active = false
+    }
+  }, [profile])
 
   const isFreeShipping = totalPrice >= 999
   const shippingFee = delivery === 'express' ? 199 : isFreeShipping ? 0 : 99
@@ -294,6 +337,27 @@ export default function CheckoutPage() {
     )
 
     if (order) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            saved_shipping: saveDetails
+              ? {
+                  full_name: fullName,
+                  email,
+                  phone: contactNumber,
+                  address_line1: addressLine1,
+                  address_line2: addressLine2,
+                  city,
+                  province,
+                  postal_code: postalCode,
+                }
+              : null,
+          },
+        })
+      } catch {
+        // Do not block order confirmation if metadata sync fails
+      }
+
       if (isDirect) {
         sessionStorage.removeItem('direct_checkout_item')
       } else {
@@ -311,7 +375,7 @@ export default function CheckoutPage() {
       className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
-     {/* ── Page banner ───────────────────────────────────────────────────── */}
+      {/* ── Page banner ───────────────────────────────────────────────────── */}
       <PageBanner
         title="Checkout"
         subtitle="Almost there! Review your details and place your order."
@@ -332,8 +396,6 @@ export default function CheckoutPage() {
           <div className="justify-self-center">
             <StepBreadcrumb />
           </div>
-
-          {/* Empty right column balances the left button so StepBreadcrumb stays dead-center */}
           <div aria-hidden="true" />
         </div>
       </PageBanner>
@@ -442,6 +504,18 @@ export default function CheckoutPage() {
                     error={errors.postalCode}
                   />
                 </div>
+
+                <label className="mt-2 flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-amber-200 bg-[#fdf2e1]/80 px-3.5 py-2.5 text-xs font-semibold text-gray-700 transition hover:border-amber-300 hover:bg-[#fdf2e1] select-none">
+                  <input
+                    type="checkbox"
+                    checked={saveDetails}
+                    onChange={(e) => setSaveDetails(e.target.checked)}
+                    className="h-4 w-4 shrink-0 rounded border-gray-300 accent-petko-blue focus:ring-petko-blue"
+                  />
+                  <span>
+                    Save contact &amp; shipping details to my account for future orders
+                  </span>
+                </label>
               </div>
             </SectionCard>
 

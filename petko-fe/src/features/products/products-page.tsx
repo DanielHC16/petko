@@ -190,7 +190,7 @@ export default function ProductsPage() {
 
       {/* ── Sticky filter area ────────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-petko-cream border-b border-amber-200 shadow-sm">
-        <div className="max-w-screen-xl mx-auto px-6 py-3 space-y-2">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-4 xl:px-6 py-3 space-y-2">
 
           <div className="hidden lg:flex items-center gap-3 rounded-xl bg-white border border-gray-200 px-4 py-2.5 shadow-sm">
             <div className="relative flex-1">
@@ -227,22 +227,28 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* ── DESKTOP row 2: category pills ───────────────────────────── */}
-          <div className="hidden lg:flex flex-wrap items-center gap-1.5">
-            <div className="flex flex-1 flex-wrap items-center gap-1 min-w-0">
+{/* ── DESKTOP row 2: category pills (fits 100% width on 1 line, no horizontal scroll) ── */}
+          <div className="hidden lg:flex items-center gap-1.5">
+            <div className="flex flex-1 min-w-0 items-center justify-between gap-1">
               {CATEGORIES.map(cat => (
-                <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                  className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium transition text-center whitespace-nowrap
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  title={cat.label}
+                  className={`min-w-0 truncate rounded-full px-2 xl:px-2.5 py-1 text-[11px] font-medium transition text-center
                     ${selectedCategory === cat.id
                       ? 'bg-orange-500 text-white shadow-sm'
-                      : 'border border-gray-300 bg-white text-gray-600 hover:border-orange-400 hover:text-orange-600'}`}>
+                      : 'border border-gray-300 bg-white text-gray-600 hover:border-orange-400 hover:text-orange-600'}`}
+                >
                   {cat.label}
                 </button>
               ))}
             </div>
             {hasActiveFilters && (
-              <button onClick={clearFilters}
-                className="shrink-0 rounded-full border border-red-400 bg-white px-2.5 py-0.5 text-xs font-medium text-red-500 hover:bg-red-50 transition">
+              <button
+                onClick={clearFilters}
+                className="shrink-0 rounded-full border border-red-400 bg-white px-2.5 py-1 text-[11px] font-medium text-red-500 hover:bg-red-50 transition"
+              >
                 ✕ Clear
               </button>
             )}
