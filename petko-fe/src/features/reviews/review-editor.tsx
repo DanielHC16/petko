@@ -33,7 +33,7 @@ export default function ReviewEditor({ review, isPending, isLoading, error, onSa
   }
   return <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-4 sm:p-5">
     <h3 className="font-display text-lg font-extrabold text-petko-blue">{review && !review.withdrawn_at ? 'Your review' : 'Share your pet’s experience'}</h3>
-    <p className="mb-4 mt-1 text-xs text-gray-600">Your purchase is verified. One review per customer for this product variant.</p>
+    <p className="mb-4 mt-1 text-xs text-gray-600">Your purchase is verified. You can leave a review for each order of this product.</p>
     {review?.is_hidden && <p className="mb-3 rounded-lg border border-orange-300 bg-white p-3 text-sm text-orange-900">An admin has hidden this review. You can edit it, but it will stay hidden until an admin restores it.</p>}
     {review?.withdrawn_at && <p className="mb-3 text-sm text-gray-700">You removed this review from public view. You can publish it again below.</p>}
     <form onSubmit={submit} className="space-y-4">

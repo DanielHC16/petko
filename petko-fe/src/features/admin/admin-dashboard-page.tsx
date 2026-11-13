@@ -163,24 +163,7 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Link to="/admin/reviews" className="flex items-center gap-3 rounded-xl border border-orange-200 bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-700"><ShieldCheck size={20} /></div>
-              <div><p className="text-sm font-semibold text-petko-blue">Customer Reviews</p><p className="text-xs text-gray-500">Read feedback and manage review visibility</p></div>
-            </Link>
-
-            {/* Store Analytics */}
-            <Link to="/admin/analytics"
-              className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                <BarChart3 size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#10298E]">Store Analytics</p>
-                <p className="text-xs text-gray-500">Buying trends, sales &amp; top products</p>
-              </div>
-            </Link>
-
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {/* Product Management */}
             <Link to="/admin/products"
               className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
@@ -207,6 +190,30 @@ export default function AdminDashboardPage() {
               </div>
             </Link>
 
+            {/* Store Analytics */}
+            <Link to="/admin/analytics"
+              className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                <BarChart3 size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#10298E]">Store Analytics</p>
+                <p className="text-xs text-gray-500">Buying trends, sales &amp; top products</p>
+              </div>
+            </Link>
+
+            {/* Customer Reviews */}
+            <Link to="/admin/reviews"
+              className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#10298E]">Customer Reviews</p>
+                <p className="text-xs text-gray-500">Read feedback and manage review visibility</p>
+              </div>
+            </Link>
+
             {/* User Roles & RBAC */}
             <Link to="/admin/users"
               className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
@@ -221,6 +228,17 @@ export default function AdminDashboardPage() {
               </div>
             </Link>
 
+            {/* Live Storefront */}
+            <Link to="/"
+              className="flex items-center gap-3 rounded-xl border border-[#e1cba5] bg-white p-4 transition hover:border-orange-400 hover:shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                <Eye size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#10298E]">Live Storefront</p>
+                <p className="text-xs text-gray-500">Preview catalog &amp; customer shopping flow</p>
+              </div>
+            </Link>
           </div>
         </div>
 

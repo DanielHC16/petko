@@ -134,3 +134,18 @@ test('successful withdrawal updates public reviews even when owner refresh canno
   assert.equal(context.review.is_hidden, true)
   assert.ok(context.review.withdrawn_at)
 })
+
+test('per-order review scoping allows different reviews for the same product across different orders', async () => {
+  const { api, actor, calls } = reviewApi()
+  // Order 1 review
+  await api.fetchOwnReview('product-1', actor, new AbortController().signal, 'order-1')
+  assert.deepEqual(calls[0].args[1].params, { order_id: 'order-1' })
+  await api.saveReview('product-1', actor, 'item-order-1', { rating: 5, comment: 'Great in order 1' }, null, new AbortController().signal)
+  assert.deepEqual(calls[1].args[1], { order_item_id: 'item-order-1', rating: 5, comment: 'Great in order 1' })
+
+  // Order 2 review for the same product
+  await api.fetchOwnReview('product-1', actor, new AbortController().signal, 'order-2')
+  assert.deepEqual(calls[2].args[1].params, { order_id: 'order-2' })
+  await api.saveReview('product-1', actor, 'item-order-2', { rating: 4, comment: 'Still good in order 2' }, null, new AbortController().signal)
+  assert.deepEqual(calls[3].args[1], { order_item_id: 'item-order-2', rating: 4, comment: 'Still good in order 2' })
+})
