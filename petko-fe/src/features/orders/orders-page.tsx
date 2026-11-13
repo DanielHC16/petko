@@ -23,7 +23,7 @@ function OrderListSkeleton() {
         <div className="h-3.5 w-44 animate-pulse rounded-md bg-orange-100/60" />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, idx) => (
+        {Array.from({ length: 6 }).map((_, idx) => (
           <div
             key={idx}
             className="flex flex-col justify-between rounded-xl border border-orange-100 bg-white p-4"
@@ -306,12 +306,42 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
   )
 }
 
+/**
+ * Computes responsive grid column spans so any partial bottom row
+ * stretches to fill 100% of the container width without leaving empty gaps.
+ */
+function getOrderCardSpanClass(index: number, count: number): string {
+  const classes: string[] = []
+
+  // Tablet (sm: 2 columns): if odd number of items, the last item spans full 2 columns
+  if (count % 2 === 1 && index === count - 1) {
+    classes.push('sm:col-span-2')
+  } else {
+    classes.push('sm:col-span-1')
+  }
+
+  // Desktop (lg: 3 columns):
+  // - If 1 item left in the last row (e.g. 1 or 4 items), last item spans all 3 columns
+  // - If 2 items left in the last row (e.g. 2 or 5 items), the last item spans 2 columns so the row fills all 3 columns
+  const lgRemainder = count % 3
+  if (lgRemainder === 1 && index === count - 1) {
+    classes.push('lg:col-span-3')
+  } else if (lgRemainder === 2 && index === count - 1) {
+    classes.push('lg:col-span-2')
+  } else {
+    classes.push('lg:col-span-1')
+  }
+
+  return classes.join(' ')
+}
+
 export default function OrdersPage() {
   const [params, setParams] = useSearchParams()
   const [refreshToken, setRefreshToken] = useState(0)
   const pageValue = Number(params.get('page') ?? '1')
   const page = Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1
-  const list = useOrderList({ page, limit: 5 })
+  // Limit set to 6 to form a complete 2-row x 3-column (or 3-row x 2-column) matrix
+  const list = useOrderList({ page, limit: 6 })
   const selectedId = params.get('order') || list.data?.orders[0]?.id || null
 
   function selectOrder(id: string): void {
@@ -336,34 +366,34 @@ export default function OrdersPage() {
     ? Math.max(1, Math.ceil(list.data.total / list.data.limit))
     : 1
 
+  const ordersCount = list.data?.orders.length ?? 0
+
   return (
     <div
       className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
       {/* Shared checkout-style banner */}
-        <PageBanner
-          title="Your Orders"
-          subtitle="Track your companion's order from our warehouse to your home."
-        />
+      <PageBanner
+        title="Your Orders"
+        subtitle="Track your companion's order from our warehouse to your home."
+      />
 
       <div className="mx-auto max-w-6xl space-y-5 px-3 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          
           {/* ── Back to Products / Storefront Button Bar ────────────────────── */}
-              <div className="justify-self-start">
-                <Link
-                  to="/"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
-                >
-                  <ArrowLeft size={13} />
-                  <span>
-                    Back<span className="hidden sm:inline"> to Storefront</span>
-                  </span>
-                </Link>
-              </div>
-          
-          {/* Pet illustration on larger screens */}          
+          <div className="justify-self-start">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10298E] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0B3B8C] active:scale-95 sm:px-3"
+            >
+              <ArrowLeft size={13} />
+              <span>
+                Back<span className="hidden sm:inline"> to Storefront</span>
+              </span>
+            </Link>
+          </div>
+
           <button
             type="button"
             onClick={refreshOrders}
@@ -453,43 +483,61 @@ export default function OrdersPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
-              {list.data.orders.map((order) => (
-                <button
-                  key={order.id}
-                  type="button"
-                  aria-pressed={selectedId === order.id}
-                  onClick={() => selectOrder(order.id)}
-                  className={`group flex min-w-0 flex-col justify-between overflow-hidden rounded-xl border p-3.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue sm:p-4 ${
-                    selectedId === order.id
-                      ? 'border-petko-blue bg-blue-50/80 shadow-sm'
-                      : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/30'
-                  }`}
-                >
-                  <div className="flex min-w-0 items-center justify-between gap-2">
-                    <span
-                      title={orderNumber(order.id)}
-                      className="min-w-0 flex-1 truncate text-sm font-extrabold text-petko-blue"
-                    >
-                      {orderNumber(order.id)}
-                    </span>
-                    <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-gray-800">
-                      {formatOrderMoney(order.total_amount)}
-                    </span>
-                  </div>
+            <div
+              className={`grid grid-cols-1 gap-2.5 sm:gap-3 ${
+                ordersCount === 1
+                  ? 'sm:grid-cols-1 lg:grid-cols-1'
+                  : ordersCount === 2
+                    ? 'sm:grid-cols-2 lg:grid-cols-2'
+                    : ordersCount === 4
+                      ? 'sm:grid-cols-2 lg:grid-cols-2'
+                      : 'sm:grid-cols-2 lg:grid-cols-3'
+              }`}
+            >
+              {list.data.orders.map((order, idx) => {
+                // Only apply remainder span logic when using the 3-column desktop grid (ordersCount !== 1, 2, 4)
+                const spanClass =
+                  ordersCount === 1 || ordersCount === 2 || ordersCount === 4
+                    ? ''
+                    : getOrderCardSpanClass(idx, ordersCount)
 
-                  <p
-                    title={formatOrderDate(order.created_at)}
-                    className="mb-3 mt-1 truncate text-xs text-gray-500"
+                return (
+                  <button
+                    key={order.id}
+                    type="button"
+                    aria-pressed={selectedId === order.id}
+                    onClick={() => selectOrder(order.id)}
+                    className={`group flex h-full min-w-0 w-full flex-col justify-between overflow-hidden rounded-xl border p-3.5 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-petko-blue sm:p-4 ${spanClass} ${
+                      selectedId === order.id
+                        ? 'border-petko-blue bg-blue-50/80 shadow-sm'
+                        : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/30'
+                    }`}
                   >
-                    {formatOrderDate(order.created_at)}
-                  </p>
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <span
+                        title={orderNumber(order.id)}
+                        className="min-w-0 flex-1 truncate text-sm font-extrabold text-petko-blue"
+                      >
+                        {orderNumber(order.id)}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-gray-800">
+                        {formatOrderMoney(order.total_amount)}
+                      </span>
+                    </div>
 
-                  <div className="min-w-0 max-w-full overflow-hidden">
-                    <OrderStatusBadge order={order} />
-                  </div>
-                </button>
-              ))}
+                    <p
+                      title={formatOrderDate(order.created_at)}
+                      className="mb-3 mt-1 truncate text-xs text-gray-500"
+                    >
+                      {formatOrderDate(order.created_at)}
+                    </p>
+
+                    <div className="min-w-0 max-w-full overflow-hidden">
+                      <OrderStatusBadge order={order} />
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             <nav
