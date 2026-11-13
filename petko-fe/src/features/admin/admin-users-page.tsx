@@ -45,7 +45,7 @@ export default function AdminUsersPage() {
 
   // Access-list state
   const [accessEmails, setAccessEmails] = useState<AdminAccessEmail[]>([])
-  const [isLoadingAccess, setIsLoadingAccess] = useState(true)
+  const [isLoadingAccess] = useState(false)
   const [accessEmailInput, setAccessEmailInput] = useState('')
   const [isAddingAccess, setIsAddingAccess] = useState(false)
   const [removingAccessId, setRemovingAccessId] = useState<string | null>(null)

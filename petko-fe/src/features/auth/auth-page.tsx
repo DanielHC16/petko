@@ -111,26 +111,72 @@ export default function AuthPage() {
     <div className="min-h-screen lg:flex lg:items-center lg:justify-center lg:bg-petko-cream lg:p-6">
       <div className="relative w-full min-h-screen lg:min-h-[78vh] lg:h-[78vh] lg:w-[70vw] lg:rounded-3xl lg:overflow-hidden lg:shadow-card-lg lg:animate-fade-up lg:grid lg:grid-cols-2">
 
-        {/* Left panel — layered illustration */}
+       {/* Left panel — layered illustration */}
         <div className="absolute inset-0 lg:relative lg:inset-auto overflow-hidden bg-[#FAF3E0]" aria-hidden="true">
           {/* Gradient background */}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #e8dfc8 0%, #fdf5e9 42%, #1A3A8F 65%)' }} />
 
           {/* Logo */}
-          <img src={logoImg} alt="PetKo" className="absolute object-contain"
-            style={{ top: '15%', left: '50%', transform: 'translateX(-50%)', height: '12%', zIndex: 10 }} />
+          <img
+            src={logoImg}
+            alt="PetKo"
+            className="absolute object-contain"
+            style={{
+              top: '15%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              height: '12%',
+              zIndex: 10,
+              WebkitBoxReflect: 'unset',
+            }}
+          />
 
           {/* Tree left */}
-          <img src={treeImg} alt="" className="absolute object-contain"
-            style={{ top: '5%', left: '-7%', height: '65%', opacity: 0.55, zIndex: 2 }} />
+          <img
+            src={treeImg}
+            alt=""
+            className="absolute object-contain"
+            style={{
+              top: '5%',
+              left: '-7%',
+              height: '65%',
+              opacity: 0.55,
+              zIndex: 2,
+              WebkitBoxReflect: 'unset',
+            }}
+          />
 
           {/* Tree right */}
-          <img src={treeImg} alt="" className="absolute object-contain"
-            style={{ top: '0%', right: '-11%', height: '85%', opacity: 0.55, transform: 'scaleX(-1)', zIndex: 2 }} />
+          <img
+            src={treeImg}
+            alt=""
+            className="absolute object-contain"
+            style={{
+              top: '0%',
+              right: '-11%',
+              height: '85%',
+              opacity: 0.55,
+              transform: 'scaleX(-1)',
+              zIndex: 2,
+              WebkitBoxReflect: 'unset',
+            }}
+          />
 
-          {/* page.png — centered character illustration */}
-          <img src={pageImg} alt="PetKo Illustration" className="absolute object-contain"
-            style={{ bottom: '12%', left: '53%', transform: 'translateX(-50%)', height: '66%', maxWidth: 'none', zIndex: 5 }} />
+          {/* page.png — centered character illustration (left: 50% + no box-reflect) */}
+          <img
+            src={pageImg}
+            alt="PetKo Illustration"
+            className="absolute object-contain"
+            style={{
+              bottom: '12%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              height: '66%',
+              maxWidth: 'none',
+              zIndex: 5,
+              WebkitBoxReflect: 'unset',
+            }}
+          />
 
           {/* Navy ground */}
           <div className="absolute bottom-0 inset-x-0" style={{ height: '10%', background: '#1A3A8F', zIndex: 1 }} />
@@ -139,10 +185,10 @@ export default function AuthPage() {
         {/* Mobile + Tablet sign-in overlay */}
         <div
           className="lg:hidden relative z-20 min-h-screen flex items-center justify-center px-6 py-10"
-          style={{ background: 'rgba(245,237,219,0.92)', backdropFilter: 'blur(4px)' }}
+          style={{ background: 'rgba(245,237,219,0.52)', backdropFilter: 'blur(2px)' }}
         >
           {/* Paw background card */}
-          <div className="relative w-full max-w-sm rounded-3xl overflow-hidden bg-white shadow-card-lg py-2">
+          <div className="relative w-full max-w-sm rounded-3xl overflow-hidden bg-white/90 backdrop-blur-md shadow-card-lg py-2">
             <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
               {[
                 { top: '3%',  left: '5%',   size: 36, rotate: '-15deg' },
