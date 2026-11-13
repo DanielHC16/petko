@@ -54,13 +54,16 @@ export async function updateOrder(
     confirm: 'confirm-receipt',
     report: 'delivery-issue',
     resolve: 'resolve-delivery-issue',
+    cancel: 'cancel',
   }
   const body =
     action.type === 'report'
       ? { message: action.message }
       : action.type === 'resolve'
         ? { resolution: action.resolution }
-        : {}
+        : action.type === 'cancel'
+          ? { reason: action.reason }
+          : {}
   const { data } = await api.post<ApiResponse<OrderDetail>>(
     `/orders/${order.id}/${paths[action.type]}`,
     { ...body, expected_version },

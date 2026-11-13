@@ -5,7 +5,9 @@ interface OrderActionDialogProps {
   title: string
   description: string
   confirmLabel: string
+  confirmVariant?: 'primary' | 'danger'
   noteLabel?: string
+  noteRequired?: boolean
   isPending: boolean
   error: string | null
   onClose: () => void
@@ -16,7 +18,9 @@ export default function OrderActionDialog({
   title,
   description,
   confirmLabel,
+  confirmVariant = 'primary',
   noteLabel,
+  noteRequired = true,
   isPending,
   error,
   onClose,
@@ -39,7 +43,7 @@ export default function OrderActionDialog({
 
   async function submit(event: React.FormEvent): Promise<void> {
     event.preventDefault()
-    if (isPending || (noteLabel && note.trim().length < 3)) return
+    if (isPending || (noteLabel && noteRequired && note.trim().length < 3)) return
     if (await onSubmit(note.trim())) onClose()
   }
 
@@ -85,8 +89,8 @@ export default function OrderActionDialog({
             </label>
             <textarea
               id={noteId}
-              required
-              minLength={3}
+              required={noteRequired}
+              minLength={noteRequired ? 3 : undefined}
               maxLength={1000}
               rows={4}
               value={note}
@@ -95,7 +99,9 @@ export default function OrderActionDialog({
               className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-petko-blue focus:outline-none focus:ring-2 focus:ring-petko-blue/20"
             />
             <p className="mt-1 text-xs text-gray-500">
-              3–1,000 characters. Please include the details needed to help.
+              {noteRequired
+                ? '3–1,000 characters. Please include the details needed to help.'
+                : 'Optional details up to 1,000 characters.'}
             </p>
           </div>
         )}
@@ -118,8 +124,15 @@ export default function OrderActionDialog({
           </button>
           <button
             type="submit"
-            disabled={isPending || Boolean(noteLabel && note.trim().length < 3)}
-            className="rounded-xl bg-petko-blue px-4 py-2 text-sm font-bold text-white hover:bg-petko-blue-dark disabled:opacity-50"
+            disabled={
+              isPending ||
+              Boolean(noteLabel && noteRequired && note.trim().length < 3)
+            }
+            className={`rounded-xl px-4 py-2 text-sm font-bold text-white transition disabled:opacity-50 ${
+              confirmVariant === 'danger'
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-petko-blue hover:bg-petko-blue-dark'
+            }`}
           >
             {isPending ? 'Saving…' : confirmLabel}
           </button>

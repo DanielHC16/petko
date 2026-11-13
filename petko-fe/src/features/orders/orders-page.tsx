@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Package, RefreshCw, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, Package, RefreshCw, ArrowLeft, XCircle } from 'lucide-react'
 import OrderDetailCard, { OrderStatusBadge } from '@/components/orders/order-detail'
 import OrderActionDialog from '@/components/orders/order-action-dialog'
 import { useOrderDetail, useOrderList, useOrderMutation } from '@/hooks/use-orders'
@@ -118,7 +118,7 @@ function OrderDetailSkeleton() {
 
 function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void }) {
   const detail = useOrderDetail(id)
-  const [dialog, setDialog] = useState<'confirm' | 'report' | null>(null)
+  const [dialog, setDialog] = useState<'confirm' | 'report' | 'cancel' | null>(null)
   const mutation = useOrderMutation(() => {
     detail.refresh()
     onUpdated()
@@ -126,6 +126,9 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
   const order = detail.data
   const canConfirm =
     order?.fulfillment_status === 'delivered' && !order.delivery_confirmed_at
+  const canCancel =
+    (order?.fulfillment_status === 'placed' || order?.fulfillment_status === 'processing') &&
+    !order.delivery_confirmed_at
   const hasOpenIssue = Boolean(
     order?.delivery_issue && !order.delivery_issue.resolved_at,
   )
@@ -207,6 +210,32 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
               </div>
             </div>
           )}
+          {canCancel && (
+            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50/60 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+              <div className="min-w-0">
+                <p className="block truncate text-sm font-semibold text-gray-800">
+                  Need to cancel this order?
+                </p>
+                <p className="mt-0.5 block truncate text-xs text-gray-500">
+                  You can cancel your order while it is still being prepared.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  disabled={mutation.isPending || detail.isLoading}
+                  onClick={() => {
+                    mutation.clearError()
+                    setDialog('cancel')
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-center text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 hover:border-red-400 disabled:opacity-50 sm:w-auto"
+                >
+                  <XCircle size={16} />
+                  <span>Cancel order</span>
+                </button>
+              </div>
+            </div>
+          )}
         </OrderDetailCard>
       </div>
       {dialog && (
@@ -215,17 +244,33 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
           title={
             dialog === 'confirm'
               ? 'Confirm you received your order'
-              : 'Report a delivery issue'
+              : dialog === 'cancel'
+                ? 'Cancel your order'
+                : 'Report a delivery issue'
           }
           description={
             dialog === 'confirm'
               ? 'This will complete your order and record your receipt confirmation. Confirm only if the package is with you.'
-              : 'Tell the admin what happened. Your order will stay incomplete while the admin reviews your report.'
+              : dialog === 'cancel'
+                ? 'Are you sure you want to cancel this order? Any reserved items will be returned to stock.'
+                : 'Tell the admin what happened. Your order will stay incomplete while the admin reviews your report.'
           }
           confirmLabel={
-            dialog === 'confirm' ? 'Yes, I received it' : 'Send delivery report'
+            dialog === 'confirm'
+              ? 'Yes, I received it'
+              : dialog === 'cancel'
+                ? 'Yes, cancel order'
+                : 'Send delivery report'
           }
-          noteLabel={dialog === 'report' ? 'What happened?' : undefined}
+          confirmVariant={dialog === 'cancel' ? 'danger' : 'primary'}
+          noteLabel={
+            dialog === 'report'
+              ? 'What happened?'
+              : dialog === 'cancel'
+                ? 'Reason for cancellation (optional)'
+                : undefined
+          }
+          noteRequired={dialog === 'report'}
           isPending={mutation.isPending}
           error={mutation.error}
           onClose={() => setDialog(null)}
@@ -234,7 +279,9 @@ function CustomerOrder({ id, onUpdated }: { id: string; onUpdated: () => void })
               order,
               dialog === 'confirm'
                 ? { type: 'confirm' }
-                : { type: 'report', message: note },
+                : dialog === 'cancel'
+                  ? { type: 'cancel', reason: note || undefined }
+                  : { type: 'report', message: note },
             )
           }
         />

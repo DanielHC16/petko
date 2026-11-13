@@ -103,6 +103,7 @@ export type OrderAction =
   | { type: 'confirm' }
   | { type: 'report'; message: string }
   | { type: 'resolve'; resolution: string }
+  | { type: 'cancel'; reason?: string }
   | {
       type: 'fulfillment'
       status: AdminFulfillmentStatus

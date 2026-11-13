@@ -32,4 +32,12 @@ describe('OrdersController', () => {
       Reflect.getMetadata(ROLES_KEY, OrdersController.prototype.confirmReceipt),
     ).toBeUndefined()
   })
+
+  it('allows customers to cancel their orders without admin role restriction', () => {
+    expect(
+      // Metadata is inspected without invoking the controller method.
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      Reflect.getMetadata(ROLES_KEY, OrdersController.prototype.cancel),
+    ).toBeUndefined()
+  })
 })

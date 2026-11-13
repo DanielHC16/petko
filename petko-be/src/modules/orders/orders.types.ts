@@ -87,4 +87,8 @@ export interface OrderList {
 }
 
 export type OrderAction =
-  'fulfillment' | 'confirm_receipt' | 'report_issue' | 'resolve_issue'
+  | 'fulfillment'
+  | 'confirm_receipt'
+  | 'report_issue'
+  | 'resolve_issue'
+  | 'cancel'

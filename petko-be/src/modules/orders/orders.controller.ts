@@ -18,6 +18,7 @@ import { OrdersService } from './orders.service'
 import { CreateOrderDto } from './dto/create-order.dto'
 import { OrderListQueryDto } from './dto/order-list-query.dto'
 import {
+  CancelOrderDto,
   OrderVersionDto,
   ReportDeliveryIssueDto,
   ResolveDeliveryIssueDto,
@@ -85,6 +86,15 @@ export class OrdersController {
     @CurrentUser() user: UserProfile,
   ): Promise<OrderDetail> {
     return this.orders.confirmReceipt(id, user, dto)
+  }
+
+  @Post(':id/cancel')
+  async cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelOrderDto,
+    @CurrentUser() user: UserProfile,
+  ): Promise<OrderDetail> {
+    return this.orders.cancel(id, user, dto)
   }
 
   @Post(':id/delivery-issue')

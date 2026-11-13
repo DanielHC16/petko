@@ -8,6 +8,7 @@ import { OrdersRepository } from './orders.repository'
 import type { CreateOrderDto } from './dto/create-order.dto'
 import type { OrderListQueryDto } from './dto/order-list-query.dto'
 import type {
+  CancelOrderDto,
   OrderVersionDto,
   ReportDeliveryIssueDto,
   ResolveDeliveryIssueDto,
@@ -86,6 +87,16 @@ export class OrdersService {
       dto.expected_version,
       {},
     )
+  }
+
+  async cancel(
+    id: string,
+    user: UserProfile,
+    dto: CancelOrderDto,
+  ): Promise<OrderDetail> {
+    return this.repository.mutate(id, user, 'cancel', dto.expected_version, {
+      reason: dto.reason,
+    })
   }
 
   async reportIssue(

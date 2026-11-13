@@ -422,6 +422,11 @@ begin
   if p_action in ('confirm_receipt','report_issue') then
     if p_actor_id is distinct from v_order.user_id then raise exception using errcode='P4040', message='Order not found'; end if;
     v_role := 'customer';
+  elsif p_action = 'cancel' then
+    if p_actor_id is distinct from v_order.user_id and p_actor_role is distinct from 'admin' then
+      raise exception using errcode='P4040', message='Order not found';
+    end if;
+    v_role := case when p_actor_role = 'admin' then 'admin' else 'customer' end;
   elsif p_action in ('fulfillment','resolve_issue') then
     if p_actor_role is distinct from 'admin' then raise exception using errcode='P4040', message='Order not found'; end if;
     v_role := 'admin';
@@ -457,6 +462,25 @@ begin
       tracking_number=case when p_payload ? 'tracking_number' then nullif(p_payload->>'tracking_number','') else tracking_number end
     where id=p_order_id;
     if v_status='cancelled' and v_order.stock_reserved then
+      for v_item in select product_id,quantity from public.order_items where order_id=p_order_id order by product_id loop
+        update public.products set stock=stock+v_item.quantity where id=v_item.product_id;
+      end loop;
+      update public.orders set stock_reserved=false where id=p_order_id;
+    end if;
+    v_event := 'status_changed';
+  elsif p_action='cancel' then
+    if not (v_order.fulfillment_status in ('placed', 'processing')) then
+      raise exception using errcode='P4091', message='Order cannot be cancelled in current status';
+    end if;
+    v_status := 'cancelled';
+    v_note := nullif(btrim(p_payload->>'reason'), '');
+    if length(coalesce(v_note, '')) > 500 then
+      raise exception using errcode='P4000', message='Cancellation reason too long';
+    end if;
+    update public.orders set fulfillment_status='cancelled',
+      status='cancelled'
+    where id=p_order_id;
+    if v_order.stock_reserved then
       for v_item in select product_id,quantity from public.order_items where order_id=p_order_id order by product_id loop
         update public.products set stock=stock+v_item.quantity where id=v_item.product_id;
       end loop;
