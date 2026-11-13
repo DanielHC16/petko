@@ -119,13 +119,9 @@ export default function CartPage() {
       className="min-h-screen w-full bg-petko-cream p-6 font-sans lg:p-10"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
-      {/* Shared checkout-style banner */}
+      {/* Shared checkout-style banner (No shopping bag icon) */}
       <PageBanner
-        title={
-          <>
-            Your Cart{' '}
-          </>
-        }
+        title="Your Cart"
         subtitle="Review your items and adjust quantities, proceed to checkout"
       />
 
@@ -237,7 +233,7 @@ export default function CartPage() {
                   </Link>
                 </div>
 
-                {/* Top Action Bar (Mobile + Desktop Select All) */}
+                {/* Top Action Bar (Mobile + Desktop Select All & Delete) */}
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-[#e1cba5] bg-[#fefaf2] px-4 sm:px-6 py-3.5 text-sm font-bold text-[#0B419A] shadow-sm">
                   <div className="flex items-center gap-3 min-w-0">
                     <button
@@ -255,6 +251,16 @@ export default function CartPage() {
                     <span className="truncate text-xs sm:text-sm font-extrabold text-[#0B419A]">
                       Select All ({selectedIds.length}/{inStockItems.length} selected)
                     </span>
+                    {selectedIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveSelectedClick}
+                        className="ml-2 inline-flex items-center gap-1 text-xs font-bold text-red-500 transition hover:text-red-700 shrink-0"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete ({selectedIds.length})</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Desktop Column Headers */}
@@ -268,20 +274,6 @@ export default function CartPage() {
 
                 {/* Items List Card */}
                 <div className="relative rounded-2xl border border-[#e1cba5] bg-[#fefaf2] p-4 sm:p-6 shadow-sm">
-                  {/* Top-Right "Remove Checked" Action Header */}
-                  {selectedIds.length > 0 && (
-                    <div className="mb-3 flex justify-end border-b border-gray-200/60 pb-2.5">
-                      <button
-                        type="button"
-                        onClick={handleRemoveSelectedClick}
-                        className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#0B419A] underline transition hover:text-red-600 shrink-0"
-                      >
-                        <Trash2 size={14} />
-                        Remove Checked ({selectedIds.length})
-                      </button>
-                    </div>
-                  )}
-
                   <div className="divide-y divide-gray-200/70">
                     {items.map((item) => {
                       const isChecked  = selectedIds.includes(String(item.product_id))
@@ -429,11 +421,11 @@ export default function CartPage() {
                           <Trash2 size={20} />
                         </div>
                         <h3 className="text-base sm:text-lg font-extrabold text-[#0B419A]">
-                          Remove Checked Items?
+                          Delete Selected Items?
                         </h3>
                       </div>
                       <p className="mt-3 text-xs sm:text-sm text-gray-600 leading-relaxed">
-                        Are you sure you want to remove the{' '}
+                        Are you sure you want to delete the{' '}
                         <span className="font-extrabold text-[#0B419A]">
                           {selectedIds.length} selected {selectedIds.length === 1 ? 'item' : 'items'}
                         </span>{' '}
@@ -452,7 +444,7 @@ export default function CartPage() {
                           onClick={confirmRemoveSelected}
                           className="rounded-lg bg-[#E53935] px-4 py-2 text-xs sm:text-sm font-extrabold text-white shadow-sm hover:bg-red-700 transition"
                         >
-                          Yes, Remove
+                          Yes, Delete
                         </button>
                       </div>
                     </div>
