@@ -251,16 +251,6 @@ export default function CartPage() {
                     <span className="truncate text-xs sm:text-sm font-extrabold text-[#0B419A]">
                       Select All ({selectedIds.length}/{inStockItems.length} selected)
                     </span>
-                    {selectedIds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveSelectedClick}
-                        className="ml-2 inline-flex items-center gap-1 text-xs font-bold text-red-500 transition hover:text-red-700 shrink-0"
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete ({selectedIds.length})</span>
-                      </button>
-                    )}
                   </div>
 
                   {/* Desktop Column Headers */}
@@ -270,6 +260,17 @@ export default function CartPage() {
                     <div className="text-center">Total</div>
                     <div className="w-8"></div>
                   </div>
+
+                  {selectedIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveSelectedClick}
+                        className="ml-2 inline-flex items-center gap-1 text-xs font-bold text-red-500 transition hover:text-red-700 shrink-0"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete ({selectedIds.length})</span>
+                      </button>
+                    )}
                 </div>
 
                 {/* Items List Card */}
