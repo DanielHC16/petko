@@ -62,6 +62,35 @@ export default function AdminUsersPage() {
     onConfirm: () => void
   }>({ open: false, title: '', message: '', confirmLabel: 'Confirm', variant: 'danger', onConfirm: () => {} })
 
+  // Lock base page scroll when confirmation popup is open
+  useEffect(() => {
+    if (!confirmDialog.open) return
+
+    const scrollY = window.scrollY
+    const originalBodyStyle = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    }
+    const originalHtmlOverflow = document.documentElement.style.overflow
+
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow
+      document.body.style.overflow = originalBodyStyle.overflow
+      document.body.style.position = originalBodyStyle.position
+      document.body.style.top = originalBodyStyle.top
+      document.body.style.width = originalBodyStyle.width
+      window.scrollTo(0, scrollY)
+    }
+  }, [confirmDialog.open])
+
   useEffect(() => {
     loadUsers()
     loadAccessEmails()
@@ -366,7 +395,6 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          {/* Input row */}
           <form onSubmit={handleAddAccessEmail} className="flex flex-col gap-3 sm:flex-row">
             <label htmlFor="access-email-input" className="sr-only">Email to pre-approve</label>
             <input
@@ -377,7 +405,7 @@ export default function AdminUsersPage() {
               value={accessEmailInput}
               onChange={(e) => setAccessEmailInput(e.target.value)}
               placeholder="e.g. colleague@gmail.com"
-              className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="flex-1 rounded-xl border border-[#e1cba5] bg-white px-4 py-2.5 text-base text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 sm:text-sm"
             />
             <button
               type="submit"
@@ -389,7 +417,6 @@ export default function AdminUsersPage() {
             </button>
           </form>
 
-          {/* Collapsible Allowlisted Emails List */}
           {isLoadingAccess ? (
             <div className="mt-5 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -481,57 +508,69 @@ export default function AdminUsersPage() {
           )}
         </div>
 
-        {/* ── Users Table ─────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-[#e1cba5] bg-white shadow-sm overflow-hidden">
-          {/* Table Toolbar */}
-          <div className="flex flex-col gap-3 border-b border-[#e1cba5] p-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Tab switcher */}
-            <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-[#e1cba5] bg-[#fdf2e1] p-1 sm:w-auto">
+        {/* ── Sticky Search & Inline Tab Switcher Bar (with top padding `top-2 sm:top-4`) ── */}
+        <div className="sticky top-5 z-30 -mx-4 border-b border-[#e1cba5]/80 bg-[#ecdab6]/95 px-4 py-2.5 backdrop-blur-sm sm:mx-0 sm:rounded-2xl sm:border sm:bg-[#fdf2e1]/95 sm:px-3.5 sm:py-3 sm:shadow-sm sm:top-4">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+            {/* Segmented Tab Switcher (Always inline on mobile and desktop without collapsing) */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-[#e1cba5] bg-white p-1 sm:w-auto">
               <button
+                type="button"
                 onClick={() => setActiveTab('customer')}
-                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === 'customer'
-                    ? 'bg-white text-[#10298E] shadow-sm'
-                    : 'text-gray-500 hover:text-[#10298E]'
+                    ? 'bg-[#10298E] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-[#10298E]'
                 }`}
               >
-                <Users size={13} className="shrink-0" />
-                <span className="truncate">Customers</span>
-                {isLoading ? (
-                  <span className="inline-block h-4 w-6 shrink-0 animate-pulse rounded-full bg-blue-100" />
-                ) : (
-                  <span className="shrink-0 rounded-full bg-blue-100 px-1.5 text-blue-700">{customerCount}</span>
-                )}
+                <Users size={13} />
+                <span>Customers</span>
+                <span className={`rounded-full px-1.5 text-[10px] ${activeTab === 'customer' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                  {customerCount}
+                </span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('admin')}
-                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                   activeTab === 'admin'
-                    ? 'bg-white text-[#10298E] shadow-sm'
-                    : 'text-gray-500 hover:text-[#10298E]'
+                    ? 'bg-[#10298E] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-[#10298E]'
                 }`}
               >
-                <Shield size={13} className="shrink-0" />
-                <span className="truncate">Admins</span>
-                {isLoading ? (
-                  <span className="inline-block h-4 w-6 shrink-0 animate-pulse rounded-full bg-orange-100" />
-                ) : (
-                  <span className="shrink-0 rounded-full bg-orange-100 px-1.5 text-orange-700">{adminCount}</span>
-                )}
+                <Shield size={13} />
+                <span>Admins</span>
+                <span className={`rounded-full px-1.5 text-[10px] ${activeTab === 'admin' ? 'bg-white/20 text-white' : 'bg-orange-100 text-orange-700'}`}>
+                  {adminCount}
+                </span>
               </button>
             </div>
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+
+            {/* Pill Search Input */}
+            <div className="relative min-w-0 flex-1 sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by display name or email..."
-                className="w-full rounded-lg border border-[#e1cba5] bg-[#fefaf2] py-2 pl-9 pr-3 text-sm text-gray-800 placeholder-gray-400 focus:border-orange-500 focus:outline-none"
+                placeholder={`Search ${activeTab === 'customer' ? 'customers' : 'admins'}...`}
+                className="h-10 w-full rounded-lg border border-[#e1cba5] bg-white pl-10 pr-8 text-base text-gray-800 placeholder-gray-400 shadow-sm focus:border-orange-500 focus:outline-none sm:h-9 sm:rounded-xl sm:text-sm"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
+        </div>
 
+        {/* ── Users Table Card ──────────────────────────────────────── */}
+        <div className="overflow-hidden rounded-2xl border border-[#e1cba5] bg-white shadow-sm">
           {isLoading ? (
             <div>
               <table className="w-full text-left text-sm">

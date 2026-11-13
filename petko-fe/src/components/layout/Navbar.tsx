@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Store,
   Package,
-  Settings,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useCartStore } from '@/store/cart.store'
@@ -106,12 +105,18 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* User avatar + name (clickable to /profile) */}
+          {/* User avatar + name + role badge (clickable to /profile) */}
           {profile && (
             <Link
               to="/profile"
+              aria-label="Profile and account settings"
+              aria-current={location.pathname === '/profile' ? 'page' : undefined}
               title="Profile & Account Settings"
-              className="flex items-center gap-2 border-l border-gray-200 pl-2 sm:pl-3 rounded-r-lg transition hover:opacity-80"
+              className={`flex items-center gap-2 border-l border-gray-200 pl-2 sm:pl-3 py-1 rounded-lg transition ${
+                location.pathname === '/profile'
+                  ? 'bg-orange-50/80 text-orange-600'
+                  : 'hover:opacity-80'
+              }`}
             >
               {profile.avatar_url ? (
                 <img
@@ -120,8 +125,8 @@ export default function Navbar() {
                   className="h-8 w-8 shrink-0 rounded-full border border-gray-200 object-cover"
                 />
               ) : (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-600">
-                  {profile.full_name?.charAt(0) || 'U'}
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-700 text-xs font-bold text-white">
+                  {profile.full_name?.substring(0, 2).toUpperCase() || 'CS'}
                 </div>
               )}
               <div className="hidden text-left sm:block">
@@ -140,21 +145,6 @@ export default function Navbar() {
               </div>
             </Link>
           )}
-
-          {/* Settings */}
-          <Link
-            to="/profile"
-            aria-label="Account settings"
-            aria-current={location.pathname === '/profile' ? 'page' : undefined}
-            title="Account settings"
-            className={`rounded-lg p-1.5 transition ${
-              location.pathname === '/profile'
-                ? 'bg-orange-50 text-orange-600'
-                : 'text-gray-400 hover:bg-orange-50 hover:text-orange-600'
-            }`}
-          >
-            <Settings size={17} aria-hidden="true" />
-          </Link>
 
           {/* Sign Out */}
           <button

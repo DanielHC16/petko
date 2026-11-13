@@ -45,7 +45,7 @@ export default function App() {
           <Route path="/loading-preview" element={<LoadingPreview />} />
 
         {/* UI Testing — bypass auth (comment out when not needed) */}
-         {/*<Route element={<AppLayout />}>
+        <Route element={<AppLayout />}>
           <Route path="/"             element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/cart"         element={<CartPage />} />
@@ -56,7 +56,7 @@ export default function App() {
           <Route path="/admin/orders"   element={<AdminOrdersPage />} />
           <Route path="/admin/users"    element={<AdminUsersPage />} />
           <Route path="/profile"       element={<Profile />} />
-        </Route>*/}
+        </Route>
 
           {/* Authenticated customer routes */}
           <Route element={<ProtectedRoute />}>
