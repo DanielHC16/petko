@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   AlertCircle,
   CheckCircle2,
@@ -66,14 +67,17 @@ export default function AdminOrderModal({
     }
   }, [action, mutation.isPending, onClose])
 
+  const backdropClasses =
+    'fixed inset-0 top-0 left-0 z-[9999] m-0 flex h-dvh w-screen items-center justify-center bg-black/60 p-3 sm:p-6 backdrop-blur-sm'
+
   if (!order) {
-    return (
+    return createPortal(
       <div
         ref={backdropRef}
         onClick={(e) => {
           if (e.target === backdropRef.current) onClose()
         }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        className={backdropClasses}
         role="dialog"
         aria-modal="true"
       >
@@ -104,7 +108,8 @@ export default function AdminOrderModal({
             </div>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 
@@ -120,19 +125,19 @@ export default function AdminOrderModal({
     setAction(value)
   }
 
-  return (
+  return createPortal(
     <>
       <div
         ref={backdropRef}
         onClick={(e) => {
           if (e.target === backdropRef.current) onClose()
         }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6 backdrop-blur-sm"
+        className={backdropClasses}
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-order-modal-title"
       >
-        <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-2xl">
+        <div className="relative flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-2xl">
           {/* ── Sticky Modal Header ───────────────────────────────────── */}
           <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-orange-100 bg-[#FFFBF5] p-5 sm:px-6">
             <div className="min-w-0">
@@ -211,7 +216,7 @@ export default function AdminOrderModal({
                     <span className="text-[11px] font-semibold text-gray-500">
                       Payment Method:
                     </span>
-                    <span className="ml-2 inline-flex items-center rounded-md bg-white border border-orange-200 px-2 py-0.5 text-xs font-bold text-petko-blue">
+                    <span className="ml-2 inline-flex items-center rounded-md border border-orange-200 bg-white px-2 py-0.5 text-xs font-bold text-petko-blue">
                       {order.payment_method
                         ? PAYMENT_LABELS[order.payment_method] || order.payment_method.toUpperCase()
                         : 'Cash on Delivery (COD)'}
@@ -351,7 +356,7 @@ export default function AdminOrderModal({
                       type="button"
                       onClick={() => openAction('cancelled')}
                       disabled={mutation.isPending || detail.isLoading}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 hover:border-red-400 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm transition hover:border-red-400 hover:bg-red-50 disabled:opacity-50"
                     >
                       <XCircle size={15} />
                       <span>Cancel order</span>
@@ -360,7 +365,7 @@ export default function AdminOrderModal({
                 </div>
 
                 {order.fulfillment_status === 'delivered' && (
-                  <p className="mt-3 text-xs font-medium text-orange-900 bg-orange-100/70 p-2.5 rounded-lg">
+                  <p className="mt-3 rounded-lg bg-orange-100/70 p-2.5 text-xs font-medium text-orange-900">
                     Awaiting customer receipt confirmation. The customer confirms receipt to mark the order completed.
                   </p>
                 )}
@@ -434,14 +439,14 @@ export default function AdminOrderModal({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-gray-800 break-words">
+                      <p className="break-words text-sm font-bold text-gray-800">
                         {item.product_name}
                       </p>
                       <p className="mt-0.5 text-xs text-gray-500">
                         Qty {item.quantity} × {formatOrderMoney(item.unit_price)}
                       </p>
                     </div>
-                    <span className="text-sm font-extrabold text-petko-blue tabular-nums">
+                    <span className="text-sm font-extrabold tabular-nums text-petko-blue">
                       {formatOrderMoney(item.unit_price * item.quantity)}
                     </span>
                   </li>
@@ -449,16 +454,16 @@ export default function AdminOrderModal({
               </ul>
 
               {/* Order Financials */}
-              <dl className="mt-4 space-y-2 rounded-xl bg-orange-50/70 p-4 text-sm border border-orange-200/50">
+              <dl className="mt-4 space-y-2 rounded-xl border border-orange-200/50 bg-orange-50/70 p-4 text-sm">
                 <div className="flex justify-between gap-3 text-gray-600">
                   <dt>Merchandise Subtotal</dt>
-                  <dd className="font-semibold text-gray-900 tabular-nums">
+                  <dd className="font-semibold tabular-nums text-gray-900">
                     {formatOrderMoney(order.subtotal_amount)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3 text-gray-600">
                   <dt>Shipping Fee</dt>
-                  <dd className="font-semibold text-gray-900 tabular-nums">
+                  <dd className="font-semibold tabular-nums text-gray-900">
                     {order.shipping_fee === 0 ? 'Free' : formatOrderMoney(order.shipping_fee)}
                   </dd>
                 </div>
@@ -494,7 +499,7 @@ export default function AdminOrderModal({
                         </span>
                       </p>
                       {event.note && (
-                        <p className="mt-1 whitespace-pre-wrap break-words text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                        <p className="mt-1 whitespace-pre-wrap break-words rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs text-gray-600">
                           {event.note}
                         </p>
                       )}
@@ -567,7 +572,8 @@ export default function AdminOrderModal({
           }
         />
       )}
-    </>
+    </>,
+    document.body
   )
 }
 
