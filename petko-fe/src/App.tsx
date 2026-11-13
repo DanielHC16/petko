@@ -47,19 +47,6 @@ export default function App() {
           {/* Dev preview */}
           <Route path="/loading-preview" element={<LoadingPreview />} />
 
-                  <Route element={<AppLayout />}>
-          <Route path="/"             element={<ProductsPage />} />
-          <Route path="/products/:id" element={<ProductDetailPage />} />
-          <Route path="/cart"         element={<CartPage />} />
-          <Route path="/checkout"     element={<CheckoutPage />} />
-          <Route path="/orders"       element={<OrdersPage />} />
-          <Route path="/admin"           element={<AdminDashboardPage />} />
-              <Route path="/admin/products"  element={<AdminProductsPage />} />
-              <Route path="/admin/orders"    element={<AdminOrdersPage />} />
-              <Route path="/admin/users"     element={<AdminUsersPage />} />
-              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
-        </Route>
-
           {/* Authenticated customer routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
