@@ -20,7 +20,7 @@ import type {
 } from './orders.types'
 
 const SUMMARY_SELECT =
-  'id,user_id,status,fulfillment_status,tracking_version,total_amount,subtotal_amount,shipping_fee,payment_method,delivery_method,created_at,updated_at,delivery_confirmed_at,courier_name,tracking_number,delivery_issue,shipping,items:order_items(id,product_id,product_name,image_url,quantity,unit_price)'
+  'id,user_id,status,fulfillment_status,tracking_version,total_amount,subtotal_amount,shipping_fee,payment_method,payment_simulated,delivery_method,created_at,updated_at,delivery_confirmed_at,courier_name,tracking_number,delivery_issue,shipping,items:order_items(id,product_id,product_name,image_url,quantity,unit_price)'
 
 @Injectable()
 export class OrdersRepository {

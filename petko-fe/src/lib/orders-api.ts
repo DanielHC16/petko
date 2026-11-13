@@ -32,8 +32,8 @@ export async function fetchOrder(
   return data.data
 }
 
-export async function placeOrder(input: PlaceOrderInput): Promise<OrderDetail> {
-  const { data } = await api.post<ApiResponse<OrderDetail>>('/orders', input)
+export async function placeOrder(input: PlaceOrderInput, accessToken: string): Promise<OrderDetail> {
+  const { data } = await api.post<ApiResponse<OrderDetail>>('/orders', input, { headers: { Authorization: `Bearer ${accessToken}` } })
   return data.data
 }
 

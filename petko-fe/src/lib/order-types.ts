@@ -1,3 +1,5 @@
+export type PaymentMethod = 'cod' | 'gcash' | 'maya' | 'card'
+
 export type FulfillmentStatus =
   | 'placed'
   | 'processing'
@@ -29,14 +31,14 @@ export interface OrderItem {
 
 export interface OrderSummary {
   id: string
-  user_id: string
+  user_id: string | null
   status: 'pending' | 'paid' | 'shipped' | 'cancelled'
   fulfillment_status: FulfillmentStatus
   tracking_version: number
   total_amount: number
   subtotal_amount: number
   shipping_fee: number
-  payment_method: 'cod' | null
+  payment_method: PaymentMethod | null
   delivery_method: 'standard' | 'express' | null
   created_at: string
   updated_at: string
@@ -93,7 +95,8 @@ export interface PlaceOrderInput {
   items: { product_id: string; quantity: number }[]
   shipping: OrderShipping
   delivery_method: 'standard' | 'express'
-  payment_method: 'cod'
+  payment_method: PaymentMethod
+  checkout_source: 'cart' | 'direct'
 }
 
 export type OrderAction =

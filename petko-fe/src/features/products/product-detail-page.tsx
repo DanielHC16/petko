@@ -1,3 +1,5 @@
+import { saveDirectCheckout } from '@/lib/checkout-selection'
+import { useAuthStore } from '@/store/auth.store'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { toastStyle, toastIconTheme } from '@/lib/toast-style'
@@ -39,6 +41,7 @@ export default function ProductDetailPage() {
   const [failedImageUrls, setFailedImageUrls] = useState<Record<string, boolean>>({})
 
   const addItem = useCartStore((s) => s.addItem)
+  const cartReady = useCartStore(state => Boolean(state.ownerId) && !state.isLoading && !state.error && !state.isCheckingOut)
   const cartItems = useCartStore((s) => s.items)
 
   const clearAddedTimer = useCallback(() => {
@@ -63,7 +66,7 @@ export default function ProductDetailPage() {
   }
 
   function handleAddToCart(): void {
-    if (!product) return
+    if (!product || !cartReady) return
     const cartQuantity = cartItems.find((item) => item.product_id === product.id)?.quantity ?? 0
     const quantityToAdd = Math.min(quantity, Math.max(0, product.stock - cartQuantity))
     if (quantityToAdd <= 0) {
@@ -116,7 +119,9 @@ export default function ProductDetailPage() {
     }
 
     // Save it to session storage so the checkout page can read it immediately
-    sessionStorage.setItem('direct_checkout_item', JSON.stringify(directItem))
+    const buyerId = useAuthStore.getState().profile?.id
+    if (!buyerId) return
+    saveDirectCheckout(buyerId, directItem)
 
     // Redirect to checkout with a direct mode parameter
     navigate('/checkout?mode=direct')
@@ -450,7 +455,7 @@ export default function ProductDetailPage() {
                 {/* Add to Cart Button */}
                 <button
                   onClick={handleAddToCart}
-                  disabled={remainingStock <= 0}
+                  disabled={remainingStock <= 0 || !cartReady}
                   className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-3 text-xs font-extrabold shadow-md transition sm:text-sm ${
                     isAdded
                       ? 'bg-green-600 text-white'

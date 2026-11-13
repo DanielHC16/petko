@@ -28,9 +28,16 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />
   }
 
+  if (!profile || profile.id !== session.user.id) {
+    return <div role="alert" className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <p className="text-sm text-gray-700">Could not load your account. Please try again.</p>
+      <button type="button" onClick={() => window.location.reload()} className="rounded-lg bg-petko-blue px-4 py-2 text-sm font-bold text-white">Reload account</button>
+    </div>
+  }
+
   if (requiredRole && profile?.role !== requiredRole) {
     return <Navigate to="/" replace />
   }
 
-  return <Outlet />
+  return <Outlet key={session.user.id} />
 }

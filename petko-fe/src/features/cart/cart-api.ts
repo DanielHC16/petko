@@ -21,7 +21,8 @@ export async function fetchRemoteCart(userId: string): Promise<CartItem[]> {
     .select('product_id, quantity, products (id, name, price, stock, image_url)')
     .eq('user_id', userId)
 
-  if (error || !data) return []
+  if (error) throw error
+  if (!data) return []
 
   return (data as unknown as RemoteCartRow[])
     .filter((row) => row.products !== null)
@@ -41,16 +42,18 @@ export async function syncRemoteCartItem(
   quantity: number,
 ): Promise<void> {
   if (quantity <= 0) {
-    await supabase
+    const { error } = await supabase
       .from('cart_items')
       .delete()
       .eq('user_id', userId)
       .eq('product_id', productId)
+    if (error) throw error
   } else {
-    await supabase.from('cart_items').upsert(
+    const { error } = await supabase.from('cart_items').upsert(
       { user_id: userId, product_id: productId, quantity },
       { onConflict: 'user_id,product_id' },
     )
+    if (error) throw error
   }
 }
 
@@ -58,13 +61,15 @@ export async function removeRemoteCartItem(
   userId: string,
   productId: string,
 ): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from('cart_items')
     .delete()
     .eq('user_id', userId)
     .eq('product_id', productId)
+  if (error) throw error
 }
 
 export async function clearRemoteCart(userId: string): Promise<void> {
-  await supabase.from('cart_items').delete().eq('user_id', userId)
+  const { error } = await supabase.from('cart_items').delete().eq('user_id', userId)
+  if (error) throw error
 }

@@ -38,14 +38,15 @@ export interface OrderDeliveryIssue {
 
 export interface OrderSummary {
   id: string
-  user_id: string
+  user_id: string | null
   status: 'pending' | 'paid' | 'shipped' | 'cancelled'
   fulfillment_status: FulfillmentStatus
   tracking_version: number
   total_amount: number
   subtotal_amount: number
   shipping_fee: number
-  payment_method: 'cod' | null
+  payment_method: 'cod' | 'gcash' | 'maya' | 'card' | null
+  payment_simulated: boolean
   delivery_method: 'standard' | 'express' | null
   created_at: string
   updated_at: string
